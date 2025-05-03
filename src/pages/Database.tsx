@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON, exportDatabaseJSON, Product, addProduct, updateProduct, deleteProduct } from '@/lib/db';
 import Header from '@/components/Header';
@@ -62,6 +63,77 @@ const Database = () => {
     setIsLoading(false);
   }, []);
 
+  // Function to create a backup of the current database
+  const createBackup = (db: DBType) => {
+    try {
+      const BACKUP_KEY = "furniture-quote-db-backups";
+      
+      const newBackup = {
+        date: new Date().toISOString(),
+        database: db
+      };
+      
+      // Get existing backups
+      const savedBackups = localStorage.getItem(BACKUP_KEY);
+      let existingBackups = [];
+      
+      if (savedBackups) {
+        existingBackups = JSON.parse(savedBackups);
+      }
+      
+      // Add new backup
+      existingBackups.push(newBackup);
+      
+      // Keep only the last 10 backups
+      const limitedBackups = existingBackups.slice(-10);
+      
+      // Save to localStorage
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(limitedBackups));
+      
+      console.log("Backup created:", newBackup.date);
+    } catch (error) {
+      console.error("Error creating backup:", error);
+    }
+  };
+
+  // Function to save the entire database and update state
+  const saveFullDatabase = (updatedDb: DBType) => {
+    // Create backup before saving
+    createBackup(database || loadDatabase());
+    
+    // Save to localStorage
+    saveDatabase(updatedDb);
+    
+    // Update state
+    setDatabase(updatedDb);
+  };
+
+  // Function to save a specific category
+  const saveCategoryData = (categoryName: string) => {
+    if (!database) return;
+    
+    // Create backup before saving
+    createBackup(database);
+    
+    // Save to localStorage
+    saveDatabase(database);
+    
+    toast.success(`Categoria "${categoryName}" a fost salvată cu succes`);
+  };
+
+  // Function to save a specific subcategory
+  const saveSubcategoryData = (categoryName: string, subcategoryName: string) => {
+    if (!database) return;
+    
+    // Create backup before saving
+    createBackup(database);
+    
+    // Save to localStorage
+    saveDatabase(database);
+    
+    toast.success(`Subcategoria "${subcategoryName}" din categoria "${categoryName}" a fost salvată cu succes`);
+  };
+
   const handleFileUpload = (categoryName: string) => {
     const fileInput = fileInputRefs.current[categoryName];
     if (fileInput) {
@@ -110,6 +182,7 @@ const Database = () => {
         // Here you would process the products and add them to the appropriate subcategories
         let productsAdded = 0;
         let productsSkipped = 0;
+        let duplicatesFound = 0;
         
         products.forEach(product => {
           if (product.subcategory && product.cod && product.pret !== undefined) {
@@ -118,20 +191,29 @@ const Database = () => {
             );
             
             if (subcategoryIndex !== -1) {
-              // Add product to subcategory
-              const newProduct = {
-                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                cod: product.cod,
-                pret: product.pret,
-                descriere: product.descriere || '',
-                ...product
-              };
-              
-              // Remove subcategory field as it's not part of product model
-              const { subcategory, ...productWithoutSubcategory } = newProduct;
-              
-              updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products.push(productWithoutSubcategory);
-              productsAdded++;
+              // Check if product with same code already exists
+              const existingProduct = updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products
+                .find(p => p.cod === product.cod);
+                
+              if (existingProduct) {
+                duplicatesFound++;
+                console.warn(`Produsul cu codul "${product.cod}" există deja în subcategoria "${product.subcategory}".`);
+              } else {
+                // Add product to subcategory
+                const newProduct = {
+                  id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  cod: product.cod,
+                  pret: product.pret,
+                  descriere: product.descriere || '',
+                  ...product
+                };
+                
+                // Remove subcategory field as it's not part of product model
+                const { subcategory, ...productWithoutSubcategory } = newProduct;
+                
+                updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products.push(productWithoutSubcategory);
+                productsAdded++;
+              }
             } else {
               productsSkipped++;
               console.warn(`Subcategoria "${product.subcategory}" nu există în categoria "${categoryName}".`);
@@ -142,12 +224,15 @@ const Database = () => {
           }
         });
         
-        if (productsAdded > 0) {
-          saveDatabase(updatedDb);
-          setDatabase(updatedDb);
+        if (productsAdded > 0 || duplicatesFound > 0) {
+          // Save the updated database
+          saveFullDatabase(updatedDb);
           
-          if (productsSkipped > 0) {
-            toast.success(`${productsAdded} produse adăugate în categoria ${categoryName}. ${productsSkipped} produse au fost ignorate.`);
+          // Show appropriate message
+          if (duplicatesFound > 0 && productsAdded > 0) {
+            toast.success(`${productsAdded} produse adăugate în categoria ${categoryName}. ${duplicatesFound} produse duplicate ignorate.`);
+          } else if (duplicatesFound > 0 && productsAdded === 0) {
+            toast.warning(`Niciun produs nou adăugat. ${duplicatesFound} produse există deja în baza de date.`);
           } else {
             toast.success(`${productsAdded} produse adăugate în categoria ${categoryName}.`);
           }
@@ -173,6 +258,11 @@ const Database = () => {
 
   const processSubcategoryFile = async (categoryName: string, subcategoryName: string, file: File) => {
     try {
+      // Create backup before proceeding
+      if (database) {
+        createBackup(database);
+      }
+      
       let data: any[];
       
       if (file.name.endsWith('.csv')) {
@@ -256,14 +346,31 @@ const Database = () => {
         return;
       }
       
+      // Check for duplicates first
+      const existingProducts = updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products;
+      const newProductCodes = products.map(p => p.cod);
+      const existingProductCodes = existingProducts.map(p => p.cod);
+      
+      // Find duplicates
+      const duplicates = newProductCodes.filter(code => existingProductCodes.includes(code));
+      const uniqueProducts = products.filter(product => !existingProductCodes.includes(product.cod));
+      
       // Replace existing products
-      updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products = products;
-      
-      // Save the database
-      saveDatabase(updatedDb);
-      setDatabase(updatedDb);
-      
-      toast.success(`Import reușit: ${products.length} produse încărcate în ${categoryName}/${subcategoryName}`);
+      if (uniqueProducts.length > 0) {
+        const updatedProducts = [...existingProducts, ...uniqueProducts];
+        updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products = updatedProducts;
+        
+        // Save the database
+        saveFullDatabase(updatedDb);
+        
+        if (duplicates.length > 0) {
+          toast.success(`Import reușit: ${uniqueProducts.length} produse noi încărcate în ${categoryName}/${subcategoryName}. ${duplicates.length} produse duplicate au fost ignorate.`);
+        } else {
+          toast.success(`Import reușit: ${uniqueProducts.length} produse încărcate în ${categoryName}/${subcategoryName}`);
+        }
+      } else {
+        toast.warning(`Toate cele ${duplicates.length} produse există deja în baza de date. Niciun produs nou adăugat.`);
+      }
     } catch (error) {
       console.error("Error processing file:", error);
       toast.error(`Eroare la procesarea fișierului: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
@@ -319,7 +426,9 @@ const Database = () => {
         const content = e.target?.result as string;
         
         // Create a backup before importing
-        createBackup(loadDatabase());
+        if (database) {
+          createBackup(database);
+        }
         
         // Import the database
         const success = importDatabaseJSON(content);
@@ -347,39 +456,6 @@ const Database = () => {
     
     reader.readAsText(file);
   };
-  
-  // Function to create a backup of the current database
-  const createBackup = (db: DBType) => {
-    try {
-      const BACKUP_KEY = "furniture-quote-db-backups";
-      
-      const newBackup = {
-        date: new Date().toISOString(),
-        database: db
-      };
-      
-      // Get existing backups
-      const savedBackups = localStorage.getItem(BACKUP_KEY);
-      let existingBackups = [];
-      
-      if (savedBackups) {
-        existingBackups = JSON.parse(savedBackups);
-      }
-      
-      // Add new backup
-      existingBackups.push(newBackup);
-      
-      // Keep only the last 10 backups
-      const limitedBackups = existingBackups.slice(-10);
-      
-      // Save to localStorage
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(limitedBackups));
-      
-      console.log("Backup created:", newBackup.date);
-    } catch (error) {
-      console.error("Error creating backup:", error);
-    }
-  };
 
   const handleEditProduct = (categoryName: string, subcategoryName: string, product: Product) => {
     setCurrentCategory(categoryName);
@@ -400,6 +476,25 @@ const Database = () => {
 
   const saveProductChanges = () => {
     if (!database || !productBeingEdited || !currentCategory || !currentSubcategory) return;
+    
+    // Create a backup first
+    createBackup(database);
+
+    // Check if product with same code already exists (and it's not the current product)
+    const subcategory = database.categories
+      .find(c => c.name === currentCategory)
+      ?.subcategories.find(s => s.name === currentSubcategory);
+      
+    if (subcategory) {
+      const duplicateProduct = subcategory.products.find(
+        p => p.cod === productBeingEdited.cod && p.id !== productBeingEdited.id
+      );
+      
+      if (duplicateProduct) {
+        toast.error(`Un produs cu codul ${productBeingEdited.cod} există deja`);
+        return;
+      }
+    }
 
     const updatedDb = updateProduct(database, currentCategory, currentSubcategory, productBeingEdited);
     saveDatabase(updatedDb);
@@ -410,6 +505,9 @@ const Database = () => {
 
   const saveNewProduct = () => {
     if (!database || !currentCategory || !currentSubcategory) return;
+    
+    // Create a backup first
+    createBackup(database);
 
     if (!newProduct.cod) {
       toast.error("Codul produsului este obligatoriu");
@@ -419,6 +517,20 @@ const Database = () => {
     if (isNaN(Number(newProduct.pret))) {
       toast.error("Prețul trebuie să fie un număr");
       return;
+    }
+    
+    // Check if product with same code already exists
+    const subcategory = database.categories
+      .find(c => c.name === currentCategory)
+      ?.subcategories.find(s => s.name === currentSubcategory);
+      
+    if (subcategory) {
+      const duplicateProduct = subcategory.products.find(p => p.cod === newProduct.cod);
+      
+      if (duplicateProduct) {
+        toast.error(`Un produs cu codul ${newProduct.cod} există deja`);
+        return;
+      }
     }
 
     const productToAdd = {
@@ -430,11 +542,14 @@ const Database = () => {
     saveDatabase(updatedDb);
     setDatabase(updatedDb);
     setIsAddModalOpen(false);
-    toast.success("Produsul a fost adăugat");
+    toast.success("Produsul a fost adăugat cu succes");
   };
 
   const handleDeleteProduct = (categoryName: string, subcategoryName: string, productId: string) => {
     if (!database) return;
+    
+    // Create a backup first
+    createBackup(database);
     
     const updatedDb = deleteProduct(database, categoryName, subcategoryName, productId);
     saveDatabase(updatedDb);
@@ -496,7 +611,15 @@ const Database = () => {
             <Card key={category.name} className="shadow-sm">
               <CardHeader className="bg-gray-50 border-b flex flex-row items-center justify-between">
                 <CardTitle>{category.name}</CardTitle>
-                <div>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => saveCategoryData(category.name)}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvează {category.name}
+                  </Button>
                   <input
                     type="file"
                     ref={(el) => fileInputRefs.current[category.name] = el}
@@ -522,6 +645,17 @@ const Database = () => {
                         <div className="flex justify-between w-full">
                           <span>{subcategory.name}</span>
                           <div className="flex items-center gap-3">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveSubcategoryData(category.name, subcategory.name);
+                              }}
+                              title={`Salvează ${subcategory.name}`}
+                            >
+                              <Save className="h-4 w-4" />
+                            </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
