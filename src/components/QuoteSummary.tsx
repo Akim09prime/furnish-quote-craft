@@ -11,6 +11,7 @@ import { Eye, Printer } from 'lucide-react';
 
 interface QuoteSummaryProps {
   quote: Quote;
+  quoteType: 'client' | 'internal';
   onUpdateLabor: (percentage: number) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
@@ -19,6 +20,7 @@ interface QuoteSummaryProps {
 
 const QuoteSummary: React.FC<QuoteSummaryProps> = ({ 
   quote, 
+  quoteType,
   onUpdateLabor,
   onUpdateQuantity,
   onRemoveItem,
@@ -61,7 +63,9 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
     <>
       <Card className="bg-white print:shadow-none">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl">Sumar Ofertă</CardTitle>
+          <CardTitle className="text-xl">
+            Sumar Ofertă {quoteType === 'internal' ? '(Intern)' : '(Client)'}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {quote.items.length === 0 ? (
@@ -133,6 +137,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         quote={quote}
+        quoteType={quoteType}
         onUpdateQuantity={onUpdateQuantity}
         onRemoveItem={onRemoveItem}
       />

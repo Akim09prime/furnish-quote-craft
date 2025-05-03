@@ -7,23 +7,26 @@ import { toast } from 'sonner';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const db = loadDatabase();
     setDatabase(db);
+    setIsLoading(false);
   }, []);
 
   const handleDatabaseUpdate = (updatedDb: Database) => {
     try {
       saveDatabase(updatedDb);
       setDatabase(updatedDb);
+      toast.success("Baza de date a fost actualizată");
     } catch (error) {
       console.error("Error updating database:", error);
       toast.error("Eroare la actualizarea bazei de date");
     }
   };
 
-  if (!database) {
+  if (isLoading || !database) {
     return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
   }
 

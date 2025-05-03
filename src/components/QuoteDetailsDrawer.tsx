@@ -1,187 +1,185 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Quote, QuoteItem as QuoteItemType } from '@/lib/db';
-import { 
-  Drawer, 
-  DrawerContent, 
-  DrawerHeader, 
-  DrawerTitle, 
-  DrawerFooter 
-} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell
-} from '@/components/ui/table';
-import { Edit, Check, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
 
 interface QuoteDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   quote: Quote;
+  quoteType: 'client' | 'internal';
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
 }
 
-const QuoteDetailsDrawer: React.FC<QuoteDetailsDrawerProps> = ({ 
-  isOpen, 
-  onClose, 
-  quote, 
-  onUpdateQuantity, 
-  onRemoveItem 
+const QuoteDetailsDrawer: React.FC<QuoteDetailsDrawerProps> = ({
+  isOpen,
+  onClose,
+  quote,
+  quoteType,
+  onUpdateQuantity,
+  onRemoveItem,
 }) => {
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingQuantity, setEditingQuantity] = useState<number>(1);
-  
-  const startEditing = (item: QuoteItemType) => {
-    setEditingItemId(item.id);
-    setEditingQuantity(item.quantity);
-  };
-  
-  const cancelEditing = () => {
-    setEditingItemId(null);
-  };
-  
-  const saveQuantity = (itemId: string) => {
-    if (editingQuantity > 0) {
-      onUpdateQuantity(itemId, editingQuantity);
-      setEditingItemId(null);
-      toast.success("Cantitatea a fost actualizată");
-    } else {
-      toast.error("Cantitatea trebuie să fie mai mare decât zero");
-    }
-  };
-  
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setEditingQuantity(value);
-    }
-  };
-  
-  const handleRemoveItem = (itemId: string) => {
-    onRemoveItem(itemId);
-    toast.success("Produsul a fost eliminat din ofertă");
-  };
-  
-  const handlePrint = () => {
-    onClose();
-    setTimeout(() => {
-      window.print();
-    }, 300);
-  };
+  // Group items by category for the client view
+  const groupedItems = React.useMemo(() => {
+    if (quoteType === 'internal') return null;
+    
+    const grouped: Record<string, { count: number, items: QuoteItemType[] }> = {};
+    
+    quote.items.forEach(item => {
+      const key = item.categoryName;
+      if (!grouped[key]) {
+        grouped[key] = { count: 0, items: [] };
+      }
+      
+      grouped[key].count += item.quantity;
+      grouped[key].items.push(item);
+    });
+    
+    return grouped;
+  }, [quote.items, quoteType]);
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[90vh]">
-        <DrawerHeader>
-          <DrawerTitle className="text-xl text-center">Ofertă Detaliată</DrawerTitle>
-        </DrawerHeader>
-        
-        <div className="px-4 overflow-y-auto max-h-[calc(90vh-160px)]">
-          {quote.items.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cod</TableHead>
-                  <TableHead>Descriere</TableHead>
-                  <TableHead className="text-right">Preț/buc</TableHead>
-                  <TableHead className="text-right">Cantitate</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Acțiuni</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {quote.items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.productDetails.cod}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{item.categoryName}</div>
-                      <div className="text-sm text-gray-500">{item.subcategoryName}</div>
-                      {item.productDetails.description && (
-                        <div className="text-sm">{item.productDetails.description}</div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">{item.pricePerUnit.toFixed(2)} RON</TableCell>
-                    <TableCell className="text-right">
-                      {editingItemId === item.id ? (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>
+            {quoteType === 'internal' ? 'Detalii Ofertă (Intern)' : 'Ofertă pentru Client'}
+          </SheetTitle>
+          <SheetDescription>
+            {quote.title} - {quote.beneficiary}
+            <div className="text-right text-sm">
+              Data: {new Date().toLocaleDateString('ro-RO')}
+            </div>
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="mt-8">
+          {quoteType === 'internal' ? (
+            // Internal view with detailed prices and codes
+            <div className="space-y-4">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2">Cod</th>
+                    <th className="text-left py-2">Descriere</th>
+                    <th className="text-right py-2">Preț/buc</th>
+                    <th className="text-right py-2">Cant.</th>
+                    <th className="text-right py-2">Total</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quote.items.map(item => (
+                    <tr key={item.id} className="border-b">
+                      <td className="py-2">{item.productDetails.cod}</td>
+                      <td className="py-2">
+                        <div>{item.categoryName}</div>
+                        <div className="text-xs text-gray-500">
+                          {Object.entries(item.productDetails)
+                            .filter(([key]) => !['id', 'cod', 'pret'].includes(key) && typeof item.productDetails[key] !== 'object')
+                            .map(([key, value]) => (
+                              <span key={key}>
+                                {key}: {String(value)}{' '}
+                              </span>
+                            ))}
+                        </div>
+                      </td>
+                      <td className="py-2 text-right">{item.pricePerUnit.toFixed(2)} RON</td>
+                      <td className="py-2 text-right">
                         <Input
                           type="number"
                           min="1"
-                          value={editingQuantity}
-                          onChange={handleQuantityChange}
-                          className="w-16 h-8 text-right"
+                          value={item.quantity}
+                          onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
+                          className="w-16 h-8 text-right inline-block"
                         />
-                      ) : (
-                        item.quantity
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">{item.total.toFixed(2)} RON</TableCell>
-                    <TableCell className="text-right">
-                      {editingItemId === item.id ? (
-                        <div className="flex justify-end space-x-1">
-                          <Button size="icon" variant="ghost" onClick={() => saveQuantity(item.id)}>
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={cancelEditing}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex justify-end space-x-1">
-                          <Button size="icon" variant="ghost" onClick={() => startEditing(item)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => handleRemoveItem(item.id)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </td>
+                      <td className="py-2 text-right font-medium">{item.total.toFixed(2)} RON</td>
+                      <td>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onRemoveItem(item.id)}
+                          className="h-8 w-8"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between">
+                  <span>Subtotal produse:</span>
+                  <span className="font-medium">{quote.subtotal.toFixed(2)} RON</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span>Manoperă ({quote.laborPercentage}%):</span>
+                  <span className="font-medium">{quote.laborCost.toFixed(2)} RON</span>
+                </div>
+                
+                <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
+                  <span>Total:</span>
+                  <span>{quote.total.toFixed(2)} RON</span>
+                </div>
+              </div>
+            </div>
           ) : (
-            <div className="text-center py-10">
-              <p className="text-gray-500">Nu există produse în ofertă</p>
+            // Client view with grouped items by category without prices
+            <div className="space-y-6">
+              {groupedItems && Object.entries(groupedItems).map(([category, data]) => (
+                <div key={category} className="border-b pb-4">
+                  <h3 className="font-bold text-lg mb-2">{category}</h3>
+                  <ul className="space-y-2">
+                    {data.items.map(item => {
+                      // Create a description without price or code
+                      const description = Object.entries(item.productDetails)
+                        .filter(([key]) => !['id', 'cod', 'pret'].includes(key) && typeof item.productDetails[key] !== 'object' && item.productDetails[key])
+                        .map(([key, value]) => `${String(value)}`)
+                        .join(', ');
+
+                      return (
+                        <li key={item.id} className="flex justify-between">
+                          <div>
+                            {description || 'Produs'} {item.quantity > 1 ? `(${item.quantity} buc)` : ''}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+              
+              <div className="border-t pt-4 mt-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total:</span>
+                  <span>{quote.total.toFixed(2)} RON</span>
+                </div>
+              </div>
             </div>
           )}
-          
-          <div className="mt-6 space-y-2 border-t pt-4">
-            <div className="flex justify-between">
-              <span>Subtotal produse:</span>
-              <span className="font-medium">{quote.subtotal.toFixed(2)} RON</span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span>Manoperă ({quote.laborPercentage}%):</span>
-              <span className="font-medium">{quote.laborCost.toFixed(2)} RON</span>
-            </div>
-            
-            <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-              <span>Total:</span>
-              <span>{quote.total.toFixed(2)} RON</span>
-            </div>
-          </div>
         </div>
-        
-        <DrawerFooter className="flex flex-row justify-between gap-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+
+        <div className="mt-8">
+          <Button onClick={onClose} className="w-full">
             Închide
           </Button>
-          <Button onClick={handlePrint} className="flex-1">
-            Printează
-          </Button>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { 
   Database, 
@@ -19,6 +20,7 @@ import ProductSelector from '@/components/ProductSelector';
 import QuoteItem from '@/components/QuoteItem';
 import QuoteSummary from '@/components/QuoteSummary';
 import Header from '@/components/Header';
+import QuoteTypeSelector from '@/components/QuoteTypeSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Index = () => {
@@ -26,6 +28,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoteType, setQuoteType] = useState<'client' | 'internal'>('internal');
 
   // Initialize database and quote on mount
   useEffect(() => {
@@ -119,6 +122,11 @@ const Index = () => {
     }
   };
 
+  // Handle quote type change
+  const handleQuoteTypeChange = (type: 'client' | 'internal') => {
+    setQuoteType(type);
+  };
+
   if (!database || !quote) {
     return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
   }
@@ -132,6 +140,11 @@ const Index = () => {
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
         <div className="lg:col-span-2 space-y-8 print:col-span-2">
           <div className="print:hidden">
+            <QuoteTypeSelector 
+              quoteType={quoteType} 
+              onChangeQuoteType={handleQuoteTypeChange}
+            />
+            
             {!selectedCategory ? (
               <CategorySelector
                 database={database}
@@ -181,31 +194,35 @@ const Index = () => {
                 <table className="w-full hidden print:table">
                   <thead className="border-b">
                     <tr>
-                      <th className="text-left py-2">Cod</th>
+                      {quoteType === 'internal' && <th className="text-left py-2">Cod</th>}
                       <th className="text-left py-2">Categorie</th>
                       <th className="text-left py-2">Specificații</th>
-                      <th className="text-right py-2">Preț/buc</th>
+                      {quoteType === 'internal' && <th className="text-right py-2">Preț/buc</th>}
                       <th className="text-right py-2">Cant.</th>
-                      <th className="text-right py-2">Total</th>
+                      {quoteType === 'internal' && <th className="text-right py-2">Total</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {quote.items.map(item => (
                       <tr key={item.id} className="border-b">
-                        <td className="py-2">{item.productDetails.cod}</td>
+                        {quoteType === 'internal' && <td className="py-2">{item.productDetails.cod}</td>}
                         <td className="py-2">{item.categoryName}</td>
                         <td className="py-2">
                           {Object.entries(item.productDetails)
-                            .filter(([key]) => !['id', 'cod', 'pret'].includes(key))
+                            .filter(([key]) => !['id', 'cod', 'pret'].includes(key) && typeof item.productDetails[key] !== 'object')
                             .map(([key, value]) => (
                               <div key={key}>
-                                <span className="font-medium">{key}:</span> {String(value)}
+                                {quoteType === 'internal' ? (
+                                  <><span className="font-medium">{key}:</span> {String(value)}</>
+                                ) : (
+                                  <>{String(value)}</>
+                                )}
                               </div>
                             ))}
                         </td>
-                        <td className="py-2 text-right">{item.pricePerUnit.toFixed(2)} RON</td>
+                        {quoteType === 'internal' && <td className="py-2 text-right">{item.pricePerUnit.toFixed(2)} RON</td>}
                         <td className="py-2 text-right">{item.quantity}</td>
-                        <td className="py-2 text-right font-medium">{item.total.toFixed(2)} RON</td>
+                        {quoteType === 'internal' && <td className="py-2 text-right font-medium">{item.total.toFixed(2)} RON</td>}
                       </tr>
                     ))}
                   </tbody>
@@ -235,7 +252,8 @@ const Index = () => {
         <div className="lg:col-span-1 print:col-span-1 print:mt-0">
           <div className="sticky top-20 print:static">
             <QuoteSummary 
-              quote={quote} 
+              quote={quote}
+              quoteType={quoteType}
               onUpdateLabor={handleUpdateLabor} 
               onUpdateQuantity={handleUpdateQuantity}
               onRemoveItem={handleRemoveItem}
