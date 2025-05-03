@@ -138,7 +138,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                 
                 {field.type === 'select' && field.options && (
                   <Select 
-                    value={newProduct[field.name] || ""} 
+                    value={newProduct[field.name] || undefined} 
                     onValueChange={(val) => handleNewProductChange(field.name, val)}
                   >
                     <SelectTrigger>
@@ -229,7 +229,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                     <TableCell key={field.name}>
                       {field.type === 'select' && field.options && (
                         <Select 
-                          value={product[field.name] || ""} 
+                          value={product[field.name] || undefined} 
                           onValueChange={(val) => handleProductChange(product, field.name, val)}
                         >
                           <SelectTrigger className="h-8">

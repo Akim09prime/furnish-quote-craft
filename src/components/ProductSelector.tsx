@@ -115,14 +115,14 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
                   
                   {field.type === 'select' && field.options && (
                     <Select 
-                      value={filters[field.name] || ""} 
+                      value={filters[field.name] || undefined} 
                       onValueChange={(val) => handleFilterChange(field.name, val)}
                     >
                       <SelectTrigger id={`field-${field.name}`}>
                         <SelectValue placeholder={`Alege ${field.name}`} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Toate</SelectItem>
+                        <SelectItem value="all">Toate</SelectItem>
                         {field.options.map(opt => (
                           <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                         ))}

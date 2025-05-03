@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
   Database, 
@@ -10,7 +9,8 @@ import {
   updateQuoteItem,
   removeQuoteItem, 
   setLaborPercentage,
-  Category
+  Category,
+  QuoteItem
 } from '@/lib/db';
 import CategorySelector from '@/components/CategorySelector';
 import ProductSelector from '@/components/ProductSelector';
@@ -59,7 +59,14 @@ const Index = () => {
     productDetails: Record<string, any>;
   }) => {
     if (quote) {
-      const updatedQuote = addItemToQuote(quote, item);
+      // Calculate total before adding to quote
+      const total = item.quantity * item.pricePerUnit;
+      const quoteItem: Omit<QuoteItem, "id"> = {
+        ...item,
+        total: total
+      };
+      
+      const updatedQuote = addItemToQuote(quote, quoteItem);
       setQuote(updatedQuote);
       saveQuote(updatedQuote);
     }
