@@ -11,7 +11,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Quote } from '@/lib/db';
 
 interface QuoteMetadataDialogProps {
   isOpen: boolean;

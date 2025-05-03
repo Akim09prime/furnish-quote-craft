@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import QuoteDetailsDrawer from './QuoteDetailsDrawer';
 import QuoteMetadataDialog from './QuoteMetadataDialog';
-import { Eye } from 'lucide-react';
+import { Eye, Printer } from 'lucide-react';
 
 interface QuoteSummaryProps {
   quote: Quote;
@@ -113,6 +113,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                   Vezi Oferta Finală
                 </Button>
                 <Button onClick={handlePrint} className="w-full">
+                  <Printer className="mr-2 h-4 w-4" />
                   Printează Oferta
                 </Button>
               </div>
@@ -120,12 +121,11 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
           )}
           
           {/* Display quote metadata if available - visible in print mode */}
-          {(quote.beneficiary || quote.title) && (
-            <div className="hidden print:block mt-4 text-center">
-              {quote.title && <h3 className="text-xl font-bold">{quote.title}</h3>}
-              {quote.beneficiary && <p className="text-md">Client: {quote.beneficiary}</p>}
-            </div>
-          )}
+          <div className="hidden print:block mt-4 text-center">
+            {quote.title && <h3 className="text-xl font-bold">{quote.title}</h3>}
+            {quote.beneficiary && <p className="text-md">Client: {quote.beneficiary}</p>}
+            <p className="text-md">Data: {new Date().toLocaleDateString('ro-RO')}</p>
+          </div>
         </CardContent>
       </Card>
       
