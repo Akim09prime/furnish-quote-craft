@@ -77,6 +77,40 @@ export const getProductById = (subcategory: Subcategory, id: string): Product | 
   return subcategory.products.find(p => p.id === id);
 };
 
+// Add a new category to the database
+export const addCategory = (db: Database, categoryName: string): Database => {
+  const newDb = { ...db };
+  
+  // Check if category already exists
+  if (newDb.categories.some(c => c.name === categoryName)) {
+    throw new Error(`Categoria "${categoryName}" există deja`);
+  }
+  
+  // Add new category
+  newDb.categories.push({
+    name: categoryName,
+    subcategories: []
+  });
+  
+  return newDb;
+};
+
+// Delete a category from the database
+export const deleteCategory = (db: Database, categoryName: string): Database => {
+  const newDb = { ...db };
+  
+  // Check if category exists
+  const categoryIndex = newDb.categories.findIndex(c => c.name === categoryName);
+  if (categoryIndex === -1) {
+    throw new Error(`Categoria "${categoryName}" nu există`);
+  }
+  
+  // Remove category
+  newDb.categories.splice(categoryIndex, 1);
+  
+  return newDb;
+};
+
 export const addSubcategory = (db: Database, categoryName: string, subcategory: Subcategory): Database => {
   const newDb = { ...db };
   const categoryIndex = newDb.categories.findIndex(c => c.name === categoryName);
