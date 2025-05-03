@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Database, loadDatabase } from '@/lib/db';
+import { Database, loadDatabase, saveDatabase } from '@/lib/db';
 import Header from '@/components/Header';
 import AdminPanel from '@/components/AdminPanel';
+import { toast } from 'sonner';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
@@ -13,7 +14,13 @@ const Admin = () => {
   }, []);
 
   const handleDatabaseUpdate = (updatedDb: Database) => {
-    setDatabase(updatedDb);
+    try {
+      saveDatabase(updatedDb);
+      setDatabase(updatedDb);
+    } catch (error) {
+      console.error("Error updating database:", error);
+      toast.error("Eroare la actualizarea bazei de date");
+    }
   };
 
   if (!database) {

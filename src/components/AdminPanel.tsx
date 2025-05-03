@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminCategoryEditor from './AdminCategoryEditor';
+import AdminCategoryManager from './AdminCategoryManager';
 
 interface AdminPanelProps {
   database: Database;
@@ -19,6 +20,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [jsonExport, setJsonExport] = useState("");
   const [jsonImport, setJsonImport] = useState("");
+  const [activeTab, setActiveTab] = useState("edit");
 
   const category = database.categories.find(c => c.name === selectedCategory);
   const subcategory = category?.subcategories.find(s => s.name === selectedSubcategory);
@@ -64,9 +66,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
         </p>
       </div>
 
-      <Tabs defaultValue="edit" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="edit">Editare Produse</TabsTrigger>
+          <TabsTrigger value="manage">Gestionare Categorii</TabsTrigger>
           <TabsTrigger value="export">Export/Import</TabsTrigger>
         </TabsList>
         
@@ -122,6 +125,42 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
                 <CardContent className="pt-6">
                   <p className="text-center text-gray-500 py-10">
                     Selectează o categorie și o subcategorie pentru a începe editarea
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="manage">
+          <div className="space-y-6">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Categorie</label>
+              <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selectează categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {database.categories.map(category => (
+                    <SelectItem key={category.name} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {category ? (
+              <AdminCategoryManager
+                database={database}
+                category={category}
+                onDatabaseUpdate={onDatabaseUpdate}
+              />
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500 py-10">
+                    Selectează o categorie pentru a începe gestionarea
                   </p>
                 </CardContent>
               </Card>

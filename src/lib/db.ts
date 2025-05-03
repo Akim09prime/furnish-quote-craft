@@ -1,3 +1,4 @@
+
 import { initialDB } from "../data/initialDB";
 
 export type Product = {
@@ -75,6 +76,24 @@ export const getSubcategoryByName = (category: Category, name: string): Subcateg
 
 export const getProductById = (subcategory: Subcategory, id: string): Product | undefined => {
   return subcategory.products.find(p => p.id === id);
+};
+
+export const addSubcategory = (db: Database, categoryName: string, subcategory: Subcategory): Database => {
+  const newDb = { ...db };
+  const categoryIndex = newDb.categories.findIndex(c => c.name === categoryName);
+  
+  if (categoryIndex === -1) {
+    throw new Error(`Categoria "${categoryName}" nu există`);
+  }
+  
+  // Check if subcategory with this name already exists
+  if (newDb.categories[categoryIndex].subcategories.some(s => s.name === subcategory.name)) {
+    throw new Error(`O subcategorie cu numele "${subcategory.name}" există deja`);
+  }
+  
+  // Add subcategory
+  newDb.categories[categoryIndex].subcategories.push(subcategory);
+  return newDb;
 };
 
 export const addProduct = (db: Database, categoryName: string, subcategoryName: string, product: Omit<Product, "id">): Database => {
