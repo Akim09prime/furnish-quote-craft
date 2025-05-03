@@ -54,7 +54,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
     const filtered = subcategory.products.filter(product => {
       return Object.entries(filters).every(([key, value]) => {
         // Skip empty filter values
-        if (value === "" || value === undefined || value === null) return true;
+        if (value === "" || value === undefined || value === null || value === "all") return true;
         return product[key] === value;
       });
     });

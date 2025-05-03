@@ -4,15 +4,22 @@ import { Database, loadDatabase, saveDatabase } from '@/lib/db';
 import Header from '@/components/Header';
 import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const loadDatabaseData = () => {
+    setIsLoading(true);
     const db = loadDatabase();
     setDatabase(db);
     setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadDatabaseData();
   }, []);
 
   const handleDatabaseUpdate = (updatedDb: Database) => {
@@ -32,6 +39,15 @@ const Admin = () => {
     }
   };
 
+  const handleResetDatabase = () => {
+    localStorage.removeItem('furniture-quote-db'); // Remove the saved database
+    toast.info("Resetarea bazei de date...");
+    setTimeout(() => {
+      loadDatabaseData(); // Reload database from initialDB
+      toast.success("Baza de date a fost resetată la valorile implicite");
+    }, 500);
+  };
+
   if (isLoading || !database) {
     return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
   }
@@ -41,6 +57,17 @@ const Admin = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-6 flex-grow">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Administrare</h1>
+          <Button 
+            variant="outline" 
+            onClick={handleResetDatabase}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw size={16} />
+            Reset la valorile inițiale
+          </Button>
+        </div>
         <AdminPanel database={database} onDatabaseUpdate={handleDatabaseUpdate} />
       </div>
     </div>

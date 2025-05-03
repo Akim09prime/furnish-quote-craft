@@ -11,7 +11,7 @@ export const initialDB: Database = {
             {
               name: "Type",
               type: "select",
-              options: ["Tandem", "Legrabox"]
+              options: ["Tandem", "Legrabox", "Gtv"]
             },
             {
               name: "Glisare",
@@ -65,6 +65,15 @@ export const initialDB: Database = {
               Glisare: "Push to Open",
               Extragere: "Totală",
               Dimensiuni: "400mm"
+            },
+            {
+              id: "g5",
+              cod: "GL-GTV-300",
+              pret: 25.5,
+              Type: "Gtv",
+              Glisare: "Normal",
+              Extragere: "Parțială",
+              Dimensiuni: "300mm"
             }
           ]
         },
