@@ -133,6 +133,47 @@ export const addSubcategory = (db: Database, categoryName: string, subcategory: 
   return newDb;
 };
 
+// Update an existing subcategory in the database
+export const updateSubcategory = (
+  db: Database, 
+  categoryName: string, 
+  oldSubcategoryName: string, 
+  updatedSubcategory: Subcategory
+): Database => {
+  const newDb = JSON.parse(JSON.stringify(db)); // Deep clone to avoid reference issues
+  const categoryIndex = newDb.categories.findIndex(c => c.name === categoryName);
+  
+  if (categoryIndex === -1) {
+    throw new Error(`Categoria "${categoryName}" nu există`);
+  }
+  
+  // Find the subcategory to update
+  const subcategoryIndex = newDb.categories[categoryIndex].subcategories.findIndex(
+    s => s.name === oldSubcategoryName
+  );
+  
+  if (subcategoryIndex === -1) {
+    throw new Error(`Subcategoria "${oldSubcategoryName}" nu există în categoria "${categoryName}"`);
+  }
+  
+  // If the name is changing, make sure the new name doesn't already exist
+  if (oldSubcategoryName !== updatedSubcategory.name) {
+    const nameExists = newDb.categories[categoryIndex].subcategories.some(
+      s => s.name === updatedSubcategory.name && s.name !== oldSubcategoryName
+    );
+    
+    if (nameExists) {
+      throw new Error(`O subcategorie cu numele "${updatedSubcategory.name}" există deja`);
+    }
+  }
+  
+  // Update the subcategory
+  newDb.categories[categoryIndex].subcategories[subcategoryIndex] = updatedSubcategory;
+  
+  saveDatabase(newDb); // Save the database immediately
+  return newDb;
+};
+
 export const addProduct = (db: Database, categoryName: string, subcategoryName: string, product: Omit<Product, "id">): Database => {
   const newDb = { ...db };
   const category = getCategoryByName(newDb, categoryName);

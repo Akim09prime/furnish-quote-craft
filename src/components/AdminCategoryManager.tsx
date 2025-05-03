@@ -4,7 +4,8 @@ import {
   Category, 
   Database, 
   addSubcategory,
-  deleteSubcategory
+  deleteSubcategory,
+  updateSubcategory
 } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PlusCircle, Save, Trash2 } from 'lucide-react';
+import { PlusCircle, Save, Trash2, Edit } from 'lucide-react';
 
 // Form validation schema
 const newSubcategorySchema = z.object({
@@ -31,8 +32,8 @@ const newSubcategorySchema = z.object({
   }),
   fieldName: z.string().min(2, {
     message: "Numele câmpului trebuie să aibă cel puțin 2 caractere"
-  }),
-  fieldType: z.enum(["select", "text", "number", "boolean"]),
+  }).optional(),
+  fieldType: z.enum(["select", "text", "number", "boolean"]).optional(),
   fieldOptions: z.string().optional(),
 });
 
@@ -50,6 +51,8 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
   onDatabaseUpdate
 }) => {
   const [showForm, setShowForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingSubcategory, setEditingSubcategory] = useState<string | null>(null);
   const [fields, setFields] = useState<{
     name: string;
     type: "select" | "text" | "number" | "boolean";
@@ -68,6 +71,17 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       fieldOptions: "",
     },
   });
+
+  const startEditSubcategory = (subcategoryName: string) => {
+    const subcategory = category.subcategories.find(s => s.name === subcategoryName);
+    if (!subcategory) return;
+    
+    setIsEditing(true);
+    setEditingSubcategory(subcategoryName);
+    setShowForm(true);
+    form.setValue("name", subcategoryName);
+    setFields([...subcategory.fields]); // make a copy of fields
+  };
 
   const addField = () => {
     const { fieldName, fieldType, fieldOptions } = form.getValues();
@@ -91,7 +105,7 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     // Add the field to our local state
     setFields([...fields, {
       name: fieldName,
-      type: fieldType,
+      type: fieldType as "select" | "text" | "number" | "boolean",
       ...(options ? { options } : {})
     }]);
 
@@ -120,12 +134,29 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     }
 
     try {
-      // Add subcategory to database with deep cloning to avoid reference issues
-      const updatedDb = addSubcategory(database, category.name, {
-        name: data.name,
-        fields: [...fields], // Make a copy of fields array
-        products: []
-      });
+      let updatedDb;
+      
+      if (isEditing && editingSubcategory) {
+        // Update existing subcategory
+        updatedDb = updateSubcategory(database, category.name, editingSubcategory, {
+          name: data.name,
+          fields: [...fields], // Make a copy of fields array
+          products: category.subcategories.find(s => s.name === editingSubcategory)?.products || []
+        });
+        
+        setSuccessMessage(`Subcategoria "${data.name}" a fost actualizată cu succes`);
+        toast.success(`Subcategoria "${data.name}" a fost actualizată`);
+      } else {
+        // Add new subcategory
+        updatedDb = addSubcategory(database, category.name, {
+          name: data.name,
+          fields: [...fields], // Make a copy of fields array
+          products: []
+        });
+        
+        setSuccessMessage(`Subcategoria "${data.name}" a fost adăugată cu succes în categoria "${category.name}"`);
+        toast.success(`Subcategoria "${data.name}" a fost adăugată`);
+      }
       
       // Update parent component's database state
       onDatabaseUpdate(updatedDb);
@@ -133,10 +164,8 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       // Reset form state
       setFields([]);
       form.reset();
-      
-      // Display success message and toast
-      setSuccessMessage(`Subcategoria "${data.name}" a fost adăugată cu succes în categoria "${category.name}"`);
-      toast.success(`Subcategoria "${data.name}" a fost adăugată`);
+      setIsEditing(false);
+      setEditingSubcategory(null);
       
       // Close form after success
       setShowForm(false);
@@ -144,8 +173,8 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       // Clear success message after 5 seconds
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
-      toast.error(`Eroare la adăugarea subcategoriei: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      console.error('Error adding subcategory:', error);
+      toast.error(`Eroare: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error adding/updating subcategory:', error);
     }
   };
 
@@ -164,6 +193,8 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
   const handleFormCancel = () => {
     setFields([]);
     setShowForm(false);
+    setIsEditing(false);
+    setEditingSubcategory(null);
     form.reset();
   };
 
@@ -203,7 +234,9 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       
         {showForm ? (
           <div className="space-y-4 border p-4 rounded-md">
-            <h3 className="font-medium">Adaugă Subcategorie Nouă</h3>
+            <h3 className="font-medium">
+              {isEditing ? `Editare Subcategorie: ${editingSubcategory}` : 'Adaugă Subcategorie Nouă'}
+            </h3>
             
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -331,7 +364,7 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
                   </Button>
                   <Button type="submit" className="gap-1">
                     <Save size={16} />
-                    <span>Salvează Subcategoria</span>
+                    <span>{isEditing ? 'Salvează Modificările' : 'Salvează Subcategoria'}</span>
                   </Button>
                 </div>
               </form>
@@ -354,7 +387,7 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
                         <th className="text-left py-2 px-3">Nume Subcategorie</th>
                         <th className="text-left py-2 px-3">Câmpuri</th>
                         <th className="text-left py-2 px-3">Produse</th>
-                        <th className="w-16 py-2 px-3">Acțiuni</th>
+                        <th className="w-24 py-2 px-3">Acțiuni</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -363,7 +396,16 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
                           <td className="py-2 px-3">{sub.name}</td>
                           <td className="py-2 px-3">{sub.fields.length}</td>
                           <td className="py-2 px-3">{sub.products.length}</td>
-                          <td className="py-2 px-3 text-right">
+                          <td className="py-2 px-3 text-right flex space-x-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => startEditSubcategory(sub.name)}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                            
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
