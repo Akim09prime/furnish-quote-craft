@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Database } from '@/lib/db';
+import { Database } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
 
 interface CategorySelectorProps {
