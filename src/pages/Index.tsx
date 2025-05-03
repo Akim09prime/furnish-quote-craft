@@ -11,7 +11,8 @@ import {
   setLaborPercentage,
   Category,
   QuoteItem as QuoteItemType,
-  addManualPalItem
+  addManualPalItem,
+  updateQuoteMetadata
 } from '@/lib/db';
 import CategorySelector from '@/components/CategorySelector';
 import ProductSelector from '@/components/ProductSelector';
@@ -100,6 +101,15 @@ const Index = () => {
     }
   };
 
+  // Handle metadata updates
+  const handleUpdateMetadata = (metadata: { beneficiary: string; title: string }) => {
+    if (quote) {
+      const updatedQuote = updateQuoteMetadata(quote, metadata);
+      setQuote(updatedQuote);
+      saveQuote(updatedQuote);
+    }
+  };
+
   // Handle manual PAL or MDF entry
   const handleAddManualItem = (description: string, quantity: number, price: number, categoryName: string) => {
     if (quote) {
@@ -151,8 +161,13 @@ const Index = () => {
           <div className="print:block">
             <div className="print:mb-8">
               <h2 className="text-2xl font-bold mb-4 print:text-3xl print:text-center">
-                Ofertă Mobilier
+                {quote.title || "Ofertă Mobilier"}
               </h2>
+              {quote.beneficiary && (
+                <p className="text-gray-700 print:text-center print:text-lg">
+                  Client: {quote.beneficiary}
+                </p>
+              )}
               <p className="text-gray-500 print:text-center print:text-lg">
                 Data: {new Date().toLocaleDateString('ro-RO')}
               </p>
@@ -224,6 +239,7 @@ const Index = () => {
               onUpdateLabor={handleUpdateLabor} 
               onUpdateQuantity={handleUpdateQuantity}
               onRemoveItem={handleRemoveItem}
+              onUpdateMetadata={handleUpdateMetadata}
             />
           </div>
         </div>

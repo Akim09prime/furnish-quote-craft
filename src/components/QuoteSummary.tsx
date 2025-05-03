@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { Quote } from '@/lib/db';
+import { Quote, updateQuoteMetadata } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import QuoteDetailsDrawer from './QuoteDetailsDrawer';
+import QuoteMetadataDialog from './QuoteMetadataDialog';
 import { Eye } from 'lucide-react';
 
 interface QuoteSummaryProps {
@@ -13,16 +14,19 @@ interface QuoteSummaryProps {
   onUpdateLabor: (percentage: number) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
+  onUpdateMetadata: (metadata: { beneficiary: string; title: string }) => void;
 }
 
 const QuoteSummary: React.FC<QuoteSummaryProps> = ({ 
   quote, 
   onUpdateLabor,
   onUpdateQuantity,
-  onRemoveItem
+  onRemoveItem,
+  onUpdateMetadata
 }) => {
   const [laborPct, setLaborPct] = useState<number>(quote.laborPercentage);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isMetadataOpen, setIsMetadataOpen] = useState(false);
 
   const handleLaborChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -36,7 +40,21 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
   };
 
   const handlePrint = () => {
+    // First check if metadata is filled in
+    if (!quote.beneficiary || !quote.title) {
+      setIsMetadataOpen(true);
+      return;
+    }
     window.print();
+  };
+
+  const handleViewDetails = () => {
+    // First check if metadata is filled in
+    if (!quote.beneficiary || !quote.title) {
+      setIsMetadataOpen(true);
+      return;
+    }
+    setIsDetailsOpen(true);
   };
 
   return (
@@ -87,7 +105,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
 
               <div className="mt-6 print:hidden space-y-2">
                 <Button 
-                  onClick={() => setIsDetailsOpen(true)}
+                  onClick={handleViewDetails}
                   className="w-full mb-2"
                   variant="outline"
                 >
@@ -100,6 +118,14 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
               </div>
             </>
           )}
+          
+          {/* Display quote metadata if available - visible in print mode */}
+          {(quote.beneficiary || quote.title) && (
+            <div className="hidden print:block mt-4 text-center">
+              {quote.title && <h3 className="text-xl font-bold">{quote.title}</h3>}
+              {quote.beneficiary && <p className="text-md">Client: {quote.beneficiary}</p>}
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -109,6 +135,16 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
         quote={quote}
         onUpdateQuantity={onUpdateQuantity}
         onRemoveItem={onRemoveItem}
+      />
+
+      <QuoteMetadataDialog
+        isOpen={isMetadataOpen}
+        onClose={() => setIsMetadataOpen(false)}
+        onSave={onUpdateMetadata}
+        defaultValues={{
+          beneficiary: quote.beneficiary || "",
+          title: quote.title || ""
+        }}
       />
     </>
   );

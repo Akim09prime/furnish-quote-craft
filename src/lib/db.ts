@@ -1,4 +1,3 @@
-
 import { initialDB } from "../data/initialDB";
 
 export type Product = {
@@ -166,6 +165,8 @@ export type Quote = {
   subtotal: number;
   laborCost: number;
   total: number;
+  beneficiary: string;
+  title: string;
 };
 
 // Helper function to create a new empty quote
@@ -175,6 +176,8 @@ export const createNewQuote = (): Quote => ({
   subtotal: 0,
   laborCost: 0,
   total: 0,
+  beneficiary: "",
+  title: ""
 });
 
 // Quote storage functions
@@ -301,4 +304,13 @@ export const setLaborPercentage = (quote: Quote, percentage: number): Quote => {
   };
 
   return recalculateQuote(newQuote);
+};
+
+// Function to update beneficiary and title
+export const updateQuoteMetadata = (quote: Quote, metadata: { beneficiary?: string, title?: string }): Quote => {
+  return {
+    ...quote,
+    beneficiary: metadata.beneficiary !== undefined ? metadata.beneficiary : quote.beneficiary,
+    title: metadata.title !== undefined ? metadata.title : quote.title
+  };
 };
