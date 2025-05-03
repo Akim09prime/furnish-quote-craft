@@ -86,6 +86,12 @@ export const addProduct = (db: Database, categoryName: string, subcategoryName: 
   const subcategoryIndex = category.subcategories.findIndex(s => s.name === subcategoryName);
   if (subcategoryIndex === -1) return db;
 
+  // Ensure product has the required properties
+  if (!product.cod || product.pret === undefined) {
+    console.error("Product must have 'cod' and 'pret' properties");
+    return db;
+  }
+
   const newProduct: Product = {
     ...product,
     id: Date.now().toString(), // Simple ID generation
