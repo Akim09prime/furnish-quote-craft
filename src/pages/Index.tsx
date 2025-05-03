@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
   Database, 
@@ -11,7 +10,8 @@ import {
   removeQuoteItem, 
   setLaborPercentage,
   Category,
-  QuoteItem as QuoteItemType
+  QuoteItem as QuoteItemType,
+  addManualPalItem
 } from '@/lib/db';
 import CategorySelector from '@/components/CategorySelector';
 import ProductSelector from '@/components/ProductSelector';
@@ -95,6 +95,15 @@ const Index = () => {
   const handleUpdateLabor = (percentage: number) => {
     if (quote) {
       const updatedQuote = setLaborPercentage(quote, percentage);
+      setQuote(updatedQuote);
+      saveQuote(updatedQuote);
+    }
+  };
+
+  // Handle manual PAL entry
+  const handleAddManualPal = (description: string, quantity: number, price: number) => {
+    if (quote) {
+      const updatedQuote = addManualPalItem(quote, description, quantity, price);
       setQuote(updatedQuote);
       saveQuote(updatedQuote);
     }
@@ -209,7 +218,11 @@ const Index = () => {
 
         <div className="lg:col-span-1 print:col-span-1 print:mt-0">
           <div className="sticky top-20 print:static">
-            <QuoteSummary quote={quote} onUpdateLabor={handleUpdateLabor} />
+            <QuoteSummary 
+              quote={quote} 
+              onUpdateLabor={handleUpdateLabor} 
+              onAddManualPal={handleAddManualPal}
+            />
           </div>
         </div>
       </div>

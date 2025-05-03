@@ -1,4 +1,3 @@
-
 import { initialDB } from "../data/initialDB";
 
 export type Product = {
@@ -199,6 +198,36 @@ export const addItemToQuote = (quote: Quote, item: Omit<QuoteItem, "id">): Quote
     ...item,
     id: Date.now().toString(), // Simple ID generation
     total: item.pricePerUnit * item.quantity,
+  };
+
+  const newQuote = {
+    ...quote,
+    items: [...quote.items, newItem],
+  };
+
+  return recalculateQuote(newQuote);
+};
+
+// Function to add a manual PAL item to the quote
+export const addManualPalItem = (
+  quote: Quote, 
+  description: string, 
+  quantity: number, 
+  pricePerUnit: number
+): Quote => {
+  const newItem = {
+    id: Date.now().toString(),
+    categoryName: "PAL",
+    subcategoryName: "Manual",
+    productId: "manual-" + Date.now(),
+    quantity,
+    pricePerUnit,
+    total: pricePerUnit * quantity,
+    productDetails: {
+      cod: "MANUAL-" + Date.now().toString().slice(-6),
+      pret: pricePerUnit,
+      description
+    }
   };
 
   const newQuote = {
