@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Database, exportDatabaseJSON, importDatabaseJSON, loadDatabase } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { FileExcel, FileCsv, Upload } from 'lucide-react';
+import { File, Upload } from 'lucide-react';
 
 interface ExportImportTabProps {
   database: Database;
@@ -226,8 +225,7 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
                               input.click();
                             }}
                           >
-                            <FileExcel className="h-4 w-4 mr-1" />
-                            <FileCsv className="h-4 w-4 mr-1" />
+                            <File className="h-4 w-4 mr-1" />
                             <Upload className="h-4 w-4" />
                           </Button>
                         </div>
