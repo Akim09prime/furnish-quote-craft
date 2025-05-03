@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Download } from "lucide-react";
+import { Upload, Download, Package } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 const Database = () => {
@@ -165,6 +165,9 @@ const Database = () => {
   if (isLoading || !database) {
     return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
   }
+
+  // Debug to make sure all categories are present in the database
+  console.log("Available categories:", database.categories.map(c => c.name));
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
