@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { 
   Database, 
@@ -10,7 +11,7 @@ import {
   removeQuoteItem, 
   setLaborPercentage,
   Category,
-  QuoteItem
+  QuoteItem as QuoteItemType
 } from '@/lib/db';
 import CategorySelector from '@/components/CategorySelector';
 import ProductSelector from '@/components/ProductSelector';
@@ -61,7 +62,7 @@ const Index = () => {
     if (quote) {
       // Calculate total before adding to quote
       const total = item.quantity * item.pricePerUnit;
-      const quoteItem: Omit<QuoteItem, "id"> = {
+      const quoteItem: Omit<QuoteItemType, "id"> = {
         ...item,
         total: total
       };
