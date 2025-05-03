@@ -21,6 +21,7 @@ import QuoteSummary from '@/components/QuoteSummary';
 import Header from '@/components/Header';
 import QuoteTypeSelector from '@/components/QuoteTypeSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [database, setDatabase] = useState<Database | null>(null);
@@ -28,17 +29,32 @@ const Index = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteType, setQuoteType] = useState<'client' | 'internal'>('internal');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Initialize database and quote on mount
   useEffect(() => {
     try {
+      setLoading(true);
+      setError(null);
+      
+      console.log("[Index] Loading database...");
       const db = loadDatabase();
-      console.log("Loaded database:", db); // Keep this debug log
-      console.log("Categories in database:", db?.categories?.map(c => c.name) || "No categories");
+      console.log("[Index] Database loaded:", db);
+      console.log("[Index] Categories in database:", db?.categories?.map(c => c.name) || "No categories");
       
       // Make sure database is properly loaded
-      if (!db || !db.categories || db.categories.length === 0) {
-        console.error("Database not loaded properly or has no categories");
+      if (!db) {
+        const errMsg = "Database failed to load";
+        console.error(errMsg);
+        setError(errMsg);
+        return;
+      }
+      
+      if (!db.categories || db.categories.length === 0) {
+        const errMsg = "Database has no categories";
+        console.error(errMsg);
+        setError(errMsg);
       }
       
       setDatabase(db);
@@ -46,7 +62,12 @@ const Index = () => {
       const savedQuote = loadQuote();
       setQuote(savedQuote);
     } catch (error) {
-      console.error("Error loading database or quote:", error);
+      const errMsg = `Error loading database: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(errMsg);
+      setError(errMsg);
+      toast.error("Eroare la încărcarea bazei de date");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -139,12 +160,54 @@ const Index = () => {
   };
 
   // Show a better loading state
-  if (!database || !quote) {
-    return <div className="h-screen flex items-center justify-center">Încărcare baza de date...</div>;
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-furniture-purple mb-4"></div>
+        <p className="text-lg">Încărcare baza de date...</p>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md w-full">
+          <h2 className="text-red-600 font-medium text-lg">Eroare la încărcarea aplicației</h2>
+          <p className="mt-2 text-sm text-red-600">{error}</p>
+          <button 
+            className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            onClick={() => window.location.reload()}
+          >
+            Încearcă din nou
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Debug check for specific categories
-  console.log("Checking 'Accesorii' category:", database.categories.some(c => c.name === "Accesorii"));
+  console.log("[Index] Checking 'Accesorii' category:", database?.categories?.some(c => c.name === "Accesorii"));
+
+  // Safety check
+  if (!database || !quote) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md w-full">
+          <h2 className="text-yellow-600 font-medium text-lg">Date incomplete</h2>
+          <p className="mt-2 text-sm text-yellow-600">
+            {!database ? "Baza de date nu a putut fi încărcată." : "Oferta nu a putut fi încărcată."}
+          </p>
+          <button 
+            className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700"
+            onClick={() => window.location.reload()}
+          >
+            Încearcă din nou
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col print:bg-white">

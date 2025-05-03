@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from 'sonner';
 
 interface CategorySelectorProps {
   database: Database | null;
@@ -10,13 +11,34 @@ interface CategorySelectorProps {
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ database, selectedCategory, onSelectCategory }) => {
-  console.log("CategorySelector database:", database); // Keep the debugging log
-  console.log("Categories available:", database?.categories?.map(c => c.name) || "No categories"); // Add more detailed logging
+  console.log("[CategorySelector] Rendering with database:", database);
+  console.log("[CategorySelector] Categories available:", database?.categories?.map(c => c.name) || "No categories");
+  
+  useEffect(() => {
+    if (!database) {
+      console.error("[CategorySelector] No database provided");
+      toast.error("Eroare la încărcarea bazei de date");
+      return;
+    }
+    
+    if (!database.categories || database.categories.length === 0) {
+      console.error("[CategorySelector] No categories found in database");
+      toast.error("Nu s-au găsit categorii în baza de date");
+      return;
+    }
+    
+    console.log("[CategorySelector] Successfully loaded categories:", database.categories.map(c => c.name));
+  }, [database]);
   
   // Safety check
-  if (!database || !database.categories || database.categories.length === 0) {
-    console.error("No database or categories available");
+  if (!database || !database.categories) {
+    console.error("[CategorySelector] No database or categories available");
     return <div className="text-red-500 p-4">Eroare la încărcarea categoriilor</div>;
+  }
+  
+  if (database.categories.length === 0) {
+    console.error("[CategorySelector] Database loaded but categories array is empty");
+    return <div className="text-yellow-500 p-4">Nu există categorii disponibile</div>;
   }
 
   return (

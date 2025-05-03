@@ -33,29 +33,37 @@ export type Database = {
 const DB_KEY = "furniture-quote-db";
 
 export const loadDatabase = (): Database => {
+  console.log("[db] Loading database...");
   try {
     const saved = localStorage.getItem(DB_KEY);
     if (saved) {
       try {
+        console.log("[db] Found saved database in localStorage, parsing...");
         const parsed = JSON.parse(saved);
         // Validate that the parsed object has the expected structure
         if (parsed && parsed.categories && Array.isArray(parsed.categories)) {
-          console.log("Using saved database with categories:", 
-            parsed.categories.map(c => c.name).join(", "));
+          console.log("[db] Successfully parsed saved database with categories:", 
+            parsed.categories.map((c: {name: string}) => c.name).join(", "));
           return parsed;
         } else {
-          console.error("Saved database has invalid structure, using initial DB");
+          console.error("[db] Saved database has invalid structure, using initial DB");
+          // Initialize localStorage with initial data
+          localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
           return initialDB;
         }
       } catch (e) {
-        console.error("Failed to parse saved database, using initial DB", e);
+        console.error("[db] Failed to parse saved database, using initial DB", e);
+        // Initialize localStorage with initial data
+        localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
         return initialDB;
       }
     }
-    console.log("No saved database found, using initial DB");
+    console.log("[db] No saved database found, using initial DB and saving to localStorage");
+    // Initialize localStorage with initial data
+    localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
     return initialDB;
   } catch (e) {
-    console.error("Error in loadDatabase, using initial DB", e);
+    console.error("[db] Error in loadDatabase, using initial DB", e);
     return initialDB;
   }
 };
