@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { 
   Category, 
   Database, 
-  saveDatabase,
   addSubcategory,
   deleteSubcategory
 } from '@/lib/db';
@@ -111,6 +110,9 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
   };
 
   const handleSubmit = (data: NewSubcategoryFormValues) => {
+    // Clear any previous success message
+    setSuccessMessage(null);
+    
     // Validate that we have at least one field
     if (fields.length === 0) {
       toast.error("Trebuie să adăugați cel puțin un câmp");
@@ -118,24 +120,26 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     }
 
     try {
-      // Add subcategory to database
+      // Add subcategory to database with deep cloning to avoid reference issues
       const updatedDb = addSubcategory(database, category.name, {
         name: data.name,
-        fields: fields,
+        fields: [...fields], // Make a copy of fields array
         products: []
       });
       
-      // Update database
+      // Update parent component's database state
       onDatabaseUpdate(updatedDb);
       
       // Reset form state
       setFields([]);
-      setShowForm(false);
       form.reset();
       
       // Display success message and toast
       setSuccessMessage(`Subcategoria "${data.name}" a fost adăugată cu succes în categoria "${category.name}"`);
       toast.success(`Subcategoria "${data.name}" a fost adăugată`);
+      
+      // Close form after success
+      setShowForm(false);
       
       // Clear success message after 5 seconds
       setTimeout(() => setSuccessMessage(null), 5000);

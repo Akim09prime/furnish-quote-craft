@@ -17,8 +17,13 @@ const Admin = () => {
 
   const handleDatabaseUpdate = (updatedDb: Database) => {
     try {
+      // First ensure we save to localStorage
       saveDatabase(updatedDb);
+      
+      // Then update the state
       setDatabase(updatedDb);
+      
+      // Show success message
       toast.success("Baza de date a fost actualizată");
       console.log("Database updated:", updatedDb);
     } catch (error) {
