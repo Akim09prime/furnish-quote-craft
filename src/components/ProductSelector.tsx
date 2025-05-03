@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Category, Subcategory, Product } from '@/lib/db';
+import { Category, Subcategory, Product, updateSubcategory } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Save } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +35,10 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const showManualEntry = category.name === "PAL" || category.name === "MDF";
+  
+  // New state for managing new type options
+  const [newTypeOption, setNewTypeOption] = useState<string>("");
+  const [showAddType, setShowAddType] = useState<boolean>(false);
 
   // Handle subcategory selection
   useEffect(() => {
@@ -92,6 +96,70 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
     toast.success("Produs adăugat în ofertă", {
       description: `${selectedProduct.cod} - ${quantity} buc.`,
     });
+  };
+
+  // Add new Type option
+  const handleAddNewTypeOption = () => {
+    if (!subcategory || !newTypeOption.trim()) return;
+    
+    // Find the Type field
+    const typeField = subcategory.fields.find(field => field.name === "Type");
+    if (!typeField || !typeField.options) {
+      toast.error("Câmpul Type nu a fost găsit sau nu are opțiuni");
+      return;
+    }
+    
+    // Check if option already exists
+    if (typeField.options.includes(newTypeOption.trim())) {
+      toast.error(`Opțiunea "${newTypeOption}" există deja`);
+      return;
+    }
+    
+    // Create updated subcategory with new option
+    const updatedSubcategory: Subcategory = {
+      ...subcategory,
+      fields: subcategory.fields.map(field => {
+        if (field.name === "Type") {
+          return {
+            ...field,
+            options: [...field.options!, newTypeOption.trim()]
+          };
+        }
+        return field;
+      })
+    };
+    
+    try {
+      // Update the database and cache it
+      const categoryIndex = category.subcategories.findIndex(sub => sub.name === subcategory.name);
+      if (categoryIndex !== -1) {
+        const updatedCategory = { ...category };
+        updatedCategory.subcategories[categoryIndex] = updatedSubcategory;
+        
+        // Save to localStorage
+        const updatedDb = updateSubcategory(
+          { categories: [updatedCategory] } as any,
+          category.name,
+          subcategory.name,
+          updatedSubcategory
+        );
+        
+        // Update local state
+        setSubcategory(updatedSubcategory);
+        setNewTypeOption("");
+        setShowAddType(false);
+        
+        toast.success(`Opțiunea "${newTypeOption}" a fost adăugată`);
+        
+        // Force page refresh to get updated data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Error adding type option:", error);
+      toast.error("A apărut o eroare la adăugarea opțiunii");
+    }
   };
 
   // Form for manual item entry
@@ -271,20 +339,55 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
                   <Label htmlFor={`field-${field.name}`}>{field.name}</Label>
                   
                   {field.type === 'select' && field.options && (
-                    <Select 
-                      value={filters[field.name] || undefined} 
-                      onValueChange={(val) => handleFilterChange(field.name, val)}
-                    >
-                      <SelectTrigger id={`field-${field.name}`}>
-                        <SelectValue placeholder={`Alege ${field.name}`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toate</SelectItem>
-                        {field.options.map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <>
+                      <Select 
+                        value={filters[field.name] || undefined} 
+                        onValueChange={(val) => handleFilterChange(field.name, val)}
+                      >
+                        <SelectTrigger id={`field-${field.name}`}>
+                          <SelectValue placeholder={`Alege ${field.name}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Toate</SelectItem>
+                          {field.options.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {/* Add new Type option button for the Type field only */}
+                      {field.name === "Type" && selectedSubcategory === "Glisiere" && (
+                        <div className="mt-2">
+                          {!showAddType ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="w-full mt-1 text-xs" 
+                              onClick={() => setShowAddType(true)}
+                            >
+                              <PlusCircle className="mr-1 h-3 w-3" />
+                              Adaugă tip nou
+                            </Button>
+                          ) : (
+                            <div className="flex gap-2 mt-2">
+                              <Input 
+                                value={newTypeOption}
+                                onChange={(e) => setNewTypeOption(e.target.value)}
+                                placeholder="Nume tip nou"
+                                className="h-8 text-sm"
+                              />
+                              <Button 
+                                size="sm"
+                                className="h-8" 
+                                onClick={handleAddNewTypeOption}
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {field.type === 'boolean' && (
