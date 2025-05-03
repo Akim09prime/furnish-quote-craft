@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { fetchFilteredFeroShopDB } from '@/lib/feroshop';
 
 interface ExportImportTabProps {
   database: Database;
@@ -14,6 +15,7 @@ interface ExportImportTabProps {
 const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseUpdate }) => {
   const [jsonExport, setJsonExport] = useState("");
   const [jsonImport, setJsonImport] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleExportDB = () => {
     const json = exportDatabaseJSON();
@@ -42,6 +44,30 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
     toast.success("Copiat în clipboard");
   };
 
+  const handleAutoImport = async () => {
+    try {
+      setIsLoading(true);
+      const json = await fetchFilteredFeroShopDB();
+      // Filter for accesorii if needed
+      const db = JSON.parse(json);
+      const accessories = {
+        ...db,
+        products: db.products.filter((p: any) => p.categorySlug === 'accesorii')
+      };
+      
+      if (importDatabaseJSON(JSON.stringify(accessories))) {
+        onDatabaseUpdate(loadDatabase());
+        toast.success('Accesorii importate cu succes');
+      } else {
+        toast.error('Structura JSON invalidă');
+      }
+    } catch (e) {
+      toast.error(`Eroare la import: ${e instanceof Error ? e.message : 'Eroare necunoscută'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
@@ -52,8 +78,11 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
+          <div className="flex flex-wrap gap-2">
             <Button onClick={handleExportDB}>Generează JSON</Button>
+            <Button onClick={handleAutoImport} disabled={isLoading}>
+              {isLoading ? 'Se importă...' : 'Importă Accesorii'}
+            </Button>
           </div>
           {jsonExport && (
             <div className="space-y-2">

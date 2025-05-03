@@ -25,6 +25,13 @@ const Header: React.FC = () => {
           
           <Button 
             asChild
+            variant={location.pathname === "/accesorii" ? "default" : "ghost"}
+          >
+            <Link to="/accesorii">Accesorii</Link>
+          </Button>
+          
+          <Button 
+            asChild
             variant={location.pathname === "/admin" ? "default" : "ghost"}
           >
             <Link to="/admin">Administrare</Link>

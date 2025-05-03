@@ -15,11 +15,17 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   selectedCategory,
   onSelectCategory,
 }) => {
+  // Add accesorii to options if it doesn't exist
+  const hasAccessories = database.categories.some(cat => cat.name === "Accesorii");
+  const displayCategories = hasAccessories ? 
+    database.categories : 
+    [...database.categories, { name: "Accesorii", subcategories: [] } as Category];
+
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-medium">Selectează Categoria</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {database.categories.map((category) => (
+        {displayCategories.map((category) => (
           <Card 
             key={category.name}
             className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
