@@ -1,4 +1,7 @@
-import { initialDB } from "../data/initialDB";
+
+import { initialDB as dbInitialData } from "../data/initialDB";
+
+export const initialDB = dbInitialData;
 
 export type Product = {
   id: string;

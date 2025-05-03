@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Database, loadDatabase, saveDatabase, initialDB } from '@/lib/db';
+import { Database, loadDatabase, saveDatabase } from '@/lib/db';
+import { initialDB } from '@/data/initialDB';
 import Header from '@/components/Header';
 import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
