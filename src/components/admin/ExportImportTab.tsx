@@ -47,15 +47,19 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
   const handleAutoImport = async () => {
     try {
       setIsLoading(true);
-      const json = await fetchFilteredFeroShopDB();
+      const db = await fetchFilteredFeroShopDB();
       // Filter for accesorii if needed
-      const db = JSON.parse(json);
       const accessories = {
         ...db,
-        products: db.products.filter((p: any) => p.categorySlug === 'accesorii')
+        products: db.products.filter(p => {
+          const cat = db.categories.find(c => c.id === p.categoryId);
+          return cat?.slug === 'accesorii';
+        })
       };
       
-      if (importDatabaseJSON(JSON.stringify(accessories))) {
+      const payload = JSON.stringify(accessories);
+      
+      if (importDatabaseJSON(payload)) {
         onDatabaseUpdate(loadDatabase());
         toast.success('Accesorii importate cu succes');
       } else {

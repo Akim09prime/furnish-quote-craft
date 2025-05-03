@@ -1,17 +1,19 @@
 
 import { useState, useEffect } from 'react';
-import { fetchFilteredFeroShopDB } from '@/lib/feroshop';
+import { fetchFilteredFeroShopDB, FeroDB } from '@/lib/feroshop';
 
 export function useFetchAccessories() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<FeroDB['products']>([]);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFilteredFeroShopDB()
-      .then(json => {
-        const db = JSON.parse(json);
-        const accessories = db.products.filter((p: any) => p.categorySlug === 'accesorii');
+      .then(db => {
+        const accessories = db.products.filter(p => {
+          const cat = db.categories.find(c => c.id === p.categoryId);
+          return cat?.slug === 'accesorii';
+        });
         setData(accessories);
       })
       .catch(e => setError(e.message))

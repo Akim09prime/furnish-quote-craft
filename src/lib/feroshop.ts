@@ -5,11 +5,11 @@ interface FeroDB {
   [key: string]: any;
 }
 
-export async function fetchFilteredFeroShopDB(): Promise<string> {
-  const res = await fetch(import.meta.env.VITE_FEROSHOP_API_URL + '/db');
+export async function fetchFilteredFeroShopDB(): Promise<FeroDB> {
+  const res = await fetch(import.meta.env.VITE_FEROSHOP_API_URL);
   if (!res.ok) throw new Error('Eroare la preluare FeroShop: ' + res.status);
   
-  const db: FeroDB = await res.json();
+  const db = (await res.json()) as FeroDB;
   const allowed = (import.meta.env.VITE_FEROSHOP_ALLOWED_CATEGORIES || 'accesorii')
     .split(',')
     .map(s => s.trim())
@@ -30,5 +30,5 @@ export async function fetchFilteredFeroShopDB(): Promise<string> {
     }
   });
 
-  return JSON.stringify({ ...db, categories: filteredCats, products: filteredProds });
+  return { ...db, categories: filteredCats, products: filteredProds };
 }
