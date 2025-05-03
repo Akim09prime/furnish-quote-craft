@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Database, exportDatabaseJSON, importDatabaseJSON, addCategory, deleteCategory, updateSubcategory } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,6 +27,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newTypeOption, setNewTypeOption] = useState<string>("");
   const [showAddType, setShowAddType] = useState<boolean>(false);
+  const [newHingeType, setNewHingeType] = useState<string>("");
+  const [showAddHingeType, setShowAddHingeType] = useState<boolean>(false);
 
   const category = database.categories.find(c => c.name === selectedCategory);
   const subcategory = category?.subcategories.find(s => s.name === selectedSubcategory);
@@ -96,7 +99,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
     }
   };
 
-  // New function to add a Type option for Glisiere
+  // Function to add a Type option for Glisiere
   const handleAddNewTypeOption = () => {
     if (!newTypeOption.trim()) {
       toast.error("Numele tipului nou nu poate fi gol");
@@ -167,6 +170,130 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
     }
   };
 
+  // New function to add a Tip option for Balamale
+  const handleAddNewHingeType = () => {
+    if (!newHingeType.trim()) {
+      toast.error("Numele tipului nou de balamale nu poate fi gol");
+      return;
+    }
+    
+    const accesoriiCategory = database.categories.find(cat => cat.name === "Accesorii");
+    if (!accesoriiCategory) {
+      toast.error("Categoria Accesorii nu a fost găsită");
+      return;
+    }
+    
+    const balamaleSubcategory = accesoriiCategory.subcategories.find(sub => sub.name === "Balamale");
+    if (!balamaleSubcategory) {
+      toast.error("Subcategoria Balamale nu a fost găsită");
+      return;
+    }
+    
+    // Find the Tip field
+    const tipField = balamaleSubcategory.fields.find(field => field.name === "Tip");
+    if (!tipField || !tipField.options) {
+      toast.error("Câmpul Tip nu a fost găsit sau nu are opțiuni");
+      return;
+    }
+    
+    // Check if option already exists
+    if (tipField.options.includes(newHingeType.trim())) {
+      toast.error(`Tipul de balamale "${newHingeType}" există deja`);
+      return;
+    }
+    
+    // Create updated subcategory with new option
+    const updatedSubcategory = {
+      ...balamaleSubcategory,
+      fields: balamaleSubcategory.fields.map(field => {
+        if (field.name === "Tip") {
+          return {
+            ...field,
+            options: [...field.options!, newHingeType.trim()]
+          };
+        }
+        return field;
+      })
+    };
+    
+    try {
+      // Update the database
+      const updatedDb = updateSubcategory(
+        database,
+        "Accesorii",
+        "Balamale",
+        updatedSubcategory
+      );
+      
+      onDatabaseUpdate(updatedDb);
+      setNewHingeType("");
+      setShowAddHingeType(false);
+      
+      toast.success(`Tipul de balamale "${newHingeType}" a fost adăugat`);
+      
+      // Force page refresh to get updated data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Error adding hinge type option:", error);
+      toast.error("A apărut o eroare la adăugarea tipului de balamale");
+    }
+  };
+
+  // New function to remove the Gtv product from Glisiere
+  const removeGtvProductFromGlisiere = () => {
+    const accesoriiCategory = database.categories.find(cat => cat.name === "Accesorii");
+    if (!accesoriiCategory) {
+      toast.error("Categoria Accesorii nu a fost găsită");
+      return;
+    }
+    
+    const glisiereSubcategory = accesoriiCategory.subcategories.find(sub => sub.name === "Glisiere");
+    if (!glisiereSubcategory) {
+      toast.error("Subcategoria Glisiere nu a fost găsită");
+      return;
+    }
+    
+    // Remove the Gtv product
+    const updatedProducts = glisiereSubcategory.products.filter(product => 
+      product.Type !== "Gtv"
+    );
+    
+    // If no products were removed
+    if (updatedProducts.length === glisiereSubcategory.products.length) {
+      toast.info("Nu există produse de tip Gtv în subcategoria Glisiere");
+      return;
+    }
+    
+    // Create updated subcategory
+    const updatedSubcategory = {
+      ...glisiereSubcategory,
+      products: updatedProducts
+    };
+    
+    try {
+      // Update the database
+      const updatedDb = updateSubcategory(
+        database,
+        "Accesorii",
+        "Glisiere",
+        updatedSubcategory
+      );
+      
+      onDatabaseUpdate(updatedDb);      
+      toast.success("Produsele de tip Gtv au fost eliminate din subcategoria Glisiere");
+      
+      // Force page refresh to get updated data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Error removing Gtv products:", error);
+      toast.error("A apărut o eroare la eliminarea produselor de tip Gtv");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -182,6 +309,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
           <TabsTrigger value="manage">Gestionare Categorii</TabsTrigger>
           <TabsTrigger value="categories">Categorii</TabsTrigger>
           <TabsTrigger value="glisiere">Tipuri Glisiere</TabsTrigger>
+          <TabsTrigger value="balamale">Tipuri Balamale</TabsTrigger>
           <TabsTrigger value="export">Export/Import</TabsTrigger>
         </TabsList>
         
@@ -226,12 +354,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
             </div>
 
             {category && subcategory ? (
-              <AdminCategoryEditor 
-                database={database}
-                category={category}
-                subcategory={subcategory}
-                onDatabaseUpdate={onDatabaseUpdate}
-              />
+              <>
+                {selectedCategory === "Accesorii" && selectedSubcategory === "Glisiere" && (
+                  <div className="mb-4">
+                    <Button 
+                      variant="destructive" 
+                      onClick={removeGtvProductFromGlisiere} 
+                      className="gap-2"
+                    >
+                      <Trash2 size={16} />
+                      <span>Șterge produsele Gtv</span>
+                    </Button>
+                  </div>
+                )}
+                <AdminCategoryEditor 
+                  database={database}
+                  category={category}
+                  subcategory={subcategory}
+                  onDatabaseUpdate={onDatabaseUpdate}
+                />
+              </>
             ) : (
               <Card>
                 <CardContent className="pt-6">
@@ -440,6 +582,82 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
                         }
                         
                         return typeField.options.map((type) => (
+                          <tr key={type} className="border-b">
+                            <td className="py-3 px-4">{type}</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* New tab for balamale types */}
+        <TabsContent value="balamale">
+          <Card>
+            <CardHeader>
+              <CardTitle>Administrare Tipuri de Balamale</CardTitle>
+              <CardDescription>
+                Adaugă tipuri noi de balamale în baza de date
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <Button onClick={() => setShowAddHingeType(!showAddHingeType)} variant="outline" className="gap-2">
+                    <PlusCircle size={16} />
+                    <span>Tip Nou de Balamale</span>
+                  </Button>
+                </div>
+
+                {showAddHingeType && (
+                  <div className="border p-4 rounded-md space-y-4">
+                    <h3 className="font-medium">Adaugă Tip Nou de Balamale</h3>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Nume Tip</label>
+                      <Input 
+                        value={newHingeType} 
+                        onChange={(e) => setNewHingeType(e.target.value)} 
+                        placeholder="ex. Aplicată, Semi-aplicată, Sticlă, etc."
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={handleAddNewHingeType} className="gap-2">
+                        <Save size={16} />
+                        <span>Salvează Tip Balamale</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Display existing hinge types */}
+                <div className="border rounded-md">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left py-3 px-4">Tipuri de Balamale Existente</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const accesoriiCategory = database.categories.find(cat => cat.name === "Accesorii");
+                        const balamaleSubcategory = accesoriiCategory?.subcategories.find(sub => sub.name === "Balamale");
+                        const tipField = balamaleSubcategory?.fields.find(field => field.name === "Tip");
+                        
+                        if (!tipField || !tipField.options || tipField.options.length === 0) {
+                          return (
+                            <tr>
+                              <td className="text-center py-4">
+                                Nu există tipuri de balamale
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        return tipField.options.map((type) => (
                           <tr key={type} className="border-b">
                             <td className="py-3 px-4">{type}</td>
                           </tr>

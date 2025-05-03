@@ -65,15 +65,6 @@ export const initialDB: Database = {
               Glisare: "Push to Open",
               Extragere: "Totală",
               Dimensiuni: "400mm"
-            },
-            {
-              id: "g5",
-              cod: "GL-GTV-300",
-              pret: 25.5,
-              Type: "Gtv",
-              Glisare: "Normal",
-              Extragere: "Parțială",
-              Dimensiuni: "300mm"
             }
           ]
         },
