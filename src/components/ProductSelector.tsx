@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Category, Subcategory, Product } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
