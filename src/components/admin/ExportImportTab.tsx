@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Database, exportDatabaseJSON, importDatabaseJSON, loadDatabase } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -102,8 +103,11 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
       // Get the fields for this subcategory
       const fields = updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].fields;
       
+      // Get existing products
+      const existingProducts = updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products;
+      
       // Map the data to products
-      const products = data.map((row: any) => {
+      const newProducts = data.map((row: any) => {
         const productData: any = {
           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           cod: row['Cod Produs'] || row['cod'] || row['COD'] || '',
@@ -128,19 +132,38 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
         return productData;
       }).filter(product => product.cod && product.pret);
       
-      if (products.length === 0) {
+      if (newProducts.length === 0) {
         toast.error("Nu s-au găsit produse valide în fișier");
         return;
       }
       
-      // Replace existing products
-      updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products = products;
+      // Check for existing products and only add new ones
+      const alreadyExistingCount = {count: 0};
+      const productsToAdd = newProducts.filter(newProduct => {
+        const productExists = existingProducts.some(existingProduct => 
+          existingProduct.cod === newProduct.cod
+        );
+        
+        if (productExists) {
+          alreadyExistingCount.count++;
+          return false;
+        }
+        return true;
+      });
+      
+      // Add new products
+      const updatedProducts = [...existingProducts, ...productsToAdd];
+      
+      // Replace existing products with updated list
+      updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products = updatedProducts;
       
       // Save the database
       importDatabaseJSON(JSON.stringify(updatedDb));
       onDatabaseUpdate(loadDatabase());
       
-      toast.success(`Import reușit: ${products.length} produse încărcate în ${categoryName}/${subcategoryName}`);
+      toast.success(
+        `Import reușit: ${productsToAdd.length} produse noi adăugate în ${categoryName}/${subcategoryName}. ${alreadyExistingCount.count} produse existau deja.`
+      );
       
       // Reset input
       e.target.value = '';
