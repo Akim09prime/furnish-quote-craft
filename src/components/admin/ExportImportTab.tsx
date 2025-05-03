@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { FileExcel, FileCsv, Upload } from 'lucide-react';
 
 interface ExportImportTabProps {
   database: Database;
@@ -199,24 +200,39 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
           </div>
           
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium mb-2">Import CSV/Excel pentru categorii:</h3>
+            <h3 className="text-lg font-medium mb-4">Import CSV/Excel pentru categorii:</h3>
             
             {database.categories.map((category) => (
-              <div key={category.name} className="mb-4">
-                <h4 className="font-medium text-sm">{category.name}</h4>
-                <div className="pl-4 space-y-2 mt-2">
+              <div key={category.name} className="mb-6">
+                <h4 className="font-medium text-md mb-2">{category.name}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {category.subcategories.map((subcategory) => (
-                    <div key={subcategory.name} className="flex flex-col gap-1">
-                      <label className="text-xs text-gray-500">{subcategory.name}:</label>
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="file"
-                          accept=".csv,.xlsx,.xls"
-                          className="text-xs"
-                          onChange={(e) => handleFileUpload(e, category.name, subcategory.name)}
-                        />
+                    <Card key={subcategory.name} className="p-3">
+                      <CardTitle className="text-sm">{subcategory.name}</CardTitle>
+                      <div className="mt-3 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">{subcategory.products.length} produse</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8"
+                            onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = '.csv,.xlsx,.xls';
+                              input.onchange = (e) => {
+                                handleFileUpload(e as any, category.name, subcategory.name);
+                              };
+                              input.click();
+                            }}
+                          >
+                            <FileExcel className="h-4 w-4 mr-1" />
+                            <FileCsv className="h-4 w-4 mr-1" />
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
