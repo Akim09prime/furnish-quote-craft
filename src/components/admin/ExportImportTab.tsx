@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Database, exportDatabaseJSON, importDatabaseJSON } from '@/lib/db';
+import { Database, exportDatabaseJSON, importDatabaseJSON, loadDatabase } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';

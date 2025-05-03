@@ -59,7 +59,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
             addButtonLabel="Tip Nou de Glisieră"
             inputLabel="Tip Nou de Glisieră"
             inputPlaceholder="ex. Tandem, Legrabox, etc."
-            successMessage='Tipul de glisieră "{type}" a fost adăugat'
+            successMessage="Tipul de glisieră {type} a fost adăugat"
           />
         </TabsContent>
         
@@ -75,7 +75,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
             addButtonLabel="Tip Nou de Balamale"
             inputLabel="Tip Nou de Balamale"
             inputPlaceholder="ex. Aplicată, Semi-aplicată, Sticlă, etc."
-            successMessage='Tipul de balamale "{type}" a fost adăugat'
+            successMessage="Tipul de balamale {type} a fost adăugat"
           />
         </TabsContent>
         
