@@ -24,6 +24,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { PlusCircle, Save, Trash2, Edit, Plus } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 // Form validation schema
 const newSubcategorySchema = z.object({
@@ -546,7 +548,26 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
                       {category.subcategories.map((sub, idx) => (
                         <tr key={idx} className="border-b last:border-b-0">
                           <td className="py-2 px-3">{sub.name}</td>
-                          <td className="py-2 px-3">{sub.fields.length}</td>
+                          <td className="py-2 px-3">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger className="text-left w-full">
+                                  <div className="flex flex-wrap gap-1">
+                                    {sub.fields.map((field, fidx) => (
+                                      <Badge key={fidx} variant="outline" className="text-xs">
+                                        {field.name}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-sm">
+                                    {sub.fields.map(f => f.name).join(', ')}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </td>
                           <td className="py-2 px-3">{sub.products.length}</td>
                           <td className="py-2 px-3 text-right flex space-x-1 justify-end">
                             <Button
