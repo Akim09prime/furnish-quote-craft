@@ -12,7 +12,8 @@ import {
   Category,
   QuoteItem as QuoteItemType,
   addManualPalItem,
-  updateQuoteMetadata
+  updateQuoteMetadata,
+  initialDB
 } from '@/lib/db';
 import CategorySelector from '@/components/CategorySelector';
 import ProductSelector from '@/components/ProductSelector';
@@ -28,25 +29,50 @@ const Index = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteType, setQuoteType] = useState<'client' | 'internal'>('internal');
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
-  // Initialize database and quote on mount
+  // Initialize database and quote on mount with improved error handling
   useEffect(() => {
     try {
+      console.log("Starting database load");
+      
+      // Check for initialDB structure first - useful for debugging
+      console.log("Initial DB available:", !!initialDB);
+      console.log("Initial DB categories:", initialDB?.categories?.map(c => c.name) || "No categories in initialDB");
+      
+      // Try loading database
       const db = loadDatabase();
-      console.log("Loaded database:", db); // Keep this debug log
-      console.log("Categories in database:", db?.categories?.map(c => c.name) || "No categories");
+      console.log("Database loaded:", !!db);
       
-      // Make sure database is properly loaded
-      if (!db || !db.categories || db.categories.length === 0) {
-        console.error("Database not loaded properly or has no categories");
+      if (!db) {
+        console.error("Database failed to load - falling back to initialDB");
+        setDatabase(initialDB);
+        setLoadingError("Eroare la încărcarea bazei de date - folosind setările implicite");
+      } else {
+        // Log detailed information about the loaded database
+        console.log("Categories in loaded database:", db?.categories?.map(c => c.name) || "No categories");
+        console.log("Categories count:", db?.categories?.length || 0);
+        
+        // Make sure database is properly loaded
+        if (!db.categories || db.categories.length === 0) {
+          console.error("Database loaded but has no categories - fallback to initialDB");
+          setDatabase(initialDB);
+          setLoadingError("Baza de date nu conține categorii - folosind setările implicite");
+        } else {
+          setDatabase(db);
+        }
       }
-      
-      setDatabase(db);
 
+      // Load quote data
       const savedQuote = loadQuote();
       setQuote(savedQuote);
     } catch (error) {
-      console.error("Error loading database or quote:", error);
+      console.error("Critical error loading database or quote:", error);
+      setLoadingError("Eroare critică la încărcarea datelor");
+      
+      // Fall back to initialDB as last resort
+      setDatabase(initialDB);
+      setQuote(loadQuote());
     }
   }, []);
 
@@ -62,6 +88,7 @@ const Index = () => {
 
   // Handle category selection
   const handleSelectCategory = (categoryName: string) => {
+    console.log("Selected category:", categoryName);
     setSelectedCategory(categoryName);
   };
 
@@ -138,13 +165,25 @@ const Index = () => {
     setQuoteType(type);
   };
 
-  // Show a better loading state
+  // Show a better loading state or error message
   if (!database || !quote) {
-    return <div className="h-screen flex items-center justify-center">Încărcare baza de date...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center flex-col p-4">
+        <div className="text-xl font-bold mb-2">Încărcare baza de date...</div>
+        {loadingError && (
+          <div className="text-red-500 text-sm mt-2 max-w-md text-center">
+            {loadingError}
+          </div>
+        )}
+      </div>
+    );
   }
 
   // Debug check for specific categories
   console.log("Checking 'Accesorii' category:", database.categories.some(c => c.name === "Accesorii"));
+  
+  // Debug check total number of categories
+  console.log("Total categories available:", database.categories.length);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col print:bg-white">
