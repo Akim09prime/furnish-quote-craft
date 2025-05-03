@@ -111,13 +111,17 @@ const Database = () => {
   const saveCategoryData = (categoryName: string) => {
     if (!database) return;
     
+    console.log(`Saving category: ${categoryName}`);
+    
     // Create backup before saving
     createBackup(database);
     
     // Save to localStorage
     saveDatabase(database);
     
-    toast.success(`Categoria "${categoryName}" a fost salvată cu succes`);
+    toast.success(`Categoria "${categoryName}" a fost salvată cu succes`, {
+      duration: 10000
+    });
   };
 
   // Function to save a specific subcategory
@@ -753,11 +757,15 @@ const Database = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => saveCategoryData(category.name)}
+                    onClick={() => {
+                      console.log(`Save button clicked for category: ${category.name}`);
+                      saveCategoryData(category.name);
+                    }}
                   >
                     <Save className="mr-2 h-4 w-4" />
                     Salvează {category.name}
                   </Button>
+                  
                   <input
                     type="file"
                     ref={(el) => fileInputRefs.current[category.name] = el}
