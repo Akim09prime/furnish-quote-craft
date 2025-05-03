@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Download, File } from "lucide-react";
+import { Upload, Download, FileExcel, FileCsv } from "lucide-react";
 import { toast } from "sonner";
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -343,8 +343,8 @@ const Database = () => {
                               onClick={() => handleSubcategoryFileUpload(category.name, subcategory.name)}
                               title={`Încarcă fișier Excel/CSV pentru ${subcategory.name}`}
                             >
-                              <File className="h-4 w-4 mr-1" />
-                              <Upload className="h-4 w-4" />
+                              <FileExcel className="h-4 w-4 mr-1" />
+                              <FileCsv className="h-4 w-4" />
                             </Button>
                             <span className="text-gray-500 font-normal">
                               {subcategory.products.length} produse

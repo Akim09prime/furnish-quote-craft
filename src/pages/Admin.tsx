@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Database, loadDatabase, saveDatabase } from '@/lib/db';
-import { initialDB } from '@/data/initialDB';
 import Header from '@/components/Header';
 import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
@@ -43,10 +42,6 @@ const Admin = () => {
   const handleResetDatabase = () => {
     localStorage.removeItem('furniture-quote-db'); // Remove the saved database
     toast.info("Resetarea bazei de date...");
-    
-    // Force reset using initialDB
-    saveDatabase(initialDB);
-    
     setTimeout(() => {
       loadDatabaseData(); // Reload database from initialDB
       toast.success("Baza de date a fost resetată la valorile implicite");
