@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON, exportDatabaseJSON } from '@/lib/db';
 import Header from '@/components/Header';
@@ -18,8 +17,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Download, Package } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { Upload, Download, File } from "lucide-react";
+import { toast } from "sonner";
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 const Database = () => {
   const [database, setDatabase] = useState<DBType | null>(null);
@@ -34,6 +35,13 @@ const Database = () => {
 
   const handleFileUpload = (categoryName: string) => {
     const fileInput = fileInputRefs.current[categoryName];
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
+
+  const handleSubcategoryFileUpload = (categoryName: string, subcategoryName: string) => {
+    const fileInput = fileInputRefs.current[`${categoryName}-${subcategoryName}`];
     if (fileInput) {
       fileInput.click();
     }
@@ -86,6 +94,7 @@ const Database = () => {
                 id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 cod: product.cod,
                 pret: product.pret,
+                descriere: product.descriere || '',
                 ...product
               };
               
@@ -133,11 +142,120 @@ const Database = () => {
     reader.readAsText(file);
   };
 
+  const processSubcategoryFile = async (categoryName: string, subcategoryName: string, file: File) => {
+    try {
+      let data: any[];
+      
+      if (file.name.endsWith('.csv')) {
+        data = await new Promise<any[]>((resolve) => {
+          Papa.parse(file, {
+            header: true,
+            complete: (res) => resolve(res.data),
+            error: (error) => {
+              console.error("CSV parse error:", error);
+              toast.error(`Eroare la parsarea CSV: ${error.message}`);
+              resolve([]);
+            }
+          });
+        });
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(ws);
+      } else {
+        toast.error("Format de fișier neacceptat. Vă rugăm să încărcați un fișier CSV sau Excel.");
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        toast.error("Nu s-au găsit date în fișier sau formatul este incorect");
+        return;
+      }
+      
+      console.log("Imported data for ", categoryName, subcategoryName, ":", data);
+      
+      // Find the category and subcategory in the database
+      const updatedDb = { ...loadDatabase() };
+      const categoryIndex = updatedDb.categories.findIndex(c => c.name === categoryName);
+      
+      if (categoryIndex === -1) {
+        toast.error(`Categoria ${categoryName} nu există.`);
+        return;
+      }
+      
+      const subcategoryIndex = updatedDb.categories[categoryIndex].subcategories.findIndex(
+        s => s.name === subcategoryName
+      );
+      
+      if (subcategoryIndex === -1) {
+        toast.error(`Subcategoria ${subcategoryName} nu există în categoria ${categoryName}.`);
+        return;
+      }
+      
+      // Get the fields for this subcategory
+      const fields = updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].fields;
+      
+      // Map the data to products
+      const products = data.map((row: any) => {
+        const productData: any = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          cod: row['Cod Produs'] || row['cod'] || row['COD'] || '',
+          descriere: row['Descriere'] || row['descriere'] || row['DESCRIERE'] || '',
+          pret: parseFloat(String(row['Pret'] || row['pret'] || row['PRET'] || 0).replace(',', '.'))
+        };
+        
+        // Map additional fields
+        fields.forEach(field => {
+          const fieldName = field.name;
+          const possibleKeys = [fieldName, fieldName.toLowerCase(), fieldName.toUpperCase()];
+          
+          // Try to find the field in the row
+          for (const key of Object.keys(row)) {
+            if (possibleKeys.includes(key) || key.toLowerCase() === fieldName.toLowerCase()) {
+              productData[fieldName] = row[key];
+              break;
+            }
+          }
+        });
+        
+        return productData;
+      }).filter(product => product.cod && product.pret);
+      
+      if (products.length === 0) {
+        toast.error("Nu s-au găsit produse valide în fișier");
+        return;
+      }
+      
+      // Replace existing products
+      updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products = products;
+      
+      // Save the database
+      saveDatabase(updatedDb);
+      setDatabase(updatedDb);
+      
+      toast.success(`Import reușit: ${products.length} produse încărcate în ${categoryName}/${subcategoryName}`);
+    } catch (error) {
+      console.error("Error processing file:", error);
+      toast.error(`Eroare la procesarea fișierului: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+    }
+  };
+
   const handleFileChange = (categoryName: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       console.log(`Processing file ${file.name} for category ${categoryName}`);
       processFile(categoryName, file);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const handleSubcategoryFileChange = (categoryName: string, subcategoryName: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      console.log(`Processing file ${file.name} for ${categoryName}/${subcategoryName}`);
+      processSubcategoryFile(categoryName, subcategoryName, file);
       // Reset file input
       event.target.value = '';
     }
@@ -211,9 +329,27 @@ const Database = () => {
                       <AccordionTrigger className="px-6 py-4 hover:bg-gray-50">
                         <div className="flex justify-between w-full">
                           <span>{subcategory.name}</span>
-                          <span className="text-gray-500 font-normal">
-                            {subcategory.products.length} produse
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="file"
+                              ref={(el) => fileInputRefs.current[`${category.name}-${subcategory.name}`] = el}
+                              style={{ display: 'none' }}
+                              accept=".csv,.xlsx,.xls"
+                              onChange={(e) => handleSubcategoryFileChange(category.name, subcategory.name, e)}
+                            />
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleSubcategoryFileUpload(category.name, subcategory.name)}
+                              title={`Încarcă fișier Excel/CSV pentru ${subcategory.name}`}
+                            >
+                              <File className="h-4 w-4 mr-1" />
+                              <Upload className="h-4 w-4" />
+                            </Button>
+                            <span className="text-gray-500 font-normal">
+                              {subcategory.products.length} produse
+                            </span>
+                          </div>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-0">
@@ -222,6 +358,7 @@ const Database = () => {
                             <TableHeader>
                               <TableRow>
                                 <TableHead>Cod</TableHead>
+                                <TableHead>Descriere</TableHead>
                                 <TableHead>Preț</TableHead>
                                 {subcategory.fields.map(field => (
                                   <TableHead key={field.name}>{field.name}</TableHead>
@@ -231,7 +368,17 @@ const Database = () => {
                             <TableBody>
                               {subcategory.products.map((product) => (
                                 <TableRow key={product.id}>
-                                  <TableCell className="font-medium">{product.cod}</TableCell>
+                                  <TableCell className="font-medium">
+                                    <a 
+                                      href={`https://www.feroshop.ro/product/${product.cod}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      {product.cod}
+                                    </a>
+                                  </TableCell>
+                                  <TableCell>{product.descriere || '-'}</TableCell>
                                   <TableCell>{product.pret} RON</TableCell>
                                   {subcategory.fields.map(field => (
                                     <TableCell key={field.name}>
