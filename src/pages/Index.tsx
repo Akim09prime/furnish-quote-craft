@@ -33,6 +33,7 @@ const Index = () => {
   // Initialize database and quote on mount
   useEffect(() => {
     const db = loadDatabase();
+    console.log("Loaded database:", db); // Add logging to debug
     setDatabase(db);
 
     const savedQuote = loadQuote();

@@ -1,45 +1,35 @@
 
 import React from 'react';
-import { Database, Category } from '@/lib/db';
+import { Database } from '@/lib/db';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
-type CategorySelectorProps = {
-  database: Database;
+interface CategorySelectorProps {
+  database: Database | null;
   selectedCategory: string | null;
   onSelectCategory: (category: string) => void;
-};
+}
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({
-  database,
-  selectedCategory,
-  onSelectCategory,
-}) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ database, selectedCategory, onSelectCategory }) => {
+  console.log("CategorySelector database:", database); // Add this line for debugging
+  
+  if (!database) return null;
+
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-medium">Selectează Categoria</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {database.categories.map((category) => (
+      <h2 className="text-2xl font-bold">Selectează o categorie</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {database.categories.map(category => (
           <Card 
-            key={category.name}
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+            key={category.name} 
+            className={`cursor-pointer transition-all ${
               selectedCategory === category.name 
                 ? 'border-furniture-purple ring-2 ring-furniture-purple/20' 
-                : 'border-gray-200 hover:border-furniture-purple/50'
+                : 'hover:border-furniture-purple/30 hover:shadow-md'
             }`}
             onClick={() => onSelectCategory(category.name)}
           >
-            <CardContent className="p-4 flex flex-col items-center text-center">
-              <h3 className="font-medium text-lg mb-2">{category.name}</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                {category.subcategories.length} subcategorii
-              </p>
-              <Button
-                variant={selectedCategory === category.name ? "default" : "outline"}
-                className="mt-auto"
-              >
-                {selectedCategory === category.name ? "Selectat" : "Selectează"}
-              </Button>
+            <CardContent className="flex justify-center items-center py-8">
+              <span className="text-xl font-medium">{category.name}</span>
             </CardContent>
           </Card>
         ))}
