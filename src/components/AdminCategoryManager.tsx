@@ -23,7 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PlusCircle, Save, Trash2, Edit } from 'lucide-react';
+import { PlusCircle, Save, Trash2, Edit, Plus } from 'lucide-react';
 
 // Form validation schema
 const newSubcategorySchema = z.object({
@@ -60,6 +60,8 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
   }[]>([]);
   const [subcategoryToDelete, setSubcategoryToDelete] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showFieldEditor, setShowFieldEditor] = useState(false);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   
   // Initialize the form
   const form = useForm<NewSubcategoryFormValues>({
@@ -81,6 +83,16 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     setShowForm(true);
     form.setValue("name", subcategoryName);
     setFields([...subcategory.fields]); // make a copy of fields
+  };
+
+  const startEditFields = (subcategoryName: string) => {
+    const subcategory = category.subcategories.find(s => s.name === subcategoryName);
+    if (!subcategory) return;
+    
+    setSelectedSubcategory(subcategoryName);
+    setShowFieldEditor(true);
+    setFields([...subcategory.fields]); // make a copy of fields
+    form.reset();
   };
 
   const addField = () => {
@@ -178,6 +190,37 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     }
   };
 
+  const saveFieldChanges = () => {
+    if (!selectedSubcategory) return;
+    
+    try {
+      // Get current subcategory
+      const subcategory = category.subcategories.find(s => s.name === selectedSubcategory);
+      if (!subcategory) return;
+      
+      // Update subcategory with new fields
+      const updatedDb = updateSubcategory(database, category.name, selectedSubcategory, {
+        name: selectedSubcategory,
+        fields: [...fields],
+        products: subcategory.products
+      });
+      
+      // Update parent component's database state
+      onDatabaseUpdate(updatedDb);
+      
+      // Show success message
+      toast.success(`Câmpurile subcategoriei "${selectedSubcategory}" au fost actualizate`);
+      
+      // Reset state and close editor
+      setShowFieldEditor(false);
+      setSelectedSubcategory(null);
+      setFields([]);
+    } catch (error) {
+      toast.error(`Eroare: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error updating subcategory fields:', error);
+    }
+  };
+
   const handleDeleteSubcategory = (subcategoryName: string) => {
     try {
       const updatedDb = deleteSubcategory(database, category.name, subcategoryName);
@@ -196,6 +239,12 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     setIsEditing(false);
     setEditingSubcategory(null);
     form.reset();
+  };
+
+  const handleFieldEditorCancel = () => {
+    setShowFieldEditor(false);
+    setSelectedSubcategory(null);
+    setFields([]);
   };
 
   const getFieldTypeDisplay = (type: string) => {
@@ -370,6 +419,109 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
               </form>
             </Form>
           </div>
+        ) : showFieldEditor ? (
+          <div className="space-y-4 border p-4 rounded-md">
+            <h3 className="font-medium">
+              Editare Câmpuri pentru: {selectedSubcategory}
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium mb-2">Câmpuri Existente</h4>
+                
+                {fields.length > 0 ? (
+                  <div className="mb-4">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left pb-1">Nume Câmp</th>
+                          <th className="text-left pb-1">Tip</th>
+                          <th className="text-left pb-1">Opțiuni</th>
+                          <th className="w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fields.map((field, idx) => (
+                          <tr key={idx} className="border-t">
+                            <td className="py-1">{field.name}</td>
+                            <td>{getFieldTypeDisplay(field.type)}</td>
+                            <td>
+                              {field.options ? field.options.join(', ') : ''}
+                            </td>
+                            <td>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeField(idx)}
+                                className="h-7 w-7"
+                              >
+                                ×
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Nu există câmpuri</p>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                  <div>
+                    <label className="text-sm font-medium">Nume Câmp</label>
+                    <Input 
+                      placeholder="ex. Dimensiune" 
+                      {...form.register("fieldName")}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium">Tip Câmp</label>
+                    <select 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      {...form.register("fieldType")}
+                    >
+                      <option value="select">Selecție (dropdown)</option>
+                      <option value="text">Text</option>
+                      <option value="number">Număr</option>
+                      <option value="boolean">Da/Nu (checkbox)</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {form.watch("fieldType") === "select" && (
+                  <div className="mb-4">
+                    <label className="text-sm font-medium">Opțiuni (separate prin virgulă)</label>
+                    <Input 
+                      placeholder="ex. 30mm, 40mm, 50mm" 
+                      {...form.register("fieldOptions")}
+                    />
+                  </div>
+                )}
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={addField}
+                  className="mt-2"
+                >
+                  Adaugă Câmp
+                </Button>
+              </div>
+              
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleFieldEditorCancel}>
+                  Anulează
+                </Button>
+                <Button onClick={saveFieldChanges} className="gap-1">
+                  <Save size={16} />
+                  <span>Salvează Câmpurile</span>
+                </Button>
+              </div>
+            </div>
+          </div>
         ) : (
           <div>
             <p className="text-gray-500 text-sm">
@@ -387,7 +539,7 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
                         <th className="text-left py-2 px-3">Nume Subcategorie</th>
                         <th className="text-left py-2 px-3">Câmpuri</th>
                         <th className="text-left py-2 px-3">Produse</th>
-                        <th className="w-24 py-2 px-3">Acțiuni</th>
+                        <th className="w-40 py-2 px-3">Acțiuni</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -400,8 +552,19 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8 text-green-500 hover:text-green-700 hover:bg-green-50"
+                              onClick={() => startEditFields(sub.name)}
+                              title="Editare câmpuri"
+                            >
+                              <Plus size={16} />
+                            </Button>
+                            
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                               onClick={() => startEditSubcategory(sub.name)}
+                              title="Editare subcategorie"
                             >
                               <Edit size={16} />
                             </Button>
