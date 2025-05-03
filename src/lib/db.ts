@@ -1,6 +1,7 @@
 
 import { initialDB as dbInitialData } from "../data/initialDB";
 
+// Re-export initialDB
 export const initialDB = dbInitialData;
 
 export type Product = {
