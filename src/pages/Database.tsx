@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON, exportDatabaseJSON, Product, addProduct, updateProduct, deleteProduct } from '@/lib/db';
 import Header from '@/components/Header';
@@ -18,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Download, File, Edit, Plus, Save, Trash2, Import, Database as DatabaseIcon } from "lucide-react";
+import { Upload, Download, File, Edit, Plus, Save, Trash2, Import, Database as DatabaseIcon, FileJson } from "lucide-react";
 import { toast } from "sonner";
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -542,7 +541,9 @@ const Database = () => {
     saveDatabase(updatedDb);
     setDatabase(updatedDb);
     setIsAddModalOpen(false);
-    toast.success("Produsul a fost adăugat cu succes");
+    toast.success("Produsul a fost adăugat cu succes", {
+      duration: 4000
+    });
   };
 
   const handleDeleteProduct = (categoryName: string, subcategoryName: string, productId: string) => {
@@ -554,7 +555,9 @@ const Database = () => {
     const updatedDb = deleteProduct(database, categoryName, subcategoryName, productId);
     saveDatabase(updatedDb);
     setDatabase(updatedDb);
-    toast.success("Produsul a fost șters");
+    toast.success("Produsul a fost șters", {
+      duration: 4000
+    });
   };
 
   const handleFieldChange = (product: Product, field: string, value: any) => {
@@ -569,6 +572,141 @@ const Database = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleExportCategory = (categoryName: string) => {
+    try {
+      if (!database) return;
+      
+      const category = database.categories.find(c => c.name === categoryName);
+      if (!category) {
+        toast.error(`Categoria ${categoryName} nu a fost găsită`);
+        return;
+      }
+      
+      // Create a new database with just this category
+      const exportDb = {
+        categories: [category]
+      };
+      
+      const jsonData = JSON.stringify(exportDb, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${categoryName}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Categoria ${categoryName} a fost exportată cu succes`);
+    } catch (error) {
+      toast.error(`Eroare la exportul categoriei: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+    }
+  };
+
+  const handleImportCategory = (categoryName: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        if (!database) return;
+        
+        const content = e.target?.result as string;
+        let importedData;
+        
+        try {
+          importedData = JSON.parse(content);
+        } catch (parseError) {
+          toast.error("Eroare la parsarea fișierului JSON. Verificați formatul.");
+          return;
+        }
+        
+        // Create a backup before importing
+        createBackup(database);
+        
+        // Find the category in imported data
+        const importedCategory = importedData.categories?.find((c: any) => c.name === categoryName);
+        
+        if (!importedCategory) {
+          toast.error(`Categoria ${categoryName} nu a fost găsită în fișierul importat.`);
+          return;
+        }
+        
+        // Find the category in the current database
+        const updatedDb = { ...loadDatabase() };
+        const categoryIndex = updatedDb.categories.findIndex(c => c.name === categoryName);
+        
+        if (categoryIndex === -1) {
+          toast.error(`Categoria ${categoryName} nu există în baza de date curentă.`);
+          return;
+        }
+        
+        // Merge subcategories from imported data
+        let totalNewProducts = 0;
+        let totalNewSubcategories = 0;
+        
+        importedCategory.subcategories.forEach((importedSubcategory: any) => {
+          // Find if this subcategory exists in current database
+          const subcategoryIndex = updatedDb.categories[categoryIndex].subcategories.findIndex(
+            s => s.name === importedSubcategory.name
+          );
+          
+          if (subcategoryIndex === -1) {
+            // If subcategory doesn't exist, add it
+            updatedDb.categories[categoryIndex].subcategories.push(importedSubcategory);
+            totalNewSubcategories++;
+            totalNewProducts += importedSubcategory.products.length;
+          } else {
+            // If subcategory exists, merge products
+            const existingProducts = updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products;
+            
+            // Find products that don't already exist
+            const newProducts = importedSubcategory.products.filter((importedProduct: any) => {
+              return !existingProducts.some(existingProduct => existingProduct.cod === importedProduct.cod);
+            });
+            
+            // Add new products to existing subcategory
+            if (newProducts.length > 0) {
+              updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products = [
+                ...existingProducts,
+                ...newProducts
+              ];
+              totalNewProducts += newProducts.length;
+            }
+          }
+        });
+        
+        // Save the updated database
+        saveDatabase(updatedDb);
+        setDatabase(updatedDb);
+        
+        if (totalNewProducts > 0 || totalNewSubcategories > 0) {
+          toast.success(
+            `Import reușit: ${totalNewProducts} produse noi și ${totalNewSubcategories} subcategorii noi au fost adăugate în categoria ${categoryName}.`,
+            { duration: 6000 }
+          );
+        } else {
+          toast.info("Nu s-au găsit produse sau subcategorii noi pentru import.", { duration: 4000 });
+        }
+      } catch (error) {
+        console.error("Error importing category:", error);
+        toast.error(`Eroare la importul categoriei: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+      }
+      
+      // Reset file input
+      event.target.value = '';
+    };
+    
+    reader.onerror = () => {
+      toast.error("Eroare la citirea fișierului.");
+      event.target.value = '';
+    };
+    
+    reader.readAsText(file);
   };
 
   if (isLoading || !database) {
@@ -634,6 +772,34 @@ const Database = () => {
                   >
                     <Upload className="mr-2 h-4 w-4" /> 
                     Încarcă produse
+                  </Button>
+                  
+                  {/* Export Category Button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleExportCategory(category.name)}
+                  >
+                    <FileJson className="mr-2 h-4 w-4" /> 
+                    Exportă
+                  </Button>
+                  
+                  {/* Import Category Button */}
+                  <input
+                    type="file"
+                    id={`import-${category.name}`}
+                    ref={(el) => fileInputRefs.current[`import-${category.name}`] = el}
+                    style={{ display: 'none' }}
+                    accept=".json"
+                    onChange={(e) => handleImportCategory(category.name, e)}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fileInputRefs.current[`import-${category.name}`]?.click()}
+                  >
+                    <Import className="mr-2 h-4 w-4" /> 
+                    Importă
                   </Button>
                 </div>
               </CardHeader>
@@ -849,9 +1015,7 @@ const Database = () => {
             </div>
           )}
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Anulare</Button>
-            </DialogClose>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Anulare</Button>
             <Button onClick={saveProductChanges}>
               <Save className="h-4 w-4 mr-2" /> Salvează
             </Button>
@@ -953,9 +1117,7 @@ const Database = () => {
             </div>
           )}
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Anulare</Button>
-            </DialogClose>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Anulare</Button>
             <Button onClick={saveNewProduct}>
               <Save className="h-4 w-4 mr-2" /> Adaugă
             </Button>
