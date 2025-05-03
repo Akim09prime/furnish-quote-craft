@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 interface LoadingStateProps {
   loadingError: string | null;
@@ -16,7 +16,10 @@ const LoadingState: React.FC<LoadingStateProps> = ({ loadingError }) => {
         </>
       ) : (
         <>
-          <div className="text-xl font-bold text-red-500 mb-2">Eroare</div>
+          <div className="flex items-center gap-2 text-xl font-bold text-red-500 mb-2">
+            <AlertCircle className="h-6 w-6" />
+            <span>Eroare</span>
+          </div>
           <div className="text-red-500 text-sm mt-2 max-w-md text-center">
             {loadingError}
             <div className="mt-4 text-gray-600">
