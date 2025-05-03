@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Category, Subcategory, Product, loadDatabase } from '@/lib/db';
+import { Category, Subcategory, Product } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
