@@ -29,6 +29,13 @@ const Header: React.FC = () => {
           >
             <Link to="/admin">Administrare</Link>
           </Button>
+          
+          <Button 
+            asChild
+            variant={location.pathname === "/database" ? "default" : "ghost"}
+          >
+            <Link to="/database">Baza de date</Link>
+          </Button>
         </nav>
       </div>
     </header>
