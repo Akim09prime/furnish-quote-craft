@@ -222,6 +222,8 @@ const Index = () => {
             <QuoteSummary 
               quote={quote} 
               onUpdateLabor={handleUpdateLabor} 
+              onUpdateQuantity={handleUpdateQuantity}
+              onRemoveItem={handleRemoveItem}
             />
           </div>
         </div>
