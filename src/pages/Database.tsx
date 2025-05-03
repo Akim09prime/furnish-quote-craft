@@ -62,29 +62,29 @@ const Database = () => {
     setIsLoading(false);
   }, []);
 
-  // Function to specifically export only the Glisiere subcategory
-  const exportGlisiere = () => {
+  // Function to specifically export only a subcategory
+  const exportSubcategory = (categoryName: string, subcategoryName: string) => {
     try {
       if (!database) return;
       
-      const accesoriCategory = database.categories.find(c => c.name === "Accesorii");
-      if (!accesoriCategory) {
-        toast.error("Categoria Accesorii nu a fost găsită");
+      const category = database.categories.find(c => c.name === categoryName);
+      if (!category) {
+        toast.error(`Categoria ${categoryName} nu a fost găsită`);
         return;
       }
       
-      const glisiereSubcategory = accesoriCategory.subcategories.find(s => s.name === "Glisiere");
-      if (!glisiereSubcategory) {
-        toast.error("Subcategoria Glisiere nu a fost găsită");
+      const subcategory = category.subcategories.find(s => s.name === subcategoryName);
+      if (!subcategory) {
+        toast.error(`Subcategoria ${subcategoryName} nu a fost găsită`);
         return;
       }
       
-      // Create a new database object with just the Glisiere subcategory
+      // Create a new database object with just the specified subcategory
       const exportDb = {
         categories: [
           {
-            name: "Accesorii",
-            subcategories: [glisiereSubcategory]
+            name: categoryName,
+            subcategories: [subcategory]
           }
         ]
       };
@@ -95,21 +95,41 @@ const Database = () => {
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Glisiere-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `${subcategoryName}-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      toast.success("Subcategoria Glisiere a fost exportată cu succes", {
+      toast.success(`Subcategoria ${subcategoryName} a fost exportată cu succes`, {
         duration: 20000
       });
     } catch (error) {
-      toast.error(`Eroare la exportul subcategoriei Glisiere: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+      toast.error(`Eroare la exportul subcategoriei ${subcategoryName}: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
     }
   };
 
-  // Function to import specifically for Glisiere subcategory
-  const importGlisiere = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Function to export Glisiere subcategory
+  const exportGlisiere = () => {
+    exportSubcategory("Accesorii", "Glisiere");
+  };
+
+  // Function to export Balamale subcategory
+  const exportBalamale = () => {
+    exportSubcategory("Accesorii", "Balamale");
+  };
+
+  // Function to export Picioare subcategory
+  const exportPicioare = () => {
+    exportSubcategory("Accesorii", "Picioare");
+  };
+
+  // Function to export Jolly subcategory
+  const exportJolly = () => {
+    exportSubcategory("Accesorii", "Jolly");
+  };
+
+  // Function to import specifically for a subcategory
+  const importSubcategory = (categoryName: string, subcategoryName: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
@@ -137,53 +157,53 @@ const Database = () => {
           return;
         }
         
-        // Find the Accesorii category in imported data
-        const importedAccesoriiCategory = importedData.categories.find((c: any) => c.name === "Accesorii");
-        if (!importedAccesoriiCategory) {
-          toast.error("Categoria Accesorii nu a fost găsită în fișierul importat.");
+        // Find the category in imported data
+        const importedCategory = importedData.categories.find((c: any) => c.name === categoryName);
+        if (!importedCategory) {
+          toast.error(`Categoria ${categoryName} nu a fost găsită în fișierul importat.`);
           return;
         }
         
-        // Find the Glisiere subcategory in imported data
-        const importedGlisiereSubcategory = importedAccesoriiCategory.subcategories?.find(
-          (s: any) => s.name === "Glisiere"
+        // Find the subcategory in imported data
+        const importedSubcategory = importedCategory.subcategories?.find(
+          (s: any) => s.name === subcategoryName
         );
-        if (!importedGlisiereSubcategory) {
-          toast.error("Subcategoria Glisiere nu a fost găsită în fișierul importat.");
+        if (!importedSubcategory) {
+          toast.error(`Subcategoria ${subcategoryName} nu a fost găsită în fișierul importat.`);
           return;
         }
         
-        // Find the Accesorii category and Glisiere subcategory in database
+        // Find the category and subcategory in database
         const updatedDb = { ...database };
-        const accesoriiCategoryIndex = updatedDb.categories.findIndex(c => c.name === "Accesorii");
+        const categoryIndex = updatedDb.categories.findIndex(c => c.name === categoryName);
         
-        if (accesoriiCategoryIndex === -1) {
-          toast.error("Categoria Accesorii nu există în baza de date curentă.");
+        if (categoryIndex === -1) {
+          toast.error(`Categoria ${categoryName} nu există în baza de date curentă.`);
           return;
         }
         
-        const glisiereSubcategoryIndex = updatedDb.categories[accesoriiCategoryIndex].subcategories.findIndex(
-          s => s.name === "Glisiere"
+        const subcategoryIndex = updatedDb.categories[categoryIndex].subcategories.findIndex(
+          s => s.name === subcategoryName
         );
         
-        if (glisiereSubcategoryIndex === -1) {
-          toast.error("Subcategoria Glisiere nu există în baza de date curentă.");
+        if (subcategoryIndex === -1) {
+          toast.error(`Subcategoria ${subcategoryName} nu există în baza de date curentă.`);
           return;
         }
         
-        // Get existing products from Glisiere
-        const existingProducts = updatedDb.categories[accesoriiCategoryIndex].subcategories[glisiereSubcategoryIndex].products;
+        // Get existing products from the subcategory
+        const existingProducts = updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products;
         
         // Find products that don't already exist
-        const newProducts = importedGlisiereSubcategory.products.filter((importedProduct: any) => {
+        const newProducts = importedSubcategory.products.filter((importedProduct: any) => {
           return !existingProducts.some(existingProduct => existingProduct.cod === importedProduct.cod);
         });
         
         if (newProducts.length === 0) {
-          toast.warning("Toate produsele din fișierul importat există deja în baza de date.");
+          toast.warning(`Toate produsele din fișierul importat există deja în subcategoria ${subcategoryName}.`);
         } else {
           // Add new products to existing subcategory
-          updatedDb.categories[accesoriiCategoryIndex].subcategories[glisiereSubcategoryIndex].products = [
+          updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products = [
             ...existingProducts,
             ...newProducts
           ];
@@ -192,13 +212,13 @@ const Database = () => {
           saveDatabase(updatedDb);
           setDatabase(updatedDb);
           
-          toast.success(`Import reușit: ${newProducts.length} produse noi au fost adăugate în subcategoria Glisiere.`, {
+          toast.success(`Import reușit: ${newProducts.length} produse noi au fost adăugate în subcategoria ${subcategoryName}.`, {
             duration: 20000
           });
         }
       } catch (error) {
-        console.error("Error importing Glisiere:", error);
-        toast.error(`Eroare la importul subcategoriei Glisiere: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+        console.error(`Error importing ${subcategoryName}:`, error);
+        toast.error(`Eroare la importul subcategoriei ${subcategoryName}: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
       }
       
       // Reset file input
@@ -211,6 +231,26 @@ const Database = () => {
     };
     
     reader.readAsText(file);
+  };
+  
+  // Function to import Glisiere
+  const importGlisiere = (event: React.ChangeEvent<HTMLInputElement>) => {
+    importSubcategory("Accesorii", "Glisiere", event);
+  };
+
+  // Function to import Balamale
+  const importBalamale = (event: React.ChangeEvent<HTMLInputElement>) => {
+    importSubcategory("Accesorii", "Balamale", event);
+  };
+
+  // Function to import Picioare
+  const importPicioare = (event: React.ChangeEvent<HTMLInputElement>) => {
+    importSubcategory("Accesorii", "Picioare", event);
+  };
+
+  // Function to import Jolly
+  const importJolly = (event: React.ChangeEvent<HTMLInputElement>) => {
+    importSubcategory("Accesorii", "Jolly", event);
   };
 
   // Function to create a backup of the current database
@@ -982,42 +1022,164 @@ const Database = () => {
                               <Save className="h-4 w-4" />
                             </Button>
                             
-                            {/* Special buttons for Glisiere */}
-                            {category.name === "Accesorii" && subcategory.name === "Glisiere" && (
+                            {/* Special buttons for specific subcategories */}
+                            {category.name === "Accesorii" && (
                               <>
-                                {/* Export Glisiere Button */}
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    exportGlisiere();
-                                  }}
-                                  title="Exportă Glisiere"
-                                >
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                                
-                                {/* Import Glisiere Button */}
-                                <input
-                                  type="file"
-                                  id="import-glisiere"
-                                  ref={(el) => fileInputRefs.current["import-glisiere"] = el}
-                                  style={{ display: 'none' }}
-                                  accept=".json"
-                                  onChange={importGlisiere}
-                                />
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    fileInputRefs.current["import-glisiere"]?.click();
-                                  }}
-                                  title="Importă Glisiere"
-                                >
-                                  <Import className="h-4 w-4" />
-                                </Button>
+                                {/* Glisiere buttons */}
+                                {subcategory.name === "Glisiere" && (
+                                  <>
+                                    {/* Export Glisiere Button */}
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        exportGlisiere();
+                                      }}
+                                      title="Exportă Glisiere"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    {/* Import Glisiere Button */}
+                                    <input
+                                      type="file"
+                                      id="import-glisiere"
+                                      ref={(el) => fileInputRefs.current["import-glisiere"] = el}
+                                      style={{ display: 'none' }}
+                                      accept=".json"
+                                      onChange={importGlisiere}
+                                    />
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        fileInputRefs.current["import-glisiere"]?.click();
+                                      }}
+                                      title="Importă Glisiere"
+                                    >
+                                      <Import className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+
+                                {/* Balamale buttons */}
+                                {subcategory.name === "Balamale" && (
+                                  <>
+                                    {/* Export Balamale Button */}
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        exportBalamale();
+                                      }}
+                                      title="Exportă Balamale"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    {/* Import Balamale Button */}
+                                    <input
+                                      type="file"
+                                      id="import-balamale"
+                                      ref={(el) => fileInputRefs.current["import-balamale"] = el}
+                                      style={{ display: 'none' }}
+                                      accept=".json"
+                                      onChange={importBalamale}
+                                    />
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        fileInputRefs.current["import-balamale"]?.click();
+                                      }}
+                                      title="Importă Balamale"
+                                    >
+                                      <Import className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+
+                                {/* Picioare buttons */}
+                                {subcategory.name === "Picioare" && (
+                                  <>
+                                    {/* Export Picioare Button */}
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        exportPicioare();
+                                      }}
+                                      title="Exportă Picioare"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    {/* Import Picioare Button */}
+                                    <input
+                                      type="file"
+                                      id="import-picioare"
+                                      ref={(el) => fileInputRefs.current["import-picioare"] = el}
+                                      style={{ display: 'none' }}
+                                      accept=".json"
+                                      onChange={importPicioare}
+                                    />
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        fileInputRefs.current["import-picioare"]?.click();
+                                      }}
+                                      title="Importă Picioare"
+                                    >
+                                      <Import className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+
+                                {/* Jolly buttons */}
+                                {subcategory.name === "Jolly" && (
+                                  <>
+                                    {/* Export Jolly Button */}
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        exportJolly();
+                                      }}
+                                      title="Exportă Jolly"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    {/* Import Jolly Button */}
+                                    <input
+                                      type="file"
+                                      id="import-jolly"
+                                      ref={(el) => fileInputRefs.current["import-jolly"] = el}
+                                      style={{ display: 'none' }}
+                                      accept=".json"
+                                      onChange={importJolly}
+                                    />
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        fileInputRefs.current["import-jolly"]?.click();
+                                      }}
+                                      title="Importă Jolly"
+                                    >
+                                      <Import className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                               </>
                             )}
 
