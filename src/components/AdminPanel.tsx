@@ -241,59 +241,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
     }
   };
 
-  // New function to remove the Gtv product from Glisiere
-  const removeGtvProductFromGlisiere = () => {
-    const accesoriiCategory = database.categories.find(cat => cat.name === "Accesorii");
-    if (!accesoriiCategory) {
-      toast.error("Categoria Accesorii nu a fost găsită");
-      return;
-    }
-    
-    const glisiereSubcategory = accesoriiCategory.subcategories.find(sub => sub.name === "Glisiere");
-    if (!glisiereSubcategory) {
-      toast.error("Subcategoria Glisiere nu a fost găsită");
-      return;
-    }
-    
-    // Remove the Gtv product
-    const updatedProducts = glisiereSubcategory.products.filter(product => 
-      product.Type !== "Gtv"
-    );
-    
-    // If no products were removed
-    if (updatedProducts.length === glisiereSubcategory.products.length) {
-      toast.info("Nu există produse de tip Gtv în subcategoria Glisiere");
-      return;
-    }
-    
-    // Create updated subcategory
-    const updatedSubcategory = {
-      ...glisiereSubcategory,
-      products: updatedProducts
-    };
-    
-    try {
-      // Update the database
-      const updatedDb = updateSubcategory(
-        database,
-        "Accesorii",
-        "Glisiere",
-        updatedSubcategory
-      );
-      
-      onDatabaseUpdate(updatedDb);      
-      toast.success("Produsele de tip Gtv au fost eliminate din subcategoria Glisiere");
-      
-      // Force page refresh to get updated data
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (error) {
-      console.error("Error removing Gtv products:", error);
-      toast.error("A apărut o eroare la eliminarea produselor de tip Gtv");
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div>
@@ -354,26 +301,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
             </div>
 
             {category && subcategory ? (
-              <>
-                {selectedCategory === "Accesorii" && selectedSubcategory === "Glisiere" && (
-                  <div className="mb-4">
-                    <Button 
-                      variant="destructive" 
-                      onClick={removeGtvProductFromGlisiere} 
-                      className="gap-2"
-                    >
-                      <Trash2 size={16} />
-                      <span>Șterge produsele Gtv</span>
-                    </Button>
-                  </div>
-                )}
-                <AdminCategoryEditor 
-                  database={database}
-                  category={category}
-                  subcategory={subcategory}
-                  onDatabaseUpdate={onDatabaseUpdate}
-                />
-              </>
+              <AdminCategoryEditor 
+                database={database}
+                category={category}
+                subcategory={subcategory}
+                onDatabaseUpdate={onDatabaseUpdate}
+              />
             ) : (
               <Card>
                 <CardContent className="pt-6">

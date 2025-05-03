@@ -11,7 +11,7 @@ export const initialDB: Database = {
             {
               name: "Type",
               type: "select",
-              options: ["Tandem", "Legrabox", "Gtv"]
+              options: ["Tandem", "Legrabox"]
             },
             {
               name: "Glisare",
