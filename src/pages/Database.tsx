@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON, exportDatabaseJSON } from '@/lib/db';
+import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON, exportDatabaseJSON, Product, addProduct, updateProduct, deleteProduct } from '@/lib/db';
 import Header from '@/components/Header';
 import { 
   Accordion,
@@ -17,15 +17,43 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Download, File } from "lucide-react";
+import { Upload, Download, File, Edit, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 const Database = () => {
   const [database, setDatabase] = useState<DBType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [productBeingEdited, setProductBeingEdited] = useState<Product | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState<string>("");
+  const [currentSubcategory, setCurrentSubcategory] = useState<string>("");
+  const [newProduct, setNewProduct] = useState<any>({
+    cod: '',
+    pret: 0,
+    descriere: ''
+  });
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     const db = loadDatabase();
@@ -280,6 +308,81 @@ const Database = () => {
     }
   };
 
+  const handleEditProduct = (categoryName: string, subcategoryName: string, product: Product) => {
+    setCurrentCategory(categoryName);
+    setCurrentSubcategory(subcategoryName);
+    setProductBeingEdited(product);
+    setIsEditModalOpen(true);
+  };
+
+  const handleAddProduct = (categoryName: string, subcategoryName: string) => {
+    setCurrentCategory(categoryName);
+    setCurrentSubcategory(subcategoryName);
+    
+    // Reset new product
+    const initialProduct: any = { cod: '', pret: 0, descriere: '' };
+    setNewProduct(initialProduct);
+    setIsAddModalOpen(true);
+  };
+
+  const saveProductChanges = () => {
+    if (!database || !productBeingEdited || !currentCategory || !currentSubcategory) return;
+
+    const updatedDb = updateProduct(database, currentCategory, currentSubcategory, productBeingEdited);
+    saveDatabase(updatedDb);
+    setDatabase(updatedDb);
+    setIsEditModalOpen(false);
+    toast.success("Produsul a fost actualizat");
+  };
+
+  const saveNewProduct = () => {
+    if (!database || !currentCategory || !currentSubcategory) return;
+
+    if (!newProduct.cod) {
+      toast.error("Codul produsului este obligatoriu");
+      return;
+    }
+
+    if (isNaN(Number(newProduct.pret))) {
+      toast.error("Prețul trebuie să fie un număr");
+      return;
+    }
+
+    const productToAdd = {
+      ...newProduct,
+      pret: Number(newProduct.pret)
+    };
+
+    const updatedDb = addProduct(database, currentCategory, currentSubcategory, productToAdd);
+    saveDatabase(updatedDb);
+    setDatabase(updatedDb);
+    setIsAddModalOpen(false);
+    toast.success("Produsul a fost adăugat");
+  };
+
+  const handleDeleteProduct = (categoryName: string, subcategoryName: string, productId: string) => {
+    if (!database) return;
+    
+    const updatedDb = deleteProduct(database, categoryName, subcategoryName, productId);
+    saveDatabase(updatedDb);
+    setDatabase(updatedDb);
+    toast.success("Produsul a fost șters");
+  };
+
+  const handleFieldChange = (product: Product, field: string, value: any) => {
+    setProductBeingEdited({
+      ...product,
+      [field]: value
+    });
+  };
+
+  const handleNewProductChange = (field: string, value: any) => {
+    setNewProduct(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   if (isLoading || !database) {
     return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
   }
@@ -330,6 +433,18 @@ const Database = () => {
                         <div className="flex justify-between w-full">
                           <span>{subcategory.name}</span>
                           <div className="flex items-center gap-3">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddProduct(category.name, subcategory.name);
+                              }}
+                              title={`Adaugă produs manual în ${subcategory.name}`}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            
                             <input
                               type="file"
                               ref={(el) => fileInputRefs.current[`${category.name}-${subcategory.name}`] = el}
@@ -340,7 +455,10 @@ const Database = () => {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => handleSubcategoryFileUpload(category.name, subcategory.name)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubcategoryFileUpload(category.name, subcategory.name);
+                              }}
                               title={`Încarcă fișier Excel/CSV pentru ${subcategory.name}`}
                             >
                               <File className="h-4 w-4 mr-1" />
@@ -363,6 +481,7 @@ const Database = () => {
                                 {subcategory.fields.map(field => (
                                   <TableHead key={field.name}>{field.name}</TableHead>
                                 ))}
+                                <TableHead className="w-[100px]">Acțiuni</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -387,6 +506,24 @@ const Database = () => {
                                         '-'}
                                     </TableCell>
                                   ))}
+                                  <TableCell>
+                                    <div className="flex items-center space-x-2">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleEditProduct(category.name, subcategory.name, product)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleDeleteProduct(category.name, subcategory.name, product.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -401,6 +538,207 @@ const Database = () => {
           ))}
         </div>
       </div>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editare produs</DialogTitle>
+          </DialogHeader>
+          {productBeingEdited && currentCategory && currentSubcategory && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Cod</label>
+                  <Input 
+                    value={productBeingEdited.cod} 
+                    onChange={(e) => handleFieldChange(productBeingEdited, 'cod', e.target.value)} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Preț</label>
+                  <Input 
+                    type="number" 
+                    value={productBeingEdited.pret} 
+                    onChange={(e) => handleFieldChange(productBeingEdited, 'pret', parseFloat(e.target.value))} 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Descriere</label>
+                <Input 
+                  value={productBeingEdited.descriere || ''} 
+                  onChange={(e) => handleFieldChange(productBeingEdited, 'descriere', e.target.value)} 
+                />
+              </div>
+              
+              {database && (
+                database.categories
+                  .find(c => c.name === currentCategory)
+                  ?.subcategories.find(s => s.name === currentSubcategory)
+                  ?.fields.map(field => (
+                    <div key={field.name} className="space-y-2">
+                      <label className="text-sm font-medium">{field.name}</label>
+                      
+                      {field.type === 'select' && field.options && (
+                        <Select 
+                          value={productBeingEdited[field.name] || ''} 
+                          onValueChange={(val) => handleFieldChange(productBeingEdited, field.name, val)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={`Selectează ${field.name}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.options.map(option => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {field.type === 'boolean' && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={!!productBeingEdited[field.name]} 
+                            onCheckedChange={(val) => handleFieldChange(productBeingEdited, field.name, val)}
+                          />
+                          <label className="text-sm">Da</label>
+                        </div>
+                      )}
+
+                      {(field.type === 'text') && (
+                        <Input 
+                          value={productBeingEdited[field.name] || ''} 
+                          onChange={(e) => handleFieldChange(productBeingEdited, field.name, e.target.value)}
+                        />
+                      )}
+                      
+                      {(field.type === 'number') && (
+                        <Input 
+                          type="number" 
+                          value={productBeingEdited[field.name] || ''} 
+                          onChange={(e) => handleFieldChange(productBeingEdited, field.name, parseFloat(e.target.value))}
+                        />
+                      )}
+                    </div>
+                  ))
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Anulare</Button>
+            </DialogClose>
+            <Button onClick={saveProductChanges}>
+              <Save className="h-4 w-4 mr-2" /> Salvează
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Product Dialog */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Adaugă produs nou</DialogTitle>
+          </DialogHeader>
+          {currentCategory && currentSubcategory && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Cod *</label>
+                  <Input 
+                    value={newProduct.cod} 
+                    onChange={(e) => handleNewProductChange('cod', e.target.value)} 
+                    placeholder="Cod produs"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Preț *</label>
+                  <Input 
+                    type="number" 
+                    value={newProduct.pret} 
+                    onChange={(e) => handleNewProductChange('pret', e.target.value)} 
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Descriere</label>
+                <Input 
+                  value={newProduct.descriere || ''} 
+                  onChange={(e) => handleNewProductChange('descriere', e.target.value)} 
+                  placeholder="Descriere produs"
+                />
+              </div>
+              
+              {database && (
+                database.categories
+                  .find(c => c.name === currentCategory)
+                  ?.subcategories.find(s => s.name === currentSubcategory)
+                  ?.fields.map(field => (
+                    <div key={field.name} className="space-y-2">
+                      <label className="text-sm font-medium">{field.name}</label>
+                      
+                      {field.type === 'select' && field.options && (
+                        <Select 
+                          value={newProduct[field.name] || ''} 
+                          onValueChange={(val) => handleNewProductChange(field.name, val)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={`Selectează ${field.name}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.options.map(option => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {field.type === 'boolean' && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={!!newProduct[field.name]} 
+                            onCheckedChange={(val) => handleNewProductChange(field.name, val)}
+                          />
+                          <label className="text-sm">Da</label>
+                        </div>
+                      )}
+
+                      {(field.type === 'text') && (
+                        <Input 
+                          value={newProduct[field.name] || ''} 
+                          onChange={(e) => handleNewProductChange(field.name, e.target.value)}
+                          placeholder={field.name}
+                        />
+                      )}
+                      
+                      {(field.type === 'number') && (
+                        <Input 
+                          type="number" 
+                          value={newProduct[field.name] || ''} 
+                          onChange={(e) => handleNewProductChange(field.name, parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      )}
+                    </div>
+                  ))
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Anulare</Button>
+            </DialogClose>
+            <Button onClick={saveNewProduct}>
+              <Save className="h-4 w-4 mr-2" /> Adaugă
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
