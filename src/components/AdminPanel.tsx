@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Database, exportDatabaseJSON, importDatabaseJSON, addCategory, deleteCategory } from '@/lib/db';
+import { Database, exportDatabaseJSON, importDatabaseJSON, addCategory, deleteCategory, updateSubcategory } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
@@ -25,6 +24,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
   const [activeTab, setActiveTab] = useState("edit");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newTypeOption, setNewTypeOption] = useState<string>("");
+  const [showAddType, setShowAddType] = useState<boolean>(false);
 
   const category = database.categories.find(c => c.name === selectedCategory);
   const subcategory = category?.subcategories.find(s => s.name === selectedSubcategory);
@@ -95,6 +96,77 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
     }
   };
 
+  // New function to add a Type option for Glisiere
+  const handleAddNewTypeOption = () => {
+    if (!newTypeOption.trim()) {
+      toast.error("Numele tipului nou nu poate fi gol");
+      return;
+    }
+    
+    const accesoriiCategory = database.categories.find(cat => cat.name === "Accesorii");
+    if (!accesoriiCategory) {
+      toast.error("Categoria Accesorii nu a fost găsită");
+      return;
+    }
+    
+    const glisiereSubcategory = accesoriiCategory.subcategories.find(sub => sub.name === "Glisiere");
+    if (!glisiereSubcategory) {
+      toast.error("Subcategoria Glisiere nu a fost găsită");
+      return;
+    }
+    
+    // Find the Type field
+    const typeField = glisiereSubcategory.fields.find(field => field.name === "Type");
+    if (!typeField || !typeField.options) {
+      toast.error("Câmpul Type nu a fost găsit sau nu are opțiuni");
+      return;
+    }
+    
+    // Check if option already exists
+    if (typeField.options.includes(newTypeOption.trim())) {
+      toast.error(`Opțiunea "${newTypeOption}" există deja`);
+      return;
+    }
+    
+    // Create updated subcategory with new option
+    const updatedSubcategory = {
+      ...glisiereSubcategory,
+      fields: glisiereSubcategory.fields.map(field => {
+        if (field.name === "Type") {
+          return {
+            ...field,
+            options: [...field.options!, newTypeOption.trim()]
+          };
+        }
+        return field;
+      })
+    };
+    
+    try {
+      // Update the database
+      const updatedDb = updateSubcategory(
+        database,
+        "Accesorii",
+        "Glisiere",
+        updatedSubcategory
+      );
+      
+      onDatabaseUpdate(updatedDb);
+      setNewTypeOption("");
+      setShowAddType(false);
+      
+      toast.success(`Tipul de glisieră "${newTypeOption}" a fost adăugat`);
+      
+      // Force page refresh to get updated data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Error adding type option:", error);
+      toast.error("A apărut o eroare la adăugarea tipului de glisieră");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -109,6 +181,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
           <TabsTrigger value="edit">Editare Produse</TabsTrigger>
           <TabsTrigger value="manage">Gestionare Categorii</TabsTrigger>
           <TabsTrigger value="categories">Categorii</TabsTrigger>
+          <TabsTrigger value="glisiere">Tipuri Glisiere</TabsTrigger>
           <TabsTrigger value="export">Export/Import</TabsTrigger>
         </TabsList>
         
@@ -300,6 +373,81 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
                     </Button>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="glisiere">
+          <Card>
+            <CardHeader>
+              <CardTitle>Administrare Tipuri de Glisiere</CardTitle>
+              <CardDescription>
+                Adaugă tipuri noi de glisiere în baza de date
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <Button onClick={() => setShowAddType(!showAddType)} variant="outline" className="gap-2">
+                    <PlusCircle size={16} />
+                    <span>Tip Nou de Glisieră</span>
+                  </Button>
+                </div>
+
+                {showAddType && (
+                  <div className="border p-4 rounded-md space-y-4">
+                    <h3 className="font-medium">Adaugă Tip Nou de Glisieră</h3>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Nume Tip</label>
+                      <Input 
+                        value={newTypeOption} 
+                        onChange={(e) => setNewTypeOption(e.target.value)} 
+                        placeholder="ex. Tandem, Legrabox, etc."
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={handleAddNewTypeOption} className="gap-2">
+                        <Save size={16} />
+                        <span>Salvează Tip Glisieră</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Display existing types */}
+                <div className="border rounded-md">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left py-3 px-4">Tipuri de Glisiere Existente</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const accesoriiCategory = database.categories.find(cat => cat.name === "Accesorii");
+                        const glisiereSubcategory = accesoriiCategory?.subcategories.find(sub => sub.name === "Glisiere");
+                        const typeField = glisiereSubcategory?.fields.find(field => field.name === "Type");
+                        
+                        if (!typeField || !typeField.options || typeField.options.length === 0) {
+                          return (
+                            <tr>
+                              <td className="text-center py-4">
+                                Nu există tipuri de glisiere
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        return typeField.options.map((type) => (
+                          <tr key={type} className="border-b">
+                            <td className="py-3 px-4">{type}</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </CardContent>
           </Card>
