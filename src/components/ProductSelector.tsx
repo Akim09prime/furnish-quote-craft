@@ -9,6 +9,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { PlusCircle } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText } from "lucide-react";
 
 interface ProductSelectorProps {
   category: Category;
@@ -20,15 +24,17 @@ interface ProductSelectorProps {
     pricePerUnit: number;
     productDetails: Record<string, any>;
   }) => void;
+  onAddManualItem?: (description: string, quantity: number, price: number, categoryName: string) => void;
 }
 
-const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuote }) => {
+const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuote, onAddManualItem }) => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
+  const showManualEntry = category.name === "PAL" || category.name === "MDF";
 
   // Handle subcategory selection
   useEffect(() => {
@@ -88,8 +94,159 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
     });
   };
 
+  // Form for manual item entry
+  const manualForm = useForm({
+    defaultValues: {
+      description: "",
+      quantity: 1,
+      price: 0
+    }
+  });
+
+  const submitManualForm = (data: { description: string; quantity: number; price: number }) => {
+    if (onAddManualItem) {
+      onAddManualItem(data.description, data.quantity, data.price, category.name);
+      manualForm.reset({
+        description: "",
+        quantity: 1,
+        price: 0
+      });
+      
+      toast.success(`${category.name} adăugat manual în ofertă`, {
+        description: `${data.description}`,
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {showManualEntry && (
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-6">
+          <h3 className="text-lg font-medium mb-4">Adaugă {category.name} manual</h3>
+          <Tabs defaultValue="direct">
+            <TabsList className="mb-4 w-full">
+              <TabsTrigger value="direct" className="flex-1">{category.name} după model și cantitate</TabsTrigger>
+              <TabsTrigger value="price" className="flex-1">{category.name} după sumă totală</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="direct">
+              <Form {...manualForm}>
+                <form onSubmit={manualForm.handleSubmit(submitManualForm)} className="space-y-4">
+                  <FormField
+                    control={manualForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descriere / Model {category.name}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={`ex: ${category.name} Alb`} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField
+                      control={manualForm.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Număr foi</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              step="1" 
+                              {...field} 
+                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={manualForm.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preț / foaie (RON)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              step="0.01" 
+                              {...field} 
+                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <Button type="submit" className="w-full">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Adaugă la ofertă
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+            
+            <TabsContent value="price">
+              <Form {...manualForm}>
+                <form onSubmit={manualForm.handleSubmit((data) => {
+                  // For total price, we set quantity to 1 and price to the total price
+                  submitManualForm({...data, quantity: 1, price: parseFloat(data.price.toString())});
+                })} className="space-y-4">
+                  <FormField
+                    control={manualForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descriere {category.name}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={`ex: ${category.name} furnir`} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={manualForm.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Suma totală (RON)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            step="0.01" 
+                            {...field} 
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="w-full">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Adaugă sumă la ofertă
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
+
       <div>
         <h2 className="text-lg font-medium mb-3">Selectează Subcategoria</h2>
         <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>

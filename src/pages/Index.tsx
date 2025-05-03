@@ -100,10 +100,10 @@ const Index = () => {
     }
   };
 
-  // Handle manual PAL entry
-  const handleAddManualPal = (description: string, quantity: number, price: number) => {
+  // Handle manual PAL or MDF entry
+  const handleAddManualItem = (description: string, quantity: number, price: number, categoryName: string) => {
     if (quote) {
-      const updatedQuote = addManualPalItem(quote, description, quantity, price);
+      const updatedQuote = addManualPalItem(quote, description, quantity, price, categoryName);
       setQuote(updatedQuote);
       saveQuote(updatedQuote);
     }
@@ -142,6 +142,7 @@ const Index = () => {
                 <ProductSelector 
                   category={category}
                   onAddToQuote={handleAddToQuote}
+                  onAddManualItem={handleAddManualItem}
                 />
               </div>
             ) : null}
@@ -221,7 +222,6 @@ const Index = () => {
             <QuoteSummary 
               quote={quote} 
               onUpdateLabor={handleUpdateLabor} 
-              onAddManualPal={handleAddManualPal}  // Make sure this prop is passed
             />
           </div>
         </div>

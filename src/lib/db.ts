@@ -208,23 +208,24 @@ export const addItemToQuote = (quote: Quote, item: Omit<QuoteItem, "id">): Quote
   return recalculateQuote(newQuote);
 };
 
-// Function to add a manual PAL item to the quote
+// Function to add a manual item to the quote (PAL or MDF)
 export const addManualPalItem = (
   quote: Quote, 
   description: string, 
   quantity: number, 
-  pricePerUnit: number
+  pricePerUnit: number,
+  categoryName: string = "PAL" // Default to PAL for backward compatibility
 ): Quote => {
   const newItem = {
     id: Date.now().toString(),
-    categoryName: "PAL",
+    categoryName: categoryName,
     subcategoryName: "Manual",
     productId: "manual-" + Date.now(),
     quantity,
     pricePerUnit,
     total: pricePerUnit * quantity,
     productDetails: {
-      cod: "MANUAL-" + Date.now().toString().slice(-6),
+      cod: `MANUAL-${categoryName}-${Date.now().toString().slice(-6)}`,
       pret: pricePerUnit,
       description
     }
