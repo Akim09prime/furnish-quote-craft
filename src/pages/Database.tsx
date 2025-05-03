@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, Download, Package } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 const Database = () => {
   const [database, setDatabase] = useState<DBType | null>(null);
@@ -86,6 +86,7 @@ const Database = () => {
                 id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 cod: product.cod,
                 pret: product.pret,
+                descriere: product.descriere || '',
                 ...product
               };
               
@@ -222,6 +223,7 @@ const Database = () => {
                             <TableHeader>
                               <TableRow>
                                 <TableHead>Cod</TableHead>
+                                <TableHead>Descriere</TableHead>
                                 <TableHead>Preț</TableHead>
                                 {subcategory.fields.map(field => (
                                   <TableHead key={field.name}>{field.name}</TableHead>
@@ -231,7 +233,17 @@ const Database = () => {
                             <TableBody>
                               {subcategory.products.map((product) => (
                                 <TableRow key={product.id}>
-                                  <TableCell className="font-medium">{product.cod}</TableCell>
+                                  <TableCell className="font-medium">
+                                    <a 
+                                      href={`https://www.feroshop.ro/product/${product.cod}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      {product.cod}
+                                    </a>
+                                  </TableCell>
+                                  <TableCell>{product.descriere || '-'}</TableCell>
                                   <TableCell>{product.pret} RON</TableCell>
                                   {subcategory.fields.map(field => (
                                     <TableCell key={field.name}>
