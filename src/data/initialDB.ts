@@ -75,11 +75,6 @@ export const initialDB: Database = {
               name: "Tip",
               type: "select",
               options: ["Aplicată", "Semi-aplicată", "Încadrată"]
-            },
-            {
-              name: "Plăcuță",
-              type: "select",
-              options: ["Dreaptă", "Cruce"]
             }
           ],
           products: [
@@ -87,29 +82,25 @@ export const initialDB: Database = {
               id: "b1",
               cod: "BL-AP-DR",
               pret: 12.5,
-              Tip: "Aplicată",
-              Plăcuță: "Dreaptă"
+              Tip: "Aplicată"
             },
             {
               id: "b2",
               cod: "BL-AP-CR",
               pret: 13.5,
-              Tip: "Aplicată",
-              Plăcuță: "Cruce"
+              Tip: "Aplicată"
             },
             {
               id: "b3",
               cod: "BL-SA-DR",
               pret: 14.5,
-              Tip: "Semi-aplicată",
-              Plăcuță: "Dreaptă"
+              Tip: "Semi-aplicată"
             },
             {
               id: "b4",
               cod: "BL-IN-CR",
               pret: 16.5,
-              Tip: "Încadrată",
-              Plăcuță: "Cruce"
+              Tip: "Încadrată"
             }
           ]
         },
