@@ -1,4 +1,3 @@
-
 import { Database } from '../lib/db';
 
 export const initialDB: Database = {
@@ -156,6 +155,36 @@ export const initialDB: Database = {
               pret: 12.5,
               Înălțime: "150mm",
               Material: "Metal"
+            }
+          ]
+        },
+        {
+          name: "Jolly",
+          fields: [
+            {
+              name: "Dimensiune",
+              type: "select",
+              options: ["150mm", "200mm", "300mm"]
+            }
+          ],
+          products: [
+            {
+              id: "j1",
+              cod: "JL-150",
+              pret: 18.5,
+              Dimensiune: "150mm"
+            },
+            {
+              id: "j2",
+              cod: "JL-200",
+              pret: 22.5,
+              Dimensiune: "200mm"
+            },
+            {
+              id: "j3",
+              cod: "JL-300",
+              pret: 28.5,
+              Dimensiune: "300mm"
             }
           ]
         }

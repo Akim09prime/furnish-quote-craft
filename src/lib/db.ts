@@ -86,7 +86,7 @@ export const addProduct = (db: Database, categoryName: string, subcategoryName: 
   const subcategoryIndex = category.subcategories.findIndex(s => s.name === subcategoryName);
   if (subcategoryIndex === -1) return db;
 
-  const newProduct = {
+  const newProduct: Product = {
     ...product,
     id: Date.now().toString(), // Simple ID generation
   };
