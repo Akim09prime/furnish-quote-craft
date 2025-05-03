@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Quote, setLaborPercentage } from '@/lib/db';
+import { Quote } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -107,13 +107,13 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote, onUpdateLabor, onAdd
           </>
         )}
         
-        {/* Manual PAL entry form */}
+        {/* Manual PAL entry form - Make sure this is always visible */}
         <div className="mt-6 pt-4 border-t print:hidden">
           <h3 className="text-lg font-medium mb-4">Adaugă PAL manual</h3>
           <Tabs defaultValue="direct">
-            <TabsList className="mb-4">
-              <TabsTrigger value="direct">PAL după model și cantitate</TabsTrigger>
-              <TabsTrigger value="price">PAL după sumă totală</TabsTrigger>
+            <TabsList className="mb-4 w-full">
+              <TabsTrigger value="direct" className="flex-1">PAL după model și cantitate</TabsTrigger>
+              <TabsTrigger value="price" className="flex-1">PAL după sumă totală</TabsTrigger>
             </TabsList>
             
             <TabsContent value="direct">
@@ -238,3 +238,4 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote, onUpdateLabor, onAdd
 };
 
 export default QuoteSummary;
+

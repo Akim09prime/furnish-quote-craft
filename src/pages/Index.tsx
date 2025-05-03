@@ -221,7 +221,7 @@ const Index = () => {
             <QuoteSummary 
               quote={quote} 
               onUpdateLabor={handleUpdateLabor} 
-              onAddManualPal={handleAddManualPal}
+              onAddManualPal={handleAddManualPal}  // Make sure this prop is passed
             />
           </div>
         </div>
