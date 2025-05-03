@@ -63,11 +63,15 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
             }
           });
         });
-      } else {
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         data = XLSX.utils.sheet_to_json(ws);
+      } else {
+        toast.error("Format de fișier neacceptat. Vă rugăm să încărcați un fișier CSV sau Excel.");
+        e.target.value = '';
+        return;
       }
       
       if (!data || data.length === 0) {
@@ -207,7 +211,7 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
                       <div className="flex gap-2 items-center">
                         <input
                           type="file"
-                          accept=".csv,.xlsx"
+                          accept=".csv,.xlsx,.xls"
                           className="text-xs"
                           onChange={(e) => handleFileUpload(e, category.name, subcategory.name)}
                         />
