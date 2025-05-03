@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Database, loadDatabase } from '@/lib/db';
+import { type Database as DBType, loadDatabase } from '@/lib/db';
 import Header from '@/components/Header';
 import { 
   Accordion,
@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Database = () => {
-  const [database, setDatabase] = useState<Database | null>(null);
+  const [database, setDatabase] = useState<DBType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
