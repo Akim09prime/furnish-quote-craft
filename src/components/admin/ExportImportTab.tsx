@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { File, Upload } from 'lucide-react';
+import { File, Upload, FileText, Download } from 'lucide-react';
 
 interface ExportImportTabProps {
   database: Database;
@@ -225,7 +225,7 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
                               input.click();
                             }}
                           >
-                            <File className="h-4 w-4 mr-1" />
+                            <FileText className="h-4 w-4 mr-1" />
                             <Upload className="h-4 w-4" />
                           </Button>
                         </div>
