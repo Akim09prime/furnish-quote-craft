@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Download, File, Edit, Plus, Save, Trash2 } from "lucide-react";
+import { Upload, Download, File, Edit, Plus, Save, Trash2, Import, Database as DatabaseIcon } from "lucide-react";
 import { toast } from "sonner";
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -54,6 +54,7 @@ const Database = () => {
     descriere: ''
   });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const fullDatabaseInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const db = loadDatabase();
@@ -308,6 +309,78 @@ const Database = () => {
     }
   };
 
+  const handleImportFullDatabase = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        
+        // Create a backup before importing
+        createBackup(loadDatabase());
+        
+        // Import the database
+        const success = importDatabaseJSON(content);
+        if (success) {
+          // Reload database
+          const updatedDb = loadDatabase();
+          setDatabase(updatedDb);
+          toast.success("Baza de date a fost importată cu succes");
+        } else {
+          toast.error("Eroare la importul bazei de date. Verificați formatul JSON.");
+        }
+      } catch (error) {
+        console.error("Error importing database:", error);
+        toast.error(`Eroare la importul bazei de date: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+      }
+      
+      // Reset file input
+      event.target.value = '';
+    };
+    
+    reader.onerror = () => {
+      toast.error("Eroare la citirea fișierului.");
+      event.target.value = '';
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  // Function to create a backup of the current database
+  const createBackup = (db: DBType) => {
+    try {
+      const BACKUP_KEY = "furniture-quote-db-backups";
+      
+      const newBackup = {
+        date: new Date().toISOString(),
+        database: db
+      };
+      
+      // Get existing backups
+      const savedBackups = localStorage.getItem(BACKUP_KEY);
+      let existingBackups = [];
+      
+      if (savedBackups) {
+        existingBackups = JSON.parse(savedBackups);
+      }
+      
+      // Add new backup
+      existingBackups.push(newBackup);
+      
+      // Keep only the last 10 backups
+      const limitedBackups = existingBackups.slice(-10);
+      
+      // Save to localStorage
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(limitedBackups));
+      
+      console.log("Backup created:", newBackup.date);
+    } catch (error) {
+      console.error("Error creating backup:", error);
+    }
+  };
+
   const handleEditProduct = (categoryName: string, subcategoryName: string, product: Product) => {
     setCurrentCategory(categoryName);
     setCurrentSubcategory(subcategoryName);
@@ -397,9 +470,25 @@ const Database = () => {
       <div className="container mx-auto px-4 py-6 flex-grow">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Baza de date</h1>
-          <Button onClick={handleExportDatabase} variant="outline" className="ml-auto">
-            <Download className="mr-2 h-4 w-4" /> Exportă baza de date
-          </Button>
+          <div className="flex gap-2">
+            <input
+              type="file"
+              ref={fullDatabaseInputRef}
+              style={{ display: 'none' }}
+              accept=".json"
+              onChange={handleImportFullDatabase}
+            />
+            <Button 
+              variant="outline"
+              onClick={() => fullDatabaseInputRef.current?.click()}
+              title="Importă baza de date completă"
+            >
+              <Import className="mr-2 h-4 w-4" /> Importă baza de date
+            </Button>
+            <Button onClick={handleExportDatabase} variant="outline">
+              <Download className="mr-2 h-4 w-4" /> Exportă baza de date
+            </Button>
+          </div>
         </div>
         
         <div className="space-y-8">
