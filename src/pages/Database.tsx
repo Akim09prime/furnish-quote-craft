@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON } from '@/lib/db';
+import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON, exportDatabaseJSON } from '@/lib/db';
 import Header from '@/components/Header';
 import { 
   Accordion,
@@ -18,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { Upload, Download } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 const Database = () => {
@@ -110,6 +109,25 @@ const Database = () => {
     }
   };
 
+  const handleExportDatabase = () => {
+    try {
+      const jsonData = exportDatabaseJSON();
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `furniture-database-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Baza de date exportată cu succes");
+    } catch (error) {
+      toast.error(`Eroare la exportul bazei de date: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+    }
+  };
+
   if (isLoading || !database) {
     return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
   }
@@ -119,7 +137,12 @@ const Database = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-6 flex-grow">
-        <h1 className="text-2xl font-bold mb-6">Baza de date</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Baza de date</h1>
+          <Button onClick={handleExportDatabase} variant="outline" className="ml-auto">
+            <Download className="mr-2 h-4 w-4" /> Exportă baza de date
+          </Button>
+        </div>
         
         <div className="space-y-8">
           {database.categories.map((category) => (
