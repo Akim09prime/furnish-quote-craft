@@ -14,7 +14,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({ database, selectedC
   useEffect(() => {
     console.log("CategorySelector database:", database);
     console.log("Categories available:", database?.categories?.map(c => c.name) || "No categories");
-    console.log("Categories count:", database?.categories?.length || 0);
     
     // Check if there are any initialization problems
     if (!database) {

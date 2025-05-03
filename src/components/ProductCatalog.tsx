@@ -20,15 +20,6 @@ const ProductCatalog: React.FC = () => {
     console.log("ProductCatalog - database:", !!database);
     console.log("ProductCatalog - selectedCategory:", selectedCategory);
     console.log("ProductCatalog - category:", category?.name);
-    
-    // More detailed debugging
-    if (database) {
-      console.log("Categories in database:", database.categories.map(c => c.name).join(", "));
-      
-      // Check specifically for Accesorii category
-      const hasAccessorii = database.categories.some(c => c.name === "Accesorii");
-      console.log("Has Accesorii category:", hasAccessorii);
-    }
   }, [database, selectedCategory, category]);
 
   if (!selectedCategory) {
