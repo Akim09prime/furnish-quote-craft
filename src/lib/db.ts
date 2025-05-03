@@ -181,6 +181,27 @@ export const deleteProduct = (db: Database, categoryName: string, subcategoryNam
   return newDb;
 };
 
+// Delete a subcategory from the database
+export const deleteSubcategory = (db: Database, categoryName: string, subcategoryName: string): Database => {
+  const newDb = { ...db };
+  const categoryIndex = newDb.categories.findIndex(c => c.name === categoryName);
+  
+  if (categoryIndex === -1) {
+    throw new Error(`Categoria "${categoryName}" nu există`);
+  }
+  
+  // Check if subcategory exists
+  const subcategoryIndex = newDb.categories[categoryIndex].subcategories.findIndex(s => s.name === subcategoryName);
+  if (subcategoryIndex === -1) {
+    throw new Error(`Subcategoria "${subcategoryName}" nu există în categoria "${categoryName}"`);
+  }
+  
+  // Remove subcategory
+  newDb.categories[categoryIndex].subcategories.splice(subcategoryIndex, 1);
+  
+  return newDb;
+};
+
 // Quote calculation
 export type QuoteItem = {
   id: string;

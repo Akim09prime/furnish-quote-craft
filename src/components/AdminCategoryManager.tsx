@@ -4,7 +4,8 @@ import {
   Category, 
   Database, 
   saveDatabase,
-  addSubcategory
+  addSubcategory,
+  deleteSubcategory
 } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,8 @@ import { toast } from 'sonner';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { PlusCircle, Save } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { PlusCircle, Save, Trash2 } from 'lucide-react';
 
 // Form validation schema
 const newSubcategorySchema = z.object({
@@ -54,6 +56,8 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     type: "select" | "text" | "number" | "boolean";
     options?: string[];
   }[]>([]);
+  const [subcategoryToDelete, setSubcategoryToDelete] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Initialize the form
   const form = useForm<NewSubcategoryFormValues>({
@@ -95,10 +99,15 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
     // Reset the field inputs
     form.setValue("fieldName", "");
     form.setValue("fieldOptions", "");
+    
+    // Show temporary feedback
+    toast.success(`Câmpul "${fieldName}" a fost adăugat`);
   };
 
   const removeField = (index: number) => {
+    const fieldName = fields[index].name;
     setFields(fields.filter((_, i) => i !== index));
+    toast.info(`Câmpul "${fieldName}" a fost eliminat`);
   };
 
   const handleSubmit = (data: NewSubcategoryFormValues) => {
@@ -124,9 +133,27 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       setShowForm(false);
       form.reset();
       
+      // Display success message and toast
+      setSuccessMessage(`Subcategoria "${data.name}" a fost adăugată cu succes în categoria "${category.name}"`);
       toast.success(`Subcategoria "${data.name}" a fost adăugată`);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       toast.error(`Eroare la adăugarea subcategoriei: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleDeleteSubcategory = (subcategoryName: string) => {
+    try {
+      const updatedDb = deleteSubcategory(database, category.name, subcategoryName);
+      saveDatabase(updatedDb);
+      onDatabaseUpdate(updatedDb);
+      
+      toast.success(`Subcategoria "${subcategoryName}" a fost ștearsă`);
+      setSubcategoryToDelete(null);
+    } catch (error) {
+      toast.error(`Eroare la ștergerea subcategoriei: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -164,6 +191,12 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       </CardHeader>
       
       <CardContent>
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-md">
+            {successMessage}
+          </div>
+        )}
+      
         {showForm ? (
           <div className="space-y-4 border p-4 rounded-md">
             <h3 className="font-medium">Adaugă Subcategorie Nouă</h3>
@@ -307,11 +340,67 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
             </p>
             <div className="mt-4">
               <h3 className="font-medium mb-2">Subcategorii existente:</h3>
-              <ul className="list-disc pl-5">
-                {category.subcategories.map((sub, idx) => (
-                  <li key={idx}>{sub.name}</li>
-                ))}
-              </ul>
+              {category.subcategories.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">Nu există subcategorii</p>
+              ) : (
+                <div className="border rounded-md">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left py-2 px-3">Nume Subcategorie</th>
+                        <th className="text-left py-2 px-3">Câmpuri</th>
+                        <th className="text-left py-2 px-3">Produse</th>
+                        <th className="w-16 py-2 px-3">Acțiuni</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {category.subcategories.map((sub, idx) => (
+                        <tr key={idx} className="border-b last:border-b-0">
+                          <td className="py-2 px-3">{sub.name}</td>
+                          <td className="py-2 px-3">{sub.fields.length}</td>
+                          <td className="py-2 px-3">{sub.products.length}</td>
+                          <td className="py-2 px-3 text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => setSubcategoryToDelete(sub.name)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Ștergere Subcategorie</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Sunteți sigur că doriți să ștergeți subcategoria "{sub.name}"?
+                                    <br />
+                                    <br />
+                                    <strong className="text-red-600">
+                                      Atenție: Această acțiune va șterge toate produsele asociate și nu poate fi anulată!
+                                    </strong>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Anulează</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-red-600 hover:bg-red-700"
+                                    onClick={() => handleDeleteSubcategory(sub.name)}
+                                  >
+                                    Șterge
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
