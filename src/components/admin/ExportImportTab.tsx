@@ -1,12 +1,10 @@
 
 import React, { useState } from 'react';
-import { Database, exportDatabaseJSON, importDatabaseJSON, loadDatabase } from '@/lib/db';
+import { Database, exportDatabaseJSON, importDatabaseJSON } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { fetchFilteredFeroShopDB } from '@/lib/feroshop';
-import { Download } from 'lucide-react';
 
 interface ExportImportTabProps {
   database: Database;
@@ -44,20 +42,6 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
     toast.success("Copiat în clipboard");
   };
 
-  async function handleAutoImport() {
-    try {
-      const json = await fetchFilteredFeroShopDB();
-      if (importDatabaseJSON(json)) {
-        onDatabaseUpdate(loadDatabase());
-        toast.success('Import FeroShop reușit doar cu categoriile selectate');
-      } else {
-        toast.error('Structura JSON invalidă');
-      }
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
@@ -92,13 +76,6 @@ const ExportImportTab: React.FC<ExportImportTabProps> = ({ database, onDatabaseU
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex space-x-2 mb-4">
-            <Button onClick={handleAutoImport} variant="outline" className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Importă de la FeroShop
-            </Button>
-          </div>
-          
           <div className="space-y-2">
             <label className="text-sm font-medium block">
               Lipește codul JSON al bazei de date
