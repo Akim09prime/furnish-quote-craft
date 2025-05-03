@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { type Database as DBType, loadDatabase, saveDatabase, importDatabaseJSON, exportDatabaseJSON } from '@/lib/db';
 import Header from '@/components/Header';
@@ -43,13 +44,24 @@ const Database = () => {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const products = JSON.parse(content);
+        let products;
+        
+        try {
+          products = JSON.parse(content);
+        } catch (parseError) {
+          console.error("JSON parse error:", parseError);
+          toast.error("Eroare la parsarea fișierului JSON. Verificați formatul.");
+          return;
+        }
         
         if (!Array.isArray(products)) {
+          console.error("Invalid format - not an array:", products);
           toast.error("Formatul fișierului nu este valid. Trebuie să fie un array de produse.");
           return;
         }
 
+        console.log("Processed products:", products);
+        
         const updatedDb = { ...loadDatabase() };
         const categoryIndex = updatedDb.categories.findIndex(c => c.name === categoryName);
         
@@ -59,8 +71,8 @@ const Database = () => {
         }
 
         // Here you would process the products and add them to the appropriate subcategories
-        // This is a simplified example
         let productsAdded = 0;
+        let productsSkipped = 0;
         
         products.forEach(product => {
           if (product.subcategory && product.cod && product.pret !== undefined) {
@@ -77,24 +89,45 @@ const Database = () => {
                 ...product
               };
               
-              delete newProduct.subcategory; // Remove subcategory field as it's not part of product model
+              // Remove subcategory field as it's not part of product model
+              const { subcategory, ...productWithoutSubcategory } = newProduct;
               
-              updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products.push(newProduct);
+              updatedDb.categories[categoryIndex].subcategories[subcategoryIndex].products.push(productWithoutSubcategory);
               productsAdded++;
+            } else {
+              productsSkipped++;
+              console.warn(`Subcategoria "${product.subcategory}" nu există în categoria "${categoryName}".`);
             }
+          } else {
+            productsSkipped++;
+            console.warn("Produs invalid:", product);
           }
         });
         
         if (productsAdded > 0) {
           saveDatabase(updatedDb);
           setDatabase(updatedDb);
-          toast.success(`${productsAdded} produse adăugate în categoria ${categoryName}.`);
+          
+          if (productsSkipped > 0) {
+            toast.success(`${productsAdded} produse adăugate în categoria ${categoryName}. ${productsSkipped} produse au fost ignorate.`);
+          } else {
+            toast.success(`${productsAdded} produse adăugate în categoria ${categoryName}.`);
+          }
         } else {
-          toast.warning("Niciun produs nu a fost adăugat. Verificați formatul fișierului.");
+          if (productsSkipped > 0) {
+            toast.warning(`Niciun produs nu a fost adăugat. ${productsSkipped} produse au fost ignorate. Verificați formatul fișierului.`);
+          } else {
+            toast.warning("Niciun produs nu a fost adăugat. Verificați formatul fișierului.");
+          }
         }
       } catch (error) {
+        console.error("Error processing file:", error);
         toast.error(`Eroare la procesarea fișierului: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
       }
+    };
+    
+    reader.onerror = () => {
+      toast.error("Eroare la citirea fișierului.");
     };
     
     reader.readAsText(file);
@@ -103,6 +136,7 @@ const Database = () => {
   const handleFileChange = (categoryName: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      console.log(`Processing file ${file.name} for category ${categoryName}`);
       processFile(categoryName, file);
       // Reset file input
       event.target.value = '';
