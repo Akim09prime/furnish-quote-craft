@@ -1,6 +1,6 @@
+
 import { initialDB as dbInitialData } from "../data/initialDB";
 
-// Re-export initialDB
 export const initialDB = dbInitialData;
 
 export type Product = {
@@ -33,31 +33,16 @@ export type Database = {
 const DB_KEY = "furniture-quote-db";
 
 export const loadDatabase = (): Database => {
-  try {
-    const saved = localStorage.getItem(DB_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Validate that the parsed object has the expected structure
-        if (parsed && parsed.categories && Array.isArray(parsed.categories)) {
-          console.log("Using saved database with categories:", 
-            parsed.categories.map(c => c.name).join(", "));
-          return parsed;
-        } else {
-          console.error("Saved database has invalid structure, using initial DB");
-          return initialDB;
-        }
-      } catch (e) {
-        console.error("Failed to parse saved database, using initial DB", e);
-        return initialDB;
-      }
+  const saved = localStorage.getItem(DB_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse saved database, using initial DB", e);
+      return initialDB;
     }
-    console.log("No saved database found, using initial DB");
-    return initialDB;
-  } catch (e) {
-    console.error("Error in loadDatabase, using initial DB", e);
-    return initialDB;
   }
+  return initialDB;
 };
 
 export const saveDatabase = (db: Database): void => {
