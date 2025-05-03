@@ -1,0 +1,237 @@
+
+import React, { useEffect, useState } from 'react';
+import { Category, Subcategory, Product, loadDatabase } from '@/lib/db';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { toast } from 'sonner';
+import { PlusCircle } from 'lucide-react';
+
+interface ProductSelectorProps {
+  category: Category;
+  onAddToQuote: (item: {
+    categoryName: string;
+    subcategoryName: string;
+    productId: string;
+    quantity: number;
+    pricePerUnit: number;
+    productDetails: Record<string, any>;
+  }) => void;
+}
+
+const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuote }) => {
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
+  const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
+  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
+
+  // Handle subcategory selection
+  useEffect(() => {
+    if (selectedSubcategory) {
+      const sub = category.subcategories.find(s => s.name === selectedSubcategory);
+      setSubcategory(sub || null);
+      setFilters({});
+      setSelectedProduct(null);
+      setFilteredProducts(sub?.products || []);
+    }
+  }, [selectedSubcategory, category]);
+
+  // Handle filter changes
+  useEffect(() => {
+    if (!subcategory) return;
+    
+    const filtered = subcategory.products.filter(product => {
+      return Object.entries(filters).every(([key, value]) => {
+        // Skip empty filter values
+        if (value === "" || value === undefined || value === null) return true;
+        return product[key] === value;
+      });
+    });
+    
+    setFilteredProducts(filtered);
+    setSelectedProduct(null);
+  }, [filters, subcategory]);
+
+  // Handle filter change
+  const handleFilterChange = (field: string, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle product selection
+  const handleSelectProduct = (product: Product) => {
+    setSelectedProduct(product);
+  };
+
+  // Handle add to quote
+  const handleAddToQuote = () => {
+    if (!selectedProduct || !subcategory) return;
+    
+    onAddToQuote({
+      categoryName: category.name,
+      subcategoryName: subcategory.name,
+      productId: selectedProduct.id,
+      quantity,
+      pricePerUnit: selectedProduct.pret,
+      productDetails: { ...selectedProduct }
+    });
+
+    toast.success("Produs adăugat în ofertă", {
+      description: `${selectedProduct.cod} - ${quantity} buc.`,
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-medium mb-3">Selectează Subcategoria</h2>
+        <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Alege subcategoria" />
+          </SelectTrigger>
+          <SelectContent>
+            {category.subcategories.map(sub => (
+              <SelectItem key={sub.name} value={sub.name}>{sub.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {subcategory && (
+        <>
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Filtrare Produse</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {subcategory.fields.map(field => (
+                <div key={field.name} className="space-y-2">
+                  <Label htmlFor={`field-${field.name}`}>{field.name}</Label>
+                  
+                  {field.type === 'select' && field.options && (
+                    <Select 
+                      value={filters[field.name] || ""} 
+                      onValueChange={(val) => handleFilterChange(field.name, val)}
+                    >
+                      <SelectTrigger id={`field-${field.name}`}>
+                        <SelectValue placeholder={`Alege ${field.name}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Toate</SelectItem>
+                        {field.options.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {field.type === 'boolean' && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`field-${field.name}`}
+                        checked={!!filters[field.name]} 
+                        onCheckedChange={(val) => handleFilterChange(field.name, val)}
+                      />
+                      <Label htmlFor={`field-${field.name}`}>Da</Label>
+                    </div>
+                  )}
+
+                  {(field.type === 'text' || field.type === 'number') && (
+                    <Input 
+                      id={`field-${field.name}`}
+                      type={field.type} 
+                      value={filters[field.name] || ""} 
+                      onChange={(e) => handleFilterChange(field.name, e.target.value)}
+                      placeholder={`Introdu ${field.name}`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Produse Disponibile ({filteredProducts.length})</h3>
+            
+            {filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredProducts.map(product => (
+                  <Card 
+                    key={product.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedProduct?.id === product.id 
+                        ? 'border-furniture-purple ring-2 ring-furniture-purple/20' 
+                        : 'border-gray-200 hover:border-furniture-purple/50 hover:shadow-md'
+                    }`}
+                    onClick={() => handleSelectProduct(product)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex justify-between">
+                        <span>{product.cod}</span>
+                        <span className="font-bold text-furniture-purple">{product.pret.toFixed(2)} RON</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="text-sm space-y-1">
+                        {Object.entries(product).filter(([key]) => !['id', 'cod', 'pret'].includes(key)).map(([key, value]) => (
+                          <div key={key} className="flex justify-between">
+                            <span className="text-gray-500">{key}:</span>
+                            <span className="font-medium">{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 bg-gray-50 rounded-md">
+                <p className="text-gray-500">Nu există produse care să corespundă filtrelor selectate.</p>
+              </div>
+            )}
+          </div>
+
+          {selectedProduct && (
+            <div className="bg-gray-50 p-4 rounded-md">
+              <h3 className="font-medium mb-3">Adaugă în ofertă</h3>
+              
+              <div className="flex items-end gap-4">
+                <div className="space-y-2 flex-1">
+                  <Label htmlFor="quantity">Cantitate</Label>
+                  <Input 
+                    id="quantity"
+                    type="number" 
+                    min="1"
+                    value={quantity} 
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="max-w-[120px]"
+                  />
+                </div>
+                
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm text-gray-500">Total</p>
+                  <p className="font-bold text-lg">{(selectedProduct.pret * quantity).toFixed(2)} RON</p>
+                </div>
+                
+                <Button
+                  className="flex-1 md:flex-initial"
+                  onClick={handleAddToQuote}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adaugă în ofertă
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default ProductSelector;
