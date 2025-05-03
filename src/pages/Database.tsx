@@ -62,6 +62,157 @@ const Database = () => {
     setIsLoading(false);
   }, []);
 
+  // Function to specifically export only the Glisiere subcategory
+  const exportGlisiere = () => {
+    try {
+      if (!database) return;
+      
+      const accesoriCategory = database.categories.find(c => c.name === "Accesorii");
+      if (!accesoriCategory) {
+        toast.error("Categoria Accesorii nu a fost găsită");
+        return;
+      }
+      
+      const glisiereSubcategory = accesoriCategory.subcategories.find(s => s.name === "Glisiere");
+      if (!glisiereSubcategory) {
+        toast.error("Subcategoria Glisiere nu a fost găsită");
+        return;
+      }
+      
+      // Create a new database object with just the Glisiere subcategory
+      const exportDb = {
+        categories: [
+          {
+            name: "Accesorii",
+            subcategories: [glisiereSubcategory]
+          }
+        ]
+      };
+      
+      const jsonData = JSON.stringify(exportDb, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Glisiere-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Subcategoria Glisiere a fost exportată cu succes", {
+        duration: 20000
+      });
+    } catch (error) {
+      toast.error(`Eroare la exportul subcategoriei Glisiere: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+    }
+  };
+
+  // Function to import specifically for Glisiere subcategory
+  const importGlisiere = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        if (!database) return;
+        
+        const content = e.target?.result as string;
+        let importedData;
+        
+        try {
+          importedData = JSON.parse(content);
+        } catch (parseError) {
+          toast.error("Eroare la parsarea fișierului JSON. Verificați formatul.");
+          return;
+        }
+        
+        // Create a backup before importing
+        createBackup(database);
+        
+        // Check if imported data has the right structure
+        if (!importedData.categories || !Array.isArray(importedData.categories)) {
+          toast.error("Format incorect al fișierului importat. Lipsesc categoriile.");
+          return;
+        }
+        
+        // Find the Accesorii category in imported data
+        const importedAccesoriiCategory = importedData.categories.find((c: any) => c.name === "Accesorii");
+        if (!importedAccesoriiCategory) {
+          toast.error("Categoria Accesorii nu a fost găsită în fișierul importat.");
+          return;
+        }
+        
+        // Find the Glisiere subcategory in imported data
+        const importedGlisiereSubcategory = importedAccesoriiCategory.subcategories?.find(
+          (s: any) => s.name === "Glisiere"
+        );
+        if (!importedGlisiereSubcategory) {
+          toast.error("Subcategoria Glisiere nu a fost găsită în fișierul importat.");
+          return;
+        }
+        
+        // Find the Accesorii category and Glisiere subcategory in database
+        const updatedDb = { ...database };
+        const accesoriiCategoryIndex = updatedDb.categories.findIndex(c => c.name === "Accesorii");
+        
+        if (accesoriiCategoryIndex === -1) {
+          toast.error("Categoria Accesorii nu există în baza de date curentă.");
+          return;
+        }
+        
+        const glisiereSubcategoryIndex = updatedDb.categories[accesoriiCategoryIndex].subcategories.findIndex(
+          s => s.name === "Glisiere"
+        );
+        
+        if (glisiereSubcategoryIndex === -1) {
+          toast.error("Subcategoria Glisiere nu există în baza de date curentă.");
+          return;
+        }
+        
+        // Get existing products from Glisiere
+        const existingProducts = updatedDb.categories[accesoriiCategoryIndex].subcategories[glisiereSubcategoryIndex].products;
+        
+        // Find products that don't already exist
+        const newProducts = importedGlisiereSubcategory.products.filter((importedProduct: any) => {
+          return !existingProducts.some(existingProduct => existingProduct.cod === importedProduct.cod);
+        });
+        
+        if (newProducts.length === 0) {
+          toast.warning("Toate produsele din fișierul importat există deja în baza de date.");
+        } else {
+          // Add new products to existing subcategory
+          updatedDb.categories[accesoriiCategoryIndex].subcategories[glisiereSubcategoryIndex].products = [
+            ...existingProducts,
+            ...newProducts
+          ];
+          
+          // Save the database
+          saveDatabase(updatedDb);
+          setDatabase(updatedDb);
+          
+          toast.success(`Import reușit: ${newProducts.length} produse noi au fost adăugate în subcategoria Glisiere.`, {
+            duration: 20000
+          });
+        }
+      } catch (error) {
+        console.error("Error importing Glisiere:", error);
+        toast.error(`Eroare la importul subcategoriei Glisiere: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+      }
+      
+      // Reset file input
+      event.target.value = '';
+    };
+    
+    reader.onerror = () => {
+      toast.error("Eroare la citirea fișierului.");
+      event.target.value = '';
+    };
+    
+    reader.readAsText(file);
+  };
+
   // Function to create a backup of the current database
   const createBackup = (db: DBType) => {
     try {
@@ -830,6 +981,46 @@ const Database = () => {
                             >
                               <Save className="h-4 w-4" />
                             </Button>
+                            
+                            {/* Special buttons for Glisiere */}
+                            {category.name === "Accesorii" && subcategory.name === "Glisiere" && (
+                              <>
+                                {/* Export Glisiere Button */}
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    exportGlisiere();
+                                  }}
+                                  title="Exportă Glisiere"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                
+                                {/* Import Glisiere Button */}
+                                <input
+                                  type="file"
+                                  id="import-glisiere"
+                                  ref={(el) => fileInputRefs.current["import-glisiere"] = el}
+                                  style={{ display: 'none' }}
+                                  accept=".json"
+                                  onChange={importGlisiere}
+                                />
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    fileInputRefs.current["import-glisiere"]?.click();
+                                  }}
+                                  title="Importă Glisiere"
+                                >
+                                  <Import className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+
                             <Button 
                               variant="outline" 
                               size="sm"
