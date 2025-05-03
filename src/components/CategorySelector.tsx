@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -10,9 +10,14 @@ interface CategorySelectorProps {
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ database, selectedCategory, onSelectCategory }) => {
-  console.log("CategorySelector database:", database); // Add this line for debugging
+  console.log("CategorySelector database:", database); // Keep the debugging log
+  console.log("Categories available:", database?.categories?.map(c => c.name) || "No categories"); // Add more detailed logging
   
-  if (!database) return null;
+  // Safety check
+  if (!database || !database.categories || database.categories.length === 0) {
+    console.error("No database or categories available");
+    return <div className="text-red-500 p-4">Eroare la încărcarea categoriilor</div>;
+  }
 
   return (
     <div className="space-y-4">

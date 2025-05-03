@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
   Database, 
@@ -32,12 +31,23 @@ const Index = () => {
 
   // Initialize database and quote on mount
   useEffect(() => {
-    const db = loadDatabase();
-    console.log("Loaded database:", db); // Add logging to debug
-    setDatabase(db);
+    try {
+      const db = loadDatabase();
+      console.log("Loaded database:", db); // Keep this debug log
+      console.log("Categories in database:", db?.categories?.map(c => c.name) || "No categories");
+      
+      // Make sure database is properly loaded
+      if (!db || !db.categories || db.categories.length === 0) {
+        console.error("Database not loaded properly or has no categories");
+      }
+      
+      setDatabase(db);
 
-    const savedQuote = loadQuote();
-    setQuote(savedQuote);
+      const savedQuote = loadQuote();
+      setQuote(savedQuote);
+    } catch (error) {
+      console.error("Error loading database or quote:", error);
+    }
   }, []);
 
   // Update category when selection changes
@@ -128,9 +138,13 @@ const Index = () => {
     setQuoteType(type);
   };
 
+  // Show a better loading state
   if (!database || !quote) {
-    return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
+    return <div className="h-screen flex items-center justify-center">Încărcare baza de date...</div>;
   }
+
+  // Debug check for specific categories
+  console.log("Checking 'Accesorii' category:", database.categories.some(c => c.name === "Accesorii"));
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col print:bg-white">
