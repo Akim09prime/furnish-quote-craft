@@ -20,6 +20,7 @@ const Admin = () => {
       saveDatabase(updatedDb);
       setDatabase(updatedDb);
       toast.success("Baza de date a fost actualizată");
+      console.log("Database updated:", updatedDb);
     } catch (error) {
       console.error("Error updating database:", error);
       toast.error("Eroare la actualizarea bazei de date");

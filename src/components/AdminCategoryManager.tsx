@@ -117,15 +117,15 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       return;
     }
 
-    // Add subcategory to database
     try {
+      // Add subcategory to database
       const updatedDb = addSubcategory(database, category.name, {
         name: data.name,
         fields: fields,
         products: []
       });
       
-      saveDatabase(updatedDb);
+      // Update database
       onDatabaseUpdate(updatedDb);
       
       // Reset form state
@@ -141,13 +141,13 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       toast.error(`Eroare la adăugarea subcategoriei: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error adding subcategory:', error);
     }
   };
 
   const handleDeleteSubcategory = (subcategoryName: string) => {
     try {
       const updatedDb = deleteSubcategory(database, category.name, subcategoryName);
-      saveDatabase(updatedDb);
       onDatabaseUpdate(updatedDb);
       
       toast.success(`Subcategoria "${subcategoryName}" a fost ștearsă`);
@@ -210,7 +210,7 @@ const AdminCategoryManager: React.FC<AdminCategoryManagerProps> = ({
                     <FormItem>
                       <FormLabel>Nume Subcategorie</FormLabel>
                       <FormControl>
-                        <Input placeholder="ex. Picurator vase" {...field} />
+                        <Input placeholder="ex. Glisiere GTV pe bile" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

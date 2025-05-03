@@ -92,6 +92,7 @@ export const addCategory = (db: Database, categoryName: string): Database => {
     subcategories: []
   });
   
+  saveDatabase(newDb); // Save the database immediately
   return newDb;
 };
 
@@ -108,11 +109,12 @@ export const deleteCategory = (db: Database, categoryName: string): Database => 
   // Remove category
   newDb.categories.splice(categoryIndex, 1);
   
+  saveDatabase(newDb); // Save the database immediately
   return newDb;
 };
 
 export const addSubcategory = (db: Database, categoryName: string, subcategory: Subcategory): Database => {
-  const newDb = { ...db };
+  const newDb = JSON.parse(JSON.stringify(db)); // Deep clone to avoid reference issues
   const categoryIndex = newDb.categories.findIndex(c => c.name === categoryName);
   
   if (categoryIndex === -1) {
@@ -126,6 +128,8 @@ export const addSubcategory = (db: Database, categoryName: string, subcategory: 
   
   // Add subcategory
   newDb.categories[categoryIndex].subcategories.push(subcategory);
+  
+  saveDatabase(newDb); // Save the database immediately
   return newDb;
 };
 
