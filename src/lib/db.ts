@@ -93,8 +93,10 @@ export const addProduct = (db: Database, categoryName: string, subcategoryName: 
   }
 
   const newProduct: Product = {
-    ...product,
     id: Date.now().toString(), // Simple ID generation
+    cod: product.cod,          // Explicitly add required properties
+    pret: product.pret,        // Explicitly add required properties
+    ...product,                // Spread the rest of the properties
   };
 
   category.subcategories[subcategoryIndex].products.push(newProduct);
