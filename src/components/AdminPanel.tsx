@@ -1,7 +1,9 @@
-
 import React, { useState } from 'react';
-import { Database } from '@/lib/db';
+import { Database, saveDatabase } from '@/lib/db';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import EditProductsTab from './admin/EditProductsTab';
 import ManageCategoriesTab from './admin/ManageCategoriesTab';
 import CategoriesAdminTab from './admin/CategoriesAdminTab';
@@ -15,6 +17,56 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) => {
   const [activeTab, setActiveTab] = useState("edit");
+
+  // Function to create a backup of the current database
+  const createBackup = (db: Database) => {
+    try {
+      const BACKUP_KEY = "furniture-quote-db-backups";
+      
+      const newBackup = {
+        date: new Date().toISOString(),
+        database: db
+      };
+      
+      // Get existing backups
+      const savedBackups = localStorage.getItem(BACKUP_KEY);
+      let existingBackups = [];
+      
+      if (savedBackups) {
+        existingBackups = JSON.parse(savedBackups);
+      }
+      
+      // Add new backup
+      existingBackups.push(newBackup);
+      
+      // Keep only the last 10 backups
+      const limitedBackups = existingBackups.slice(-10);
+      
+      // Save to localStorage
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(limitedBackups));
+      
+      console.log("Backup created:", newBackup.date);
+    } catch (error) {
+      console.error("Error creating backup:", error);
+    }
+  };
+
+  // Function to save a specific category
+  const saveCategoryData = (categoryName: string) => {
+    if (!database) return;
+    
+    console.log(`Saving category: ${categoryName}`);
+    
+    // Create backup before saving
+    createBackup(database);
+    
+    // Save to localStorage
+    saveDatabase(database);
+    
+    toast.success(`Categoria "${categoryName}" a fost salvată cu succes`, {
+      duration: 10000
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -44,10 +96,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
         </TabsContent>
 
         <TabsContent value="categories">
+          <div className="mb-4">
+            <Button 
+              variant="outline"
+              onClick={() => saveCategoryData("Categories")}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Salvează Categoriile
+            </Button>
+          </div>
           <CategoriesAdminTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
         </TabsContent>
 
         <TabsContent value="glisiere">
+          <div className="mb-4">
+            <Button 
+              variant="outline"
+              onClick={() => saveCategoryData("Accesorii")}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Salvează Glisiere
+            </Button>
+          </div>
           <TypesEditorTab 
             database={database}
             onDatabaseUpdate={onDatabaseUpdate}
@@ -64,6 +136,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
         </TabsContent>
         
         <TabsContent value="balamale">
+          <div className="mb-4">
+            <Button 
+              variant="outline"
+              onClick={() => saveCategoryData("Balamale")}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Salvează Balamale
+            </Button>
+          </div>
           <TypesEditorTab 
             database={database}
             onDatabaseUpdate={onDatabaseUpdate}
