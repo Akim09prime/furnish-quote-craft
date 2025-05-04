@@ -24,7 +24,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { isUsingPlaceholderKey } from '@/lib/firebase';
 
 const passwordResetSchema = z.object({
   email: z.string().email("Email invalid"),
@@ -63,14 +62,6 @@ const LoginPage = () => {
       toast.info(
         "Mod demo activ! Utilizați credențialele pre-completate pentru testare.",
         { duration: 5000 }
-      );
-    }
-    
-    // Show API key warning if using placeholder
-    if (isUsingPlaceholderKey) {
-      toast.warning(
-        "Cheie API Firebase nevalidă detectată. Configurați Firebase pentru funcționalitate completă.",
-        { duration: 8000 }
       );
     }
   }, []);
@@ -220,19 +211,11 @@ const LoginPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isUsingPlaceholderKey && (
-            <Alert className="mb-4 border-red-500 bg-red-50">
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Configurație Firebase invalidă</AlertTitle>
-              <AlertDescription className="text-sm">
-                <p>Aplicația folosește o cheie API Firebase de test. Pentru a înregistra și autentifica utilizatori:</p>
-                <div className="mt-2">
-                  <Link to="/firebase-setup" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1">
-                    <Info className="h-3.5 w-3.5" />
-                    <span>Vezi instrucțiuni de configurare</span>
-                  </Link>
-                </div>
-              </AlertDescription>
+              <AlertTitle>Eroare</AlertTitle>
+              <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
           
@@ -245,14 +228,6 @@ const LoginPage = () => {
                 <p className="mt-1"><strong>Email:</strong> {DEMO_EMAIL}</p>
                 <p><strong>Parolă:</strong> {DEMO_PASSWORD}</p>
               </AlertDescription>
-            </Alert>
-          )}
-          
-          {authError && !isUsingPlaceholderKey && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Eroare</AlertTitle>
-              <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
           
@@ -348,7 +323,7 @@ const LoginPage = () => {
             <Button 
               type="submit" 
               className="w-full flex items-center justify-center gap-2" 
-              disabled={isSubmitting || isUsingPlaceholderKey}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <span className="flex items-center">
@@ -385,7 +360,6 @@ const LoginPage = () => {
                 variant="outline"
                 onClick={() => handleSocialLogin('google')}
                 className="flex items-center justify-center gap-2"
-                disabled={isUsingPlaceholderKey}
               >
                 <Mail className="h-4 w-4" />
                 Google
@@ -396,7 +370,6 @@ const LoginPage = () => {
                 variant="outline"
                 onClick={() => handleSocialLogin('facebook')}
                 className="flex items-center justify-center gap-2"
-                disabled={isUsingPlaceholderKey}
               >
                 <Facebook className="h-4 w-4" />
                 Facebook
