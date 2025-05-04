@@ -5,10 +5,15 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut
+  signOut,
+  signInWithPopup,
+  AuthProvider,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, googleProvider, facebookProvider } from "@/lib/firebase";
 
 type FirebaseContextType = {
   currentUser: User | null;
@@ -17,6 +22,9 @@ type FirebaseContextType = {
   login: (email: string, password: string) => Promise<User>;
   signup: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
+  loginWithGoogle: () => Promise<User>;
+  loginWithFacebook: () => Promise<User>;
+  resetPassword: (email: string) => Promise<void>;
 };
 
 const FirebaseContext = createContext<FirebaseContextType | null>(null);
@@ -73,13 +81,33 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return signOut(auth);
   };
 
+  const loginWithProvider = (provider: AuthProvider) => {
+    return signInWithPopup(auth, provider)
+      .then((result) => result.user);
+  };
+
+  const loginWithGoogle = () => {
+    return loginWithProvider(googleProvider);
+  };
+
+  const loginWithFacebook = () => {
+    return loginWithProvider(facebookProvider);
+  };
+
+  const resetPassword = (email: string) => {
+    return sendPasswordResetEmail(auth, email);
+  };
+
   const value = {
     currentUser,
     isAdmin,
     isLoading,
     login,
     signup,
-    logout
+    logout,
+    loginWithGoogle,
+    loginWithFacebook,
+    resetPassword
   };
 
   return (
