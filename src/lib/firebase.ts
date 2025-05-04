@@ -11,7 +11,7 @@ import {
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Firebase configuration
+// Firebase configuration - hardcoded, no fallbacks or environment variables
 const firebaseConfig = {
   apiKey: "AIzaSyAqtFRhZ1o3ub5MGkjRx-5mtIrjmTNANKf",
   authDomain: "mail-63f7e.firebaseapp.com",
@@ -22,23 +22,15 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
+// Log the API key (will appear in the console when the app initializes)
+console.log("Firebase API Key being used:", firebaseConfig.apiKey?.substring(0, 5) + "..." + firebaseConfig.apiKey?.substring(firebaseConfig.apiKey.length - 5));
+
 // Initialize Firebase services
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Export type correctly with 'export type'
-export type { User };
-
 // Export Firebase services and auth methods
-export {
-  app,
-  auth,
-  db,
-  storage,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
-};
+export { app, auth, db, storage, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut };
+export type { User };
