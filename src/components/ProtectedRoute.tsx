@@ -14,7 +14,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   useEffect(() => {
     console.log("ProtectedRoute: verifică starea autentificării");
+    
+    // Unsubscribe from the previous listener if it exists
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Auth state changed:", user ? "User authenticated" : "No user");
       setCurrentUser(user);
       setIsLoading(false);
       

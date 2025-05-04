@@ -13,7 +13,7 @@ import { getStorage } from "firebase/storage";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD1fNubvZz8lV9QyPnPvCQZhTsYR8A5WsQ", // Înlocuim cu o cheie API validă
+  apiKey: "AIzaSyD1fNubvZz8lV9QyPnPvCQZhTsYR8A5WsQ",
   authDomain: "mail-63f7e.firebaseapp.com",
   projectId: "mail-63f7e",
   storageBucket: "mail-63f7e.appspot.com",
@@ -22,11 +22,23 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
-// Log the API key (will appear in the console when the app initializes)
-console.log("Firebase API Key being used:", firebaseConfig.apiKey.substring(0, 5) + "..." + firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5));
+// Prevent multiple Firebase app initializations
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log("Firebase initialized successfully");
+} catch (error) {
+  // If Firebase app already exists, use the existing one
+  if (error.code === 'app/duplicate-app') {
+    console.log("Firebase app already exists, using existing app");
+    app = initializeApp();
+  } else {
+    console.error("Firebase initialization error:", error);
+    throw error;
+  }
+}
 
 // Initialize Firebase services
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);

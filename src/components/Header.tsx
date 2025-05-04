@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { auth, signOut } from "@/lib/firebase";
+import { auth, signOut, onAuthStateChanged } from "@/lib/firebase";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LogIn, LogOut } from 'lucide-react';
@@ -10,7 +10,16 @@ import { LogIn, LogOut } from 'lucide-react';
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const isLoggedIn = auth.currentUser !== null;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Monitor auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -18,6 +27,7 @@ const Header: React.FC = () => {
       toast.success("V-ați deconectat cu succes!");
       navigate("/");
     } catch (error) {
+      console.error("Eroare la deconectare:", error);
       toast.error("Eroare la deconectare");
     }
   };

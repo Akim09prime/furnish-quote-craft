@@ -28,12 +28,14 @@ const LoginPage = () => {
     }
     
     setIsSubmitting(true);
+    console.log("Încercare de autentificare cu:", email);
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Autentificare reușită!");
       navigate("/admin");
     } catch (error: any) {
+      console.error("Eroare autentificare:", error);
       let errorMessage = "Eroare la autentificare";
       
       if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
@@ -68,12 +70,14 @@ const LoginPage = () => {
     }
     
     setIsSubmitting(true);
+    console.log("Încercare de înregistrare cu:", email);
     
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       toast.success("Cont creat cu succes!");
       navigate("/admin");
     } catch (error: any) {
+      console.error("Eroare înregistrare:", error);
       let errorMessage = "Eroare la crearea contului";
       
       if (error.code === "auth/email-already-in-use") {
