@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
@@ -17,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlusCircle, Save, Trash2, Upload, Image, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadProductImage, deleteProductImage } from '@/lib/firebase';
+import { uploadProductImage, deleteProductImage, storage } from '@/lib/firebase';
 
 interface AdminCategoryEditorProps {
   database: Database;
@@ -48,6 +47,16 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     // Reset products list when category or subcategory changes
     setProducts([...subcategory.products]);
   }, [subcategory]);
+
+  // Verify Firebase Storage is available
+  useEffect(() => {
+    if (!storage) {
+      console.error("Firebase Storage nu este inițializat în AdminCategoryEditor!");
+      toast.error("Eroare: Firebase Storage nu este disponibil");
+    } else {
+      console.log("Firebase Storage este disponibil în AdminCategoryEditor");
+    }
+  }, []);
 
   const handleProductChange = (product: Product, field: string, value: any) => {
     const updatedProducts = products.map(p => {

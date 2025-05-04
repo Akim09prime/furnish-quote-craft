@@ -19,41 +19,27 @@ import {
   deleteObject
 } from "firebase/storage";
 
-// Check if Firebase is already initialized to prevent duplicate initializations
-let app;
-let auth;
-let db;
-let storage;
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAqtFRhz1O3ub5MGKjRx-5mtIrjmTNANfk",
+  authDomain: "mail-63f7e.firebaseapp.com",
+  projectId: "mail-63f7e",
+  storageBucket: "mail-63f7e.appspot.com",
+  messagingSenderId: "367987796071",
+  appId: "1:367987796071:web:ed2cda80af01f49a9e0cc2",
+  measurementId: "G-RZ7BXEF429"
+};
 
-try {
-  // Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyAqtFRhz1O3ub5MGKjRx-5mtIrjmTNANfk", // Updated API key
-    authDomain: "mail-63f7e.firebaseapp.com",
-    projectId: "mail-63f7e",
-    storageBucket: "mail-63f7e.appspot.com",
-    messagingSenderId: "367987796071",
-    appId: "1:367987796071:web:ed2cda80af01f49a9e0cc2",
-    measurementId: "G-RZ7BXEF429"
-  };
+// Initialize Firebase - create single instances
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-  console.log("Inițializare Firebase cu configurația:", {
-    authDomain: firebaseConfig.authDomain,
-    projectId: firebaseConfig.projectId,
-    apiKey: "Valid API Key present" // Don't log the actual key
-  });
-
-  // Initialize Firebase services
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-
-  console.log("Firebase inițializat cu succes:", auth ? "Auth disponibil" : "Auth nedisponibil");
-  console.log("Firebase Storage inițializat:", storage ? "Storage disponibil" : "Storage nedisponibil");
-} catch (error) {
-  console.error("Eroare la inițializarea Firebase:", error);
-}
+console.log("Firebase inițializat:", {
+  auth: auth ? "Auth disponibil" : "Auth nedisponibil",
+  storage: storage ? "Storage disponibil" : "Storage nedisponibil"
+});
 
 // Firebase Storage functions for image uploads
 export const uploadProductImage = async (imageFile, productId) => {

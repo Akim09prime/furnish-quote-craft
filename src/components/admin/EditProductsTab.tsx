@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from '@/components/ui/card';
 import AdminCategoryEditor from '@/components/AdminCategoryEditor';
 import { toast } from 'sonner';
+import { storage } from '@/lib/firebase';
 
 interface EditProductsTabProps {
   database: Database;
@@ -22,6 +23,12 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
     setSelectedCategory(value);
     setSelectedSubcategory("");
   };
+
+  // Check if Firebase Storage is initialized
+  if (!storage) {
+    console.error("Firebase Storage nu este inițializat în EditProductsTab!");
+    toast.error("Eroare: Firebase Storage nu este disponibil");
+  }
 
   return (
     <div className="space-y-6">
