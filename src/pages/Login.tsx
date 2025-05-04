@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'sonner';
-import { auth, signInWithEmailAndPassword } from '@/lib/firebase';
-import { Mail, Lock } from 'lucide-react';
+import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '@/lib/firebase';
+import { Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -18,7 +19,7 @@ const LoginPage = () => {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
     setAuthError(null);
@@ -67,12 +68,61 @@ const LoginPage = () => {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setAuthError(null);
+    setAuthSuccess(null);
+    
+    if (!email || !password) {
+      setAuthError("Vă rugăm să introduceți email și parolă");
+      return;
+    }
+    
+    if (password.length < 6) {
+      setAuthError("Parola trebuie să aibă cel puțin 6 caractere");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      console.log(`Încercare de creare cont pentru email: ${email}`);
+      
+      await createUserWithEmailAndPassword(auth, email, password);
+      console.log("Cont creat cu succes");
+      
+      setAuthSuccess("Cont creat cu succes! Acum vă puteți autentifica.");
+      toast.success("Cont creat cu succes!");
+      
+    } catch (error: any) {
+      console.error("Eroare la crearea contului:", error);
+      
+      let errorMessage = "A apărut o eroare la crearea contului";
+      
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "Există deja un cont cu acest email";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Adresa de email este invalidă";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Parola este prea slabă";
+      } else {
+        errorMessage = `Eroare: ${error.message || error.code || "Necunoscut"}`;
+      }
+      
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center text-2xl">
-            Autentificare
+            Autentificare / Înregistrare
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -88,52 +138,120 @@ const LoginPage = () => {
             </Alert>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email
-              </Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="exemplu@email.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                Parolă
-              </Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="login">Autentificare</TabsTrigger>
+              <TabsTrigger value="register">Înregistrare</TabsTrigger>
+            </TabsList>
             
-            <Button 
-              type="submit" 
-              className="w-full flex items-center justify-center gap-2" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Se procesează...
-                </span>
-              ) : "Autentificare"}
-            </Button>
-          </form>
+            <TabsContent value="login">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <Input 
+                    id="login-email" 
+                    type="email" 
+                    placeholder="exemplu@email.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Parolă
+                  </Label>
+                  <Input 
+                    id="login-password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full flex items-center justify-center gap-2" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Se procesează...
+                    </span>
+                  ) : (
+                    <>
+                      <LogIn className="h-4 w-4" />
+                      Autentificare
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="register">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <Input 
+                    id="register-email" 
+                    type="email" 
+                    placeholder="exemplu@email.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Parolă (minim 6 caractere)
+                  </Label>
+                  <Input 
+                    id="register-password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full flex items-center justify-center gap-2" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Se procesează...
+                    </span>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4" />
+                      Înregistrare
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
