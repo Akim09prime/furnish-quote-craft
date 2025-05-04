@@ -10,9 +10,11 @@ const Header: React.FC = () => {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center">
-          <h1 className="text-xl font-semibold text-[#1A73E8]">
-            FurnishQuote<span className="font-light text-gray-500">Craft</span>
-          </h1>
+          <Link to="/" className="flex items-center">
+            <h1 className="text-xl font-semibold text-[#1A73E8]">
+              FurnishQuote<span className="font-light text-gray-500">Craft</span>
+            </h1>
+          </Link>
         </div>
         
         <nav className="flex space-x-2">

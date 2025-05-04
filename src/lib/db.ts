@@ -1,3 +1,4 @@
+
 import { initialDB as dbInitialData } from "../data/initialDB";
 
 // Re-export initialDB
@@ -25,8 +26,21 @@ export type Category = {
   subcategories: Subcategory[];
 };
 
+export type Material = {
+  id: string;
+  name: string;
+  type: string;
+  thickness: number;
+  length: number;
+  width: number;
+  pricePerSheet: number;
+  pricePerSquareMeter: number;
+  updatedAt: string;
+};
+
 export type Database = {
   categories: Category[];
+  materials?: Material[];
 };
 
 // DB operations
@@ -44,27 +58,49 @@ export const loadDatabase = (): Database => {
         if (parsed && parsed.categories && Array.isArray(parsed.categories)) {
           console.log("[db] Successfully parsed saved database with categories:", 
             parsed.categories.map((c: {name: string}) => c.name).join(", "));
+          
+          // Ensure materials exists
+          if (!parsed.materials) {
+            parsed.materials = [];
+          }
+          
           return parsed;
         } else {
           console.error("[db] Saved database has invalid structure, using initial DB");
           // Initialize localStorage with initial data
-          localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
-          return initialDB;
+          const initialDbWithMaterials = {
+            ...initialDB,
+            materials: []
+          };
+          localStorage.setItem(DB_KEY, JSON.stringify(initialDbWithMaterials));
+          return initialDbWithMaterials;
         }
       } catch (e) {
         console.error("[db] Failed to parse saved database, using initial DB", e);
         // Initialize localStorage with initial data
-        localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
-        return initialDB;
+        const initialDbWithMaterials = {
+          ...initialDB,
+          materials: []
+        };
+        localStorage.setItem(DB_KEY, JSON.stringify(initialDbWithMaterials));
+        return initialDbWithMaterials;
       }
     }
     console.log("[db] No saved database found, using initial DB and saving to localStorage");
     // Initialize localStorage with initial data
-    localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
-    return initialDB;
+    const initialDbWithMaterials = {
+      ...initialDB,
+      materials: []
+    };
+    localStorage.setItem(DB_KEY, JSON.stringify(initialDbWithMaterials));
+    return initialDbWithMaterials;
   } catch (e) {
     console.error("[db] Error in loadDatabase, using initial DB", e);
-    return initialDB;
+    const initialDbWithMaterials = {
+      ...initialDB,
+      materials: []
+    };
+    return initialDbWithMaterials;
   }
 };
 
@@ -82,6 +118,12 @@ export const importDatabaseJSON = (json: string): boolean => {
     if (!data.categories) {
       throw new Error("Invalid database structure");
     }
+    
+    // Ensure materials exists
+    if (!data.materials) {
+      data.materials = [];
+    }
+    
     saveDatabase(data);
     return true;
   } catch (e) {
@@ -273,6 +315,40 @@ export const deleteSubcategory = (db: Database, categoryName: string, subcategor
   return newDb;
 };
 
+// Materials management functions
+export const addMaterial = (db: Database, material: Material): Database => {
+  const newDb = { ...db };
+  
+  // Initialize materials array if it doesn't exist
+  if (!newDb.materials) {
+    newDb.materials = [];
+  }
+  
+  // Check if material with same ID already exists
+  const existingIndex = newDb.materials.findIndex(m => m.id === material.id);
+  
+  if (existingIndex !== -1) {
+    // Update existing material
+    newDb.materials[existingIndex] = material;
+  } else {
+    // Add new material
+    newDb.materials.push(material);
+  }
+  
+  return newDb;
+};
+
+export const deleteMaterial = (db: Database, materialId: string): Database => {
+  const newDb = { ...db };
+  
+  if (!newDb.materials) {
+    return newDb;
+  }
+  
+  newDb.materials = newDb.materials.filter(m => m.id !== materialId);
+  return newDb;
+};
+
 // Quote calculation
 export type QuoteItem = {
   id: string;
@@ -439,4 +515,36 @@ export const updateQuoteMetadata = (quote: Quote, metadata: { beneficiary?: stri
     beneficiary: metadata.beneficiary !== undefined ? metadata.beneficiary : quote.beneficiary,
     title: metadata.title !== undefined ? metadata.title : quote.title
   };
+};
+
+// Furniture type definitions for the 6-step quote process
+export type FurnitureType = {
+  id: string;
+  name: string; 
+  description?: string;
+};
+
+export type FurnitureBodyPart = {
+  id: string;
+  materialId: string;
+  length: number;
+  width: number;
+  quantity: number;
+  edgeBanding?: {
+    top?: boolean;
+    right?: boolean;
+    bottom?: boolean;
+    left?: boolean;
+  };
+};
+
+export type FurnitureBody = {
+  id: string;
+  typeId: string; 
+  name: string;
+  imageSrc?: string;
+  parts: FurnitureBodyPart[];
+  accessories: string[]; // IDs of accessories
+  paintingArea?: number;
+  paintingFaces?: number;
 };
