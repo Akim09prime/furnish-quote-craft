@@ -112,7 +112,15 @@ export const uploadProductImage = async (
         throw new Error(`Tip de fișier nepermis: ${imageFile.type}. Sunt acceptate doar imagini (jpg, png, gif, webp).`);
       }
       
-      uploadTask = uploadBytesResumable(storageReference, imageFile);
+      // Crearea unui nou obiect File pentru a preveni probleme cu unele browsere
+      // care pot bloca anumite proprietăți ale obiectului File original
+      const newFile = new File([imageFile], imageFile.name, {
+        type: imageFile.type,
+        lastModified: imageFile.lastModified,
+      });
+      
+      console.log("Prepared file for upload:", newFile.name, newFile.type, newFile.size);
+      uploadTask = uploadBytesResumable(storageReference, newFile);
     } else {
       throw new Error("Invalid image format: Must be a File object or data URL");
     }
@@ -133,7 +141,9 @@ export const uploadProductImage = async (
     }
     
     // Wait for upload to complete
+    console.log("Waiting for upload to complete...");
     await uploadTask;
+    console.log("Upload completed successfully");
     
     // Get download URL after upload is complete
     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);

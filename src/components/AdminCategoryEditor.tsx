@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
@@ -46,6 +45,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     // Reset products list when category or subcategory changes
@@ -140,6 +140,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const handleProductImageChange = (product: Product) => {
     // Store the current product ID
     setUploadingProductId(product.id);
+    setUploadError(null);
     
     // Trigger file input
     if (fileInputRef.current) {
@@ -171,15 +172,22 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
 
     try {
       console.log("Încărcarea imaginii pentru produsul cu ID:", uploadingProductId);
       toast.info("Încărcare imagine...", { id: "upload-toast" });
       
+      // Create a unique path for the image to avoid caching issues
+      const timestamp = new Date().getTime();
+      const imagePath = `${category.name}/${subcategory.name}/product-${uploadingProductId}-${timestamp}`;
+      
+      console.log(`Using image path: ${imagePath}`);
+      
       // Upload image to Firebase Storage
       const imageUrl = await uploadProductImage(
         file, 
-        `${category.name}/${subcategory.name}/product-${uploadingProductId}`,
+        imagePath,
         (progress) => {
           setUploadProgress(progress);
           if (progress === 100) {
@@ -212,11 +220,18 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       toast.success("Imaginea a fost încărcată și salvată");
     } catch (error) {
       console.error("Error uploading image:", error);
-      toast.error(`Eroare la încărcarea imaginii: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
+      setUploadError(errorMessage);
+      toast.error(`Eroare la încărcarea imaginii: ${errorMessage}`);
     } finally {
       setIsUploading(false);
       setUploadingProductId(null);
       setUploadProgress(0);
+      
+      // Clear the file input to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -233,6 +248,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     }
     
     setIsUploading(true);
+    setUploadError(null);
     
     try {
       // Create product with or without image
@@ -244,9 +260,13 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         console.log("Încărcare imagine pentru produsul nou:", selectedImage.name);
         toast.info("Încărcare imagine pentru produs nou...");
         
+        // Create a unique path for the image to avoid caching issues
+        const timestamp = new Date().getTime();
+        const imagePath = `${category.name}/${subcategory.name}/product-${tempProductId}-${timestamp}`;
+        
         imageUrl = await uploadProductImage(
           selectedImage, 
-          `${category.name}/${subcategory.name}/product-${tempProductId}`,
+          imagePath,
           (progress) => {
             setUploadProgress(progress);
           }
@@ -275,10 +295,17 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       toast.success("Produs adăugat");
     } catch (error) {
       console.error("Error adding product:", error);
-      toast.error("Eroare la adăugarea produsului");
+      const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
+      setUploadError(errorMessage);
+      toast.error(`Eroare la adăugarea produsului: ${errorMessage}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      
+      // Clear the file input to allow selecting the same file again
+      if (newImageInputRef.current) {
+        newImageInputRef.current.value = '';
+      }
     }
   };
 
@@ -325,6 +352,13 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4">
           <p className="font-bold">Atenție!</p>
           <p>Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
+        </div>
+      )}
+
+      {uploadError && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+          <p className="font-bold">Eroare la încărcarea imaginii:</p>
+          <p>{uploadError}</p>
         </div>
       )}
 
