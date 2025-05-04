@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
@@ -14,9 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Save, Trash2, Upload, Image, Loader2, AlertCircle } from 'lucide-react';
+import { PlusCircle, Save, Trash2, Upload, Image, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadProductImage, deleteProductImage, storage } from '@/lib/firebase';
+import { Progress } from "@/components/ui/progress";
 
 interface AdminCategoryEditorProps {
   database: Database;
@@ -46,6 +48,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [storageAvailable, setStorageAvailable] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadTimeout, setUploadTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Reset products list when category or subcategory changes
@@ -74,6 +77,15 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     
     checkStorage();
   }, []);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (uploadTimeout) {
+        clearTimeout(uploadTimeout);
+      }
+    };
+  }, [uploadTimeout]);
 
   const handleProductChange = (product: Product, field: string, value: any) => {
     const updatedProducts = products.map(p => {
@@ -141,11 +153,32 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     // Store the current product ID
     setUploadingProductId(product.id);
     setUploadError(null);
+    setUploadProgress(0);
     
     // Trigger file input
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
+  };
+
+  const resetUploadState = () => {
+    setIsUploading(false);
+    setUploadingProductId(null);
+    setUploadProgress(0);
+    
+    // Clear the file input to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
+    if (newImageInputRef.current) {
+      newImageInputRef.current.value = '';
+    }
+  };
+  
+  const cancelUpload = () => {
+    toast.info("Încărcarea a fost anulată");
+    resetUploadState();
   };
 
   const handleExistingProductImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,6 +206,16 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     setIsUploading(true);
     setUploadProgress(0);
     setUploadError(null);
+
+    // Set a timeout to reset the upload state if there's no progress for 30 seconds
+    const timeout = setTimeout(() => {
+      if (isUploading && uploadProgress < 100) {
+        toast.error("Încărcarea a expirat. Vă rugăm să încercați din nou.");
+        resetUploadState();
+      }
+    }, 30000);
+    
+    setUploadTimeout(timeout);
 
     try {
       console.log("Încărcarea imaginii pentru produsul cu ID:", uploadingProductId);
@@ -224,14 +267,11 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       setUploadError(errorMessage);
       toast.error(`Eroare la încărcarea imaginii: ${errorMessage}`);
     } finally {
-      setIsUploading(false);
-      setUploadingProductId(null);
-      setUploadProgress(0);
-      
-      // Clear the file input to allow selecting the same file again
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      if (uploadTimeout) {
+        clearTimeout(uploadTimeout);
+        setUploadTimeout(null);
       }
+      resetUploadState();
     }
   };
 
@@ -367,10 +407,11 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         type="file"
         ref={fileInputRef}
         className="hidden"
-        accept="image/*"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
         onChange={handleExistingProductImageChange}
       />
 
+      {/* New product form */}
       {showNewProductForm && (
         <div className="bg-gray-50 p-4 rounded-md mb-6 border">
           <h4 className="font-medium mb-3">Adaugă Produs Nou</h4>
@@ -516,7 +557,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                       {product.imageUrl ? (
                         <div className="relative group">
                           <img 
-                            src={product.imageUrl} 
+                            src={`${product.imageUrl}?timestamp=${Date.now()}`} 
                             alt={product.cod} 
                             className="h-12 w-12 object-cover rounded-md"
                             onError={(e) => {
@@ -630,18 +671,24 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         </Table>
       </div>
 
-      {isUploading && uploadProgress > 0 && (
+      {isUploading && (
         <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 w-64 z-50">
-          <div className="flex items-center mb-2">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            <span>Încărcare imagine...</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <span>Încărcare imagine...</span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={cancelUpload} 
+              className="h-6 w-6 p-0"
+            >
+              <span className="sr-only">Anulează</span>
+              <RefreshCw size={14} className="text-red-500" />
+            </Button>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
-          </div>
+          <Progress value={uploadProgress} className="h-2" />
           <div className="text-xs text-right mt-1">{uploadProgress}%</div>
         </div>
       )}

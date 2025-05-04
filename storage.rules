@@ -13,15 +13,15 @@ service firebase.storage {
       allow write: if isAuthenticated() && 
                     request.auth.uid == userId && 
                     request.resource.contentType.matches('image/.*') &&
-                    request.resource.size < 20 * 1024 * 1024; // 20MB max
+                    request.resource.size < 50 * 1024 * 1024; // 50MB max
     }
     
     // Allow access to product images for all categories and subcategories
     match /{categoryName}/{subcategoryName}/{allPaths=**} {
       allow read: if true; // Public read access for product images
       allow write: if isAuthenticated() && 
-                     request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)') &&
-                     request.resource.size < 20 * 1024 * 1024; // 20MB max
+                     request.resource.contentType.matches('image/.*') && // Allow any image type
+                     request.resource.size < 50 * 1024 * 1024; // 50MB max
     }
   }
 }

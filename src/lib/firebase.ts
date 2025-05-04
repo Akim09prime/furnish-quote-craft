@@ -1,4 +1,3 @@
-
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
@@ -113,7 +112,6 @@ export const uploadProductImage = async (
       }
       
       // Crearea unui nou obiect File pentru a preveni probleme cu unele browsere
-      // care pot bloca anumite proprietăți ale obiectului File original
       const newFile = new File([imageFile], imageFile.name, {
         type: imageFile.type,
         lastModified: imageFile.lastModified,
@@ -125,30 +123,35 @@ export const uploadProductImage = async (
       throw new Error("Invalid image format: Must be a File object or data URL");
     }
     
-    // Listen for upload progress
-    if (onProgress) {
+    // Return a promise that resolves with the download URL
+    return new Promise((resolve, reject) => {
+      // Listen for upload progress
       uploadTask.on('state_changed', 
         (snapshot) => {
           const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          onProgress(progress);
           console.log(`Upload progress: ${progress}%`);
+          if (onProgress) {
+            onProgress(progress);
+          }
         },
         (error) => {
           console.error("Upload error:", error);
-          throw error;
+          reject(error);
+        },
+        async () => {
+          try {
+            // Get download URL after upload is complete
+            console.log("Upload completed successfully");
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log(`Image uploaded successfully. URL: ${downloadURL}`);
+            resolve(downloadURL);
+          } catch (error) {
+            console.error("Error getting download URL:", error);
+            reject(error);
+          }
         }
       );
-    }
-    
-    // Wait for upload to complete
-    console.log("Waiting for upload to complete...");
-    await uploadTask;
-    console.log("Upload completed successfully");
-    
-    // Get download URL after upload is complete
-    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-    console.log(`Image uploaded successfully. URL: ${downloadURL}`);
-    return downloadURL;
+    });
   } catch (error) {
     console.error("Error uploading image:", error);
     throw error;
