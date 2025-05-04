@@ -16,8 +16,25 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_MEASUREMENT_ID
 };
 
-// Check if we're using valid API keys
-const isUsingPlaceholderKey = !import.meta.env.VITE_API_KEY;
+// Log environment variables for debugging (will be stripped in production)
+if (import.meta.env.DEV) {
+  console.log("Firebase environment variables:");
+  console.log("VITE_API_KEY present:", !!import.meta.env.VITE_API_KEY);
+  console.log("VITE_AUTH_DOMAIN present:", !!import.meta.env.VITE_AUTH_DOMAIN);
+  console.log("VITE_PROJECT_ID present:", !!import.meta.env.VITE_PROJECT_ID);
+  // Mask API key for security but show first and last few characters
+  const apiKey = import.meta.env.VITE_API_KEY || "";
+  const maskedKey = apiKey ? 
+    `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : 
+    "not set";
+  console.log("VITE_API_KEY (masked):", maskedKey);
+}
+
+// Check if we're using valid API keys (more robust check)
+const isUsingPlaceholderKey = !import.meta.env.VITE_API_KEY || 
+                             import.meta.env.VITE_API_KEY.includes("dummy") ||
+                             import.meta.env.VITE_API_KEY.includes("placeholder") ||
+                             import.meta.env.VITE_API_KEY === "";
 
 // Initialize Firebase with error handling
 let app;
@@ -28,6 +45,11 @@ let googleProvider;
 let facebookProvider;
 
 try {
+  if (isUsingPlaceholderKey) {
+    console.error("Firebase initialization skipped: Invalid or missing API key");
+    throw new Error("Firebase API key is not valid or is missing");
+  }
+
   // Initialize Firebase
   app = initializeApp(firebaseConfig);
   
@@ -54,12 +76,10 @@ try {
   if (isUsingPlaceholderKey) {
     console.warn("🔥 ATENȚIE: Folosiți o cheie API Firebase de test! Autentificarea nu va funcționa corect. " +
                 "Vă rugăm să configurați cheia API reală în variabilele de mediu.");
+  } else {
+    console.log("Firebase initialized successfully with valid API key");
   }
   
-  // Enable Firebase debug logs in development
-  if (import.meta.env.DEV) {
-    console.log("Firebase debugging enabled");
-  }
 } catch (error) {
   console.error("Firebase initialization error:", error);
   toast.error("Eroare la inițializarea Firebase. Vă rugăm să verificați configurația.");
