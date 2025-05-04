@@ -1,105 +1,128 @@
-
 import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  User,
-  onAuthStateChanged,
-  signOut,
-  sendPasswordResetEmail
-} from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { 
   getStorage, 
-  ref, 
+  ref as storageRef, 
   uploadBytes, 
-  getDownloadURL,
-  uploadString,
-  deleteObject
+  getDownloadURL, 
+  deleteObject,
+  uploadBytesResumable
 } from "firebase/storage";
 
-// Firebase configuration
+// Firebase configuration object - will be populated from env variables
 const firebaseConfig = {
-  apiKey: "AIzaSyAqtFRhz1O3ub5MGKjRx-5mtIrjmTNANfk",
-  authDomain: "mail-63f7e.firebaseapp.com",
-  projectId: "mail-63f7e",
-  storageBucket: "mail-63f7e.appspot.com",
-  messagingSenderId: "367987796071",
-  appId: "1:367987796071:web:ed2cda80af01f49a9e0cc2",
-  measurementId: "G-RZ7BXEF429"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase - create single instances
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+// Initialize Firebase only if configuration is available
+let app;
+let auth;
+let storage;
+let googleProvider;
 
-console.log("Firebase inițializat:", {
-  auth: auth ? "Auth disponibil" : "Auth nedisponibil",
-  storage: storage ? "Storage disponibil" : "Storage nedisponibil"
-});
+try {
+  // Check if required config is available
+  const requiredConfig = [
+    "apiKey", 
+    "authDomain", 
+    "projectId", 
+    "storageBucket"
+  ];
+  
+  const missingKeys = requiredConfig.filter(key => !firebaseConfig[key]);
+  
+  if (missingKeys.length > 0) {
+    console.error(`Firebase initialization failed. Missing: ${missingKeys.join(", ")}`);
+    throw new Error("Incomplete Firebase configuration");
+  }
+  
+  // Initialize the Firebase app
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  storage = getStorage(app);
+  googleProvider = new GoogleAuthProvider();
+  
+  console.log("Firebase initialized successfully!");
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+  // Keep variables undefined if initialization fails
+}
 
-// Firebase Storage functions for image uploads
-export const uploadProductImage = async (imageFile, productId) => {
-  if (!storage) throw new Error('Firebase Storage nu este inițializat');
+// Helper function to upload product images
+export const uploadProductImage = async (
+  imageFile: File | string, 
+  imagePath: string,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  if (!storage) {
+    throw new Error("Firebase Storage is not available");
+  }
   
   try {
-    const storageRef = ref(storage, `product-images/${productId}`);
+    console.log(`Uploading image to path: ${imagePath}`);
+    const storageReference = storageRef(storage, imagePath);
     
-    // If it's a File object
-    if (imageFile instanceof File) {
-      console.log("Încărcare fișier imagine:", imageFile.name, imageFile.type);
-      const snapshot = await uploadBytes(storageRef, imageFile);
-      console.log("Imagine încărcată cu succes:", snapshot.ref.fullPath);
-      return await getDownloadURL(snapshot.ref);
-    } 
-    // If it's a data URL (base64)
-    else if (typeof imageFile === 'string' && imageFile.startsWith('data:')) {
-      console.log("Încărcare imagine în format data URL");
-      const snapshot = await uploadString(storageRef, imageFile, 'data_url');
-      console.log("Imagine încărcată cu succes:", snapshot.ref.fullPath);
-      return await getDownloadURL(snapshot.ref);
+    let uploadTask;
+    
+    if (typeof imageFile === 'string' && imageFile.startsWith('data:')) {
+      // Handle data URL
+      const response = await fetch(imageFile);
+      const blob = await response.blob();
+      uploadTask = uploadBytesResumable(storageReference, blob);
+    } else if (imageFile instanceof File) {
+      // Handle File object
+      uploadTask = uploadBytesResumable(storageReference, imageFile);
+    } else {
+      throw new Error("Invalid image format");
     }
     
-    throw new Error('Format de imagine invalid');
+    // Listen for upload progress
+    if (onProgress) {
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          onProgress(progress);
+        },
+        (error) => {
+          console.error("Upload error:", error);
+          throw error;
+        }
+      );
+    }
+    
+    // Wait for upload to complete
+    await uploadTask;
+    
+    // Get download URL after upload is complete
+    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+    console.log(`Image uploaded successfully. URL: ${downloadURL}`);
+    return downloadURL;
   } catch (error) {
-    console.error("Eroare la încărcarea imaginii:", error);
+    console.error("Error uploading image:", error);
     throw error;
   }
 };
 
-// Function to delete product image
-export const deleteProductImage = async (productId) => {
-  if (!storage) throw new Error('Firebase Storage nu este inițializat');
+// Helper function to delete product images
+export const deleteProductImage = async (imagePath: string): Promise<void> => {
+  if (!storage) {
+    throw new Error("Firebase Storage is not available");
+  }
   
   try {
-    const storageRef = ref(storage, `product-images/${productId}`);
-    await deleteObject(storageRef);
-    console.log("Imagine ștearsă cu succes:", productId);
-    return true;
+    console.log(`Deleting image at path: ${imagePath}`);
+    const storageReference = storageRef(storage, imagePath);
+    await deleteObject(storageReference);
+    console.log("Image deleted successfully");
   } catch (error) {
-    console.error("Eroare la ștergerea imaginii:", error);
-    return false;
+    console.error("Error deleting image:", error);
+    throw error;
   }
 };
 
-// Export Firebase services and auth methods
-export { 
-  app, 
-  auth, 
-  db, 
-  storage, 
-  ref, 
-  getDownloadURL,
-  uploadBytes,
-  uploadString,
-  deleteObject,
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut, 
-  sendPasswordResetEmail 
-};
-export type { User };
+export { app, auth, storage, googleProvider };

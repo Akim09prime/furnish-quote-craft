@@ -27,14 +27,25 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
 
   // Check if Firebase Storage is initialized
   useEffect(() => {
-    if (!storage) {
-      console.error("Firebase Storage nu este inițializat în EditProductsTab!");
-      toast.error("Eroare: Firebase Storage nu este disponibil");
-      setStorageAvailable(false);
-    } else {
-      console.log("Firebase Storage este disponibil în EditProductsTab");
-      setStorageAvailable(true);
-    }
+    const checkStorage = async () => {
+      try {
+        if (!storage) {
+          console.error("Firebase Storage nu este inițializat în EditProductsTab!");
+          toast.error("Eroare: Firebase Storage nu este disponibil");
+          setStorageAvailable(false);
+          return;
+        }
+        
+        console.log("Firebase Storage este disponibil în EditProductsTab");
+        setStorageAvailable(true);
+      } catch (error) {
+        console.error("Error checking Firebase Storage:", error);
+        toast.error("Eroare la verificarea Firebase Storage");
+        setStorageAvailable(false);
+      }
+    };
+    
+    checkStorage();
   }, []);
 
   return (

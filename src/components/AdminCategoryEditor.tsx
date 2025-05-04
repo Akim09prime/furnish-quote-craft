@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Save, Trash2, Upload, Image, Loader2 } from 'lucide-react';
+import { PlusCircle, Save, Trash2, Upload, Image, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadProductImage, deleteProductImage, storage } from '@/lib/firebase';
 
@@ -41,8 +42,10 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const newImageInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   useEffect(() => {
     // Reset products list when category or subcategory changes
@@ -51,14 +54,25 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
 
   // Verify Firebase Storage is available
   useEffect(() => {
-    if (!storage) {
-      console.error("Firebase Storage nu este inițializat în AdminCategoryEditor!");
-      toast.error("Eroare: Firebase Storage nu este disponibil");
-      setStorageAvailable(false);
-    } else {
-      console.log("Firebase Storage este disponibil în AdminCategoryEditor");
-      setStorageAvailable(true);
-    }
+    const checkStorage = async () => {
+      try {
+        if (!storage) {
+          console.error("Firebase Storage nu este inițializat în AdminCategoryEditor!");
+          toast.error("Eroare: Firebase Storage nu este disponibil");
+          setStorageAvailable(false);
+          return;
+        }
+        
+        console.log("Firebase Storage este disponibil în AdminCategoryEditor");
+        setStorageAvailable(true);
+      } catch (error) {
+        console.error("Error checking Firebase Storage:", error);
+        toast.error("Eroare la verificarea Firebase Storage");
+        setStorageAvailable(false);
+      }
+    };
+    
+    checkStorage();
   }, []);
 
   const handleProductChange = (product: Product, field: string, value: any) => {
@@ -76,21 +90,26 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   };
 
   const saveChanges = async () => {
-    let updatedDb = { ...database };
-    
-    // Update existing products
-    products.forEach(product => {
-      const originalProduct = subcategory.products.find(p => p.id === product.id);
+    try {
+      let updatedDb = { ...database };
       
-      // If product changed, update it
-      if (originalProduct && JSON.stringify(originalProduct) !== JSON.stringify(product)) {
-        updatedDb = updateProduct(updatedDb, category.name, subcategory.name, product);
-      }
-    });
-    
-    saveDatabase(updatedDb);
-    onDatabaseUpdate(updatedDb);
-    toast.success("Modificările au fost salvate");
+      // Update existing products
+      products.forEach(product => {
+        const originalProduct = subcategory.products.find(p => p.id === product.id);
+        
+        // If product changed, update it
+        if (originalProduct && JSON.stringify(originalProduct) !== JSON.stringify(product)) {
+          updatedDb = updateProduct(updatedDb, category.name, subcategory.name, product);
+        }
+      });
+      
+      saveDatabase(updatedDb);
+      onDatabaseUpdate(updatedDb);
+      toast.success("Modificările au fost salvate");
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      toast.error("Eroare la salvarea modificărilor");
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,12 +167,24 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     }
     
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       console.log("Încărcarea imaginii pentru produsul cu ID:", uploadingProductId);
+      toast.info("Încărcare imagine...", { id: "upload-toast" });
       
       // Upload image to Firebase Storage
-      const imageUrl = await uploadProductImage(file, `product-${uploadingProductId}`);
+      const imageUrl = await uploadProductImage(
+        file, 
+        `${category.name}/${subcategory.name}/product-${uploadingProductId}`,
+        (progress) => {
+          setUploadProgress(progress);
+          if (progress === 100) {
+            toast.success("Imagine încărcată", { id: "upload-toast" });
+          }
+        }
+      );
+      
       console.log("Imagine încărcată cu succes, URL:", imageUrl);
       
       // Update product with new image URL
@@ -175,13 +206,14 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         onDatabaseUpdate(updatedDb);
       }
       
-      toast.success("Imaginea a fost încărcată");
+      toast.success("Imaginea a fost încărcată și salvată");
     } catch (error) {
       console.error("Error uploading image:", error);
       toast.error("Eroare la încărcarea imaginii");
     } finally {
       setIsUploading(false);
       setUploadingProductId(null);
+      setUploadProgress(0);
     }
   };
 
@@ -207,13 +239,17 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       // Upload image if available
       if (selectedImage && storageAvailable) {
         console.log("Încărcare imagine pentru produsul nou:", selectedImage.name);
-        imageUrl = await uploadProductImage(selectedImage, `product-${tempProductId}`);
+        toast.info("Încărcare imagine pentru produs nou...");
+        
+        imageUrl = await uploadProductImage(
+          selectedImage, 
+          `${category.name}/${subcategory.name}/product-${tempProductId}`,
+          (progress) => {
+            setUploadProgress(progress);
+          }
+        );
+        
         console.log("Imagine încărcată cu succes, URL:", imageUrl);
-      } else if (previewUrl && storageAvailable) {
-        // If we have a preview URL (from a data URL), upload it
-        console.log("Încărcare imagine din data URL pentru produsul nou");
-        imageUrl = await uploadProductImage(previewUrl, `product-${tempProductId}`);
-        console.log("Imagine încărcată cu succes din data URL, URL:", imageUrl);
       }
       
       // Add image URL to product if available
@@ -239,22 +275,29 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       toast.error("Eroare la adăugarea produsului");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    // First try to delete the image if it exists
-    const product = products.find(p => p.id === productId);
-    if (product?.imageUrl && storageAvailable) {
-      deleteProductImage(productId).catch(err => {
-        console.error("Failed to delete product image:", err);
-      });
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      // First try to delete the image if it exists
+      const product = products.find(p => p.id === productId);
+      if (product?.imageUrl && storageAvailable) {
+        toast.info("Ștergere imagine...");
+        
+        await deleteProductImage(`${category.name}/${subcategory.name}/product-${productId}`);
+        console.log("Product image deleted successfully");
+      }
+      
+      const updatedDb = deleteProduct(database, category.name, subcategory.name, productId);
+      saveDatabase(updatedDb);
+      onDatabaseUpdate(updatedDb);
+      toast.success("Produs șters");
+    } catch (err) {
+      console.error("Failed to delete product or image:", err);
+      toast.error("Eroare la ștergerea produsului");
     }
-    
-    const updatedDb = deleteProduct(database, category.name, subcategory.name, productId);
-    saveDatabase(updatedDb);
-    onDatabaseUpdate(updatedDb);
-    toast.success("Produs șters");
   };
 
   return (
@@ -316,6 +359,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
               <div className="flex items-center space-x-2">
                 <Input 
                   type="file" 
+                  ref={newImageInputRef}
                   accept="image/*"
                   onChange={handleImageChange}
                   className="flex-1"
@@ -394,7 +438,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Se încarcă...</span>
+                  <span>Se încarcă... {uploadProgress > 0 ? `${uploadProgress}%` : ''}</span>
                 </>
               ) : (
                 <>
@@ -438,15 +482,23 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                             src={product.imageUrl} 
                             alt={product.cod} 
                             className="h-12 w-12 object-cover rounded-md"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://placehold.co/100/gray/white?text=Error';
+                              console.error("Error loading image:", product.imageUrl);
+                            }}
                           />
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => handleProductImageChange(product)} 
-                            disabled={!storageAvailable}
+                            disabled={!storageAvailable || isUploading}
                             className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-black/50 rounded-md text-white"
                           >
-                            <Upload size={16} />
+                            {isUploading && uploadingProductId === product.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Upload size={16} />
+                            )}
                           </Button>
                         </div>
                       ) : (
@@ -454,7 +506,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                           variant="outline" 
                           size="sm"
                           onClick={() => handleProductImageChange(product)} 
-                          disabled={isUploading && uploadingProductId === product.id || !storageAvailable}
+                          disabled={isUploading || !storageAvailable}
                           className="h-12 w-12 flex items-center justify-center"
                         >
                           {isUploading && uploadingProductId === product.id ? (
@@ -540,6 +592,22 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
           </TableBody>
         </Table>
       </div>
+
+      {isUploading && uploadProgress > 0 && (
+        <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 w-64 z-50">
+          <div className="flex items-center mb-2">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <span>Încărcare imagine...</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+          <div className="text-xs text-right mt-1">{uploadProgress}%</div>
+        </div>
+      )}
     </div>
   );
 };
