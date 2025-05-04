@@ -9,9 +9,6 @@ import Admin from "./pages/Admin";
 import Database from "./pages/Database";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
-import FirebaseSetup from "./pages/FirebaseSetup";
-import { useState, useEffect } from "react";
-import { auth, onAuthStateChanged, isFirebaseInitialized } from "./lib/firebase";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Create a new QueryClient
@@ -25,28 +22,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    console.log("Setting up auth state listener in App");
-    
-    // Only set up Firebase listener if properly initialized
-    if (!isFirebaseInitialized()) {
-      console.error("Firebase not properly initialized in App component");
-      setIsLoading(false);
-      return () => {};
-    }
-    
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed in App:", user ? `User ${user.email}` : "No user");
-      setCurrentUser(user);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -56,7 +31,6 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/firebase-setup" element={<FirebaseSetup />} />
               <Route path="/" element={<Index />} />
               <Route 
                 path="/admin" 

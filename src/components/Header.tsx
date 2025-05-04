@@ -2,7 +2,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
+import { auth, signOut } from "@/lib/firebase";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LogIn, LogOut } from 'lucide-react';
@@ -14,11 +14,10 @@ const Header: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      await signOut(auth);
       toast.success("V-ați deconectat cu succes!");
       navigate("/");
     } catch (error) {
-      console.error("Error logging out:", error);
       toast.error("Eroare la deconectare");
     }
   };
