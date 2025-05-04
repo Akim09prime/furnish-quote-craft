@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
@@ -191,7 +192,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     
     if (!storageAvailable) {
       toast.error('Firebase Storage nu este disponibil. Încărcarea imaginilor nu este posibilă.');
-      setUploadingProductId(null);
+      resetUploadState();
       return;
     }
     
@@ -200,29 +201,29 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     setUploadError(null);
 
     try {
-      console.log("Încărcarea imaginii pentru produsul cu ID:", uploadingProductId);
       toast.info("Încărcare imagine...", { id: "upload-toast" });
       
-      // Create a unique path for the image to avoid caching issues
+      // Create a unique path for the image - simplified to avoid any path issues
       const timestamp = Date.now();
-      const imagePath = `${category.name}/${subcategory.name}/${timestamp}-product-${uploadingProductId}`;
+      const imagePath = `products/${timestamp}-${file.name}`;
       
-      console.log(`Using image path: ${imagePath}`);
+      console.log(`Using simplified image path: ${imagePath}`);
       
-      // Upload image to Firebase Storage with the simplified approach
+      // Upload image with progress tracking
       const imageUrl = await uploadProductImage(
         file, 
         imagePath,
         (progress) => {
           console.log(`Upload progress update: ${progress}%`);
           setUploadProgress(progress);
+          
           if (progress === 100) {
-            toast.success("Imagine încărcată", { id: "upload-toast" });
+            toast.success("Imagine încărcată cu succes", { id: "upload-toast" });
           }
         }
       );
       
-      console.log("Imagine încărcată cu succes, URL:", imageUrl);
+      console.log("Încărcare finalizată, URL:", imageUrl);
       
       // Update product with new image URL
       const updatedProducts = products.map(p => {
@@ -241,9 +242,8 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         updatedDb = updateProduct(updatedDb, category.name, subcategory.name, productToUpdate);
         saveDatabase(updatedDb);
         onDatabaseUpdate(updatedDb);
+        toast.success("Imaginea a fost salvată în baza de date");
       }
-      
-      toast.success("Imaginea a fost încărcată și salvată");
     } catch (error) {
       console.error("Error uploading image:", error);
       const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
@@ -378,15 +378,21 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       </div>
 
       {!storageAvailable && (
-        <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4">
-          <p className="font-bold">Atenție!</p>
+        <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4 rounded">
+          <p className="font-bold flex items-center gap-2">
+            <AlertCircle size={16} />
+            Atenție!
+          </p>
           <p>Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
         </div>
       )}
 
       {uploadError && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
-          <p className="font-bold">Eroare la încărcarea imaginii:</p>
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
+          <p className="font-bold flex items-center gap-2">
+            <AlertCircle size={16} />
+            Eroare la încărcarea imaginii:
+          </p>
           <p>{uploadError}</p>
         </div>
       )}
@@ -661,7 +667,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       </div>
 
       {isUploading && (
-        <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 w-64 z-50">
+        <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 w-64 z-50 border">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />

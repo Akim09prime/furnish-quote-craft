@@ -27,8 +27,8 @@ import {
   getDocs 
 } from "firebase/firestore";
 
-// Configurație Firebase implicită de test pentru dezvoltare
-// Va fi înlocuită cu configrația din env dacă este disponibilă
+// Default test config for development
+// Will be replaced with env config if available
 const defaultTestConfig = {
   apiKey: "AIzaSyAqtFRhz1O3ub5MGKjRx-5mtIrjmTNANfk",
   authDomain: "test-project.firebaseapp.com",
@@ -38,8 +38,8 @@ const defaultTestConfig = {
   appId: "1:123456789012:web:abc123def456ghi789jkl"
 };
 
-// Firebase configuration object - se va încerca folosirea variabilelor de mediu
-// Dacă nu sunt disponibile, se folosește configurația implicită de test
+// Firebase configuration object - try to use env vars
+// If not available, use default test config
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || defaultTestConfig.apiKey,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultTestConfig.authDomain,
@@ -49,11 +49,10 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultTestConfig.appId
 };
 
-// Inițializare Firebase
 console.log("Inițializare Firebase cu configurația:", 
   import.meta.env.VITE_FIREBASE_API_KEY ? "din variabile de mediu" : "implicită de test");
 
-// Initialize Firebase
+// Initialize Firebase services
 let app;
 let auth;
 let storage;
@@ -61,7 +60,6 @@ let googleProvider;
 let db;
 
 try {
-  // Inițializare Firebase
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   storage = getStorage(app);
@@ -74,7 +72,7 @@ try {
   // Keep variables undefined if initialization fails
 }
 
-// Helper function to upload product images
+// Simplified upload method for easier debugging
 export const uploadProductImage = async (
   imageFile: File | string, 
   imagePath: string,
@@ -85,76 +83,55 @@ export const uploadProductImage = async (
   }
   
   try {
-    console.log(`Uploading image to path: ${imagePath}`, typeof imageFile, imageFile instanceof File ? imageFile.type : 'string');
-    const storageReference = storageRef(storage, imagePath);
+    console.log(`Starting upload to path: ${imagePath}`);
+    const fileRef = storageRef(storage, imagePath);
     
-    let uploadTask: UploadTask;
-    
-    if (typeof imageFile === 'string') {
-      // Handle data URL
-      if (imageFile.startsWith('data:')) {
-        const mimeType = imageFile.split(';')[0].split(':')[1];
-        console.log("Data URL MIME type:", mimeType);
-        
-        const response = await fetch(imageFile);
-        const blob = await response.blob();
-        console.log("Converted blob:", blob.type, blob.size);
-        uploadTask = uploadBytesResumable(storageReference, blob);
-      } else {
-        throw new Error("Invalid image format: String is not a data URL");
-      }
+    // Convert string to blob if needed
+    let fileToUpload: Blob;
+    if (typeof imageFile === 'string' && imageFile.startsWith('data:')) {
+      const response = await fetch(imageFile);
+      fileToUpload = await response.blob();
+      console.log("Converted blob:", fileToUpload.type, fileToUpload.size);
     } else if (imageFile instanceof File) {
-      // Handle File object
-      console.log("File type:", imageFile.type, "File size:", imageFile.size);
-      
-      // Verificăm dacă tipul fișierului este permis
-      if (!imageFile.type.match(/image\/(jpeg|jpg|png|gif|webp)/i)) {
-        throw new Error(`Tip de fișier nepermis: ${imageFile.type}. Sunt acceptate doar imagini (jpg, png, gif, webp).`);
-      }
-      
-      // Crearea unui nou obiect File pentru a preveni probleme cu unele browsere
-      const newFile = new File([imageFile], imageFile.name, {
-        type: imageFile.type,
-        lastModified: imageFile.lastModified,
-      });
-      
-      console.log("Prepared file for upload:", newFile.name, newFile.type, newFile.size);
-      uploadTask = uploadBytesResumable(storageReference, newFile);
+      fileToUpload = imageFile;
+      console.log("Using file:", imageFile.name, imageFile.type, imageFile.size);
     } else {
-      throw new Error("Invalid image format: Must be a File object or data URL");
+      throw new Error("Invalid image format");
     }
     
-    // Return a promise that resolves with the download URL
+    // Create upload task
+    const uploadTask = uploadBytesResumable(fileRef, fileToUpload);
+    
+    // Monitor upload progress
     return new Promise((resolve, reject) => {
-      // Listen for upload progress
       uploadTask.on('state_changed', 
         (snapshot) => {
           const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          console.log(`Upload progress: ${progress}%`, snapshot.bytesTransferred, snapshot.totalBytes);
+          console.log(`Upload progress: ${progress}%`);
           if (onProgress) {
             onProgress(progress);
           }
         },
         (error) => {
-          console.error("Upload error:", error);
+          console.error("Upload error:", error.code, error.message);
           reject(error);
         },
         async () => {
+          // Upload completed successfully
+          console.log("Upload completed!");
           try {
-            // Get download URL after upload is complete
-            console.log("Upload completed successfully");
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log(`Image uploaded successfully. URL: ${downloadURL}`);
+            console.log("Download URL:", downloadURL);
             resolve(downloadURL);
-          } catch (error) {
-            console.error("Error getting download URL:", error);
-            reject(error);
+          } catch (urlError) {
+            console.error("Error getting download URL:", urlError);
+            reject(urlError);
           }
         }
       );
     });
   } catch (error) {
-    console.error("Error uploading image:", error);
+    console.error("Error in uploadProductImage:", error);
     throw error;
   }
 };
@@ -167,8 +144,8 @@ export const deleteProductImage = async (imagePath: string): Promise<void> => {
   
   try {
     console.log(`Deleting image at path: ${imagePath}`);
-    const storageReference = storageRef(storage, imagePath);
-    await deleteObject(storageReference);
+    const fileRef = storageRef(storage, imagePath);
+    await deleteObject(fileRef);
     console.log("Image deleted successfully");
   } catch (error) {
     console.error("Error deleting image:", error);
@@ -176,13 +153,11 @@ export const deleteProductImage = async (imagePath: string): Promise<void> => {
   }
 };
 
-// Validează cheia API Firebase
+// Validate Firebase API key
 export const validateFirebaseCredentials = async (): Promise<boolean> => {
   if (!auth) return false;
   
   try {
-    // Încercăm o operație simplă pentru a verifica dacă cheia API este validă
-    // Folosim getAuth() care va arunca o eroare dacă cheia API este invalidă
     await auth.app.options;
     console.log("Cheia API Firebase este validă");
     return true;

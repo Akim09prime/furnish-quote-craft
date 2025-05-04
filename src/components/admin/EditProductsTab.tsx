@@ -7,7 +7,8 @@ import AdminCategoryEditor from '@/components/AdminCategoryEditor';
 import { toast } from 'sonner';
 import { storage } from '@/lib/firebase';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface EditProductsTabProps {
   database: Database;
@@ -18,6 +19,7 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [storageAvailable, setStorageAvailable] = useState(false);
+  const [isCheckingStorage, setIsCheckingStorage] = useState(true);
 
   const category = database.categories.find(c => c.name === selectedCategory);
   const subcategory = category?.subcategories.find(s => s.name === selectedSubcategory);
@@ -29,26 +31,35 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
 
   // Check if Firebase Storage is initialized
   useEffect(() => {
-    const checkStorage = async () => {
-      try {
-        if (!storage) {
-          console.error("Firebase Storage nu este inițializat în EditProductsTab!");
-          toast.error("Eroare: Firebase Storage nu este disponibil");
-          setStorageAvailable(false);
-          return;
-        }
-        
-        console.log("Firebase Storage este disponibil în EditProductsTab");
-        setStorageAvailable(true);
-      } catch (error) {
-        console.error("Error checking Firebase Storage:", error);
-        toast.error("Eroare la verificarea Firebase Storage");
-        setStorageAvailable(false);
-      }
-    };
-    
-    checkStorage();
+    checkStorageAvailability();
   }, []);
+
+  const checkStorageAvailability = async () => {
+    setIsCheckingStorage(true);
+    try {
+      if (!storage) {
+        console.error("Firebase Storage nu este inițializat în EditProductsTab!");
+        toast.error("Eroare: Firebase Storage nu este disponibil");
+        setStorageAvailable(false);
+        return;
+      }
+      
+      // Test storage availability with a simple operation
+      const testRef = storage.ref ? storage.ref() : null;
+      if (!testRef) {
+        throw new Error("Nu se poate accesa referința Storage");
+      }
+      
+      console.log("Firebase Storage este disponibil în EditProductsTab");
+      setStorageAvailable(true);
+    } catch (error) {
+      console.error("Error checking Firebase Storage:", error);
+      toast.error("Eroare la verificarea Firebase Storage");
+      setStorageAvailable(false);
+    } finally {
+      setIsCheckingStorage(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -94,9 +105,18 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Atenție!</AlertTitle>
-          <AlertDescription>
-            Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.
-            Verificați consola pentru mai multe detalii.
+          <AlertDescription className="space-y-2">
+            <p>Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 flex items-center gap-1" 
+              onClick={checkStorageAvailability}
+              disabled={isCheckingStorage}
+            >
+              <RefreshCw className="h-3 w-3" />
+              {isCheckingStorage ? "Verificare..." : "Verifică din nou"}
+            </Button>
           </AlertDescription>
         </Alert>
       )}

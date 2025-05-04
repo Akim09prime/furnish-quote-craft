@@ -2,21 +2,10 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Check if user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Allow more permissive uploads for development/testing
-    match /users/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    
-    // Allow access to product images for all categories and subcategories
-    match /{categoryName}/{subcategoryName}/{allPaths=**} {
-      allow read: if true; // Public read access for product images
-      allow write: if true; // During development and testing
+    match /{allPaths=**} {
+      // Allow read/write access to all users during development
+      // WARNING: This is insecure and should be properly restricted in production
+      allow read, write;
     }
   }
 }
