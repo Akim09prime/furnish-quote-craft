@@ -24,6 +24,7 @@ const firebaseConfig = {
 
 // Log the API key (will appear in the console when the app initializes)
 console.log("Firebase API Key being used:", import.meta.env.VITE_FIREBASE_API_KEY.substring(0, 5) + "..." + import.meta.env.VITE_FIREBASE_API_KEY.substring(import.meta.env.VITE_FIREBASE_API_KEY.length - 5));
+console.log("Firebase API key:", import.meta.env.VITE_FIREBASE_API_KEY); // Added verification log
 
 // Initialize Firebase services
 const app = initializeApp(firebaseConfig);

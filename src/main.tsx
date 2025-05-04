@@ -8,6 +8,7 @@ console.log("=============================================");
 console.log("LOADING APPLICATION WITH ENVIRONMENT VARIABLES");
 console.log("=============================================");
 console.log("Firebase API Key loaded:", import.meta.env.VITE_FIREBASE_API_KEY ? "✅ Yes" : "❌ No");
+console.log("Firebase API Key value:", import.meta.env.VITE_FIREBASE_API_KEY); // Added verification log
 console.log("Build timestamp:", new Date().toISOString());
 console.log("=============================================");
 
