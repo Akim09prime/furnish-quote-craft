@@ -47,6 +47,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [storageAvailable, setStorageAvailable] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadTimeout, setUploadTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Reset products list when category or subcategory changes
@@ -157,6 +158,12 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     setIsUploading(false);
     setUploadingProductId(null);
     setUploadProgress(0);
+    
+    // Clear any existing timeout
+    if (uploadTimeout) {
+      clearTimeout(uploadTimeout);
+      setUploadTimeout(null);
+    }
     
     // Clear the file input to allow selecting the same file again
     if (fileInputRef.current) {
