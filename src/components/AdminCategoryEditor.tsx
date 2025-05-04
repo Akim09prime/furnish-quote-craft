@@ -42,6 +42,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [storageAvailable, setStorageAvailable] = useState(false);
 
   useEffect(() => {
     // Reset products list when category or subcategory changes
@@ -53,8 +54,10 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     if (!storage) {
       console.error("Firebase Storage nu este inițializat în AdminCategoryEditor!");
       toast.error("Eroare: Firebase Storage nu este disponibil");
+      setStorageAvailable(false);
     } else {
       console.log("Firebase Storage este disponibil în AdminCategoryEditor");
+      setStorageAvailable(true);
     }
   }, []);
 
@@ -138,6 +141,12 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       return;
     }
     
+    if (!storageAvailable) {
+      toast.error('Firebase Storage nu este disponibil. Încărcarea imaginilor nu este posibilă.');
+      setUploadingProductId(null);
+      return;
+    }
+    
     setIsUploading(true);
 
     try {
@@ -183,6 +192,11 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       return;
     }
 
+    if (selectedImage && !storageAvailable) {
+      toast.error('Firebase Storage nu este disponibil. Încărcarea imaginilor nu este posibilă.');
+      return;
+    }
+    
     setIsUploading(true);
     
     try {
@@ -191,11 +205,11 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       let imageUrl;
 
       // Upload image if available
-      if (selectedImage) {
+      if (selectedImage && storageAvailable) {
         console.log("Încărcare imagine pentru produsul nou:", selectedImage.name);
         imageUrl = await uploadProductImage(selectedImage, `product-${tempProductId}`);
         console.log("Imagine încărcată cu succes, URL:", imageUrl);
-      } else if (previewUrl) {
+      } else if (previewUrl && storageAvailable) {
         // If we have a preview URL (from a data URL), upload it
         console.log("Încărcare imagine din data URL pentru produsul nou");
         imageUrl = await uploadProductImage(previewUrl, `product-${tempProductId}`);
@@ -231,7 +245,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const handleDeleteProduct = (productId: string) => {
     // First try to delete the image if it exists
     const product = products.find(p => p.id === productId);
-    if (product?.imageUrl) {
+    if (product?.imageUrl && storageAvailable) {
       deleteProductImage(productId).catch(err => {
         console.error("Failed to delete product image:", err);
       });
@@ -260,6 +274,13 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
           </Button>
         </div>
       </div>
+
+      {!storageAvailable && (
+        <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4">
+          <p className="font-bold">Atenție!</p>
+          <p>Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
+        </div>
+      )}
 
       {/* Hidden file input for image uploads */}
       <input
@@ -298,6 +319,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                   accept="image/*"
                   onChange={handleImageChange}
                   className="flex-1"
+                  disabled={!storageAvailable}
                 />
               </div>
               {previewUrl && (
@@ -311,6 +333,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
               )}
             </div>
 
+            {/* Add other fields */}
             {subcategory.fields.map(field => (
               <div key={field.name} className="space-y-2">
                 <label className="text-sm font-medium">{field.name}</label>
@@ -420,6 +443,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                             variant="outline" 
                             size="sm"
                             onClick={() => handleProductImageChange(product)} 
+                            disabled={!storageAvailable}
                             className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-black/50 rounded-md text-white"
                           >
                             <Upload size={16} />
@@ -430,7 +454,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                           variant="outline" 
                           size="sm"
                           onClick={() => handleProductImageChange(product)} 
-                          disabled={isUploading && uploadingProductId === product.id}
+                          disabled={isUploading && uploadingProductId === product.id || !storageAvailable}
                           className="h-12 w-12 flex items-center justify-center"
                         >
                           {isUploading && uploadingProductId === product.id ? (
@@ -458,6 +482,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                     />
                   </TableCell>
                   
+                  {/* Other fields */}
                   {subcategory.fields.map(field => (
                     <TableCell key={field.name}>
                       {field.type === 'select' && field.options && (

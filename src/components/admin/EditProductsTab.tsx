@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +15,7 @@ interface EditProductsTabProps {
 const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseUpdate }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [storageAvailable, setStorageAvailable] = useState(false);
 
   const category = database.categories.find(c => c.name === selectedCategory);
   const subcategory = category?.subcategories.find(s => s.name === selectedSubcategory);
@@ -25,10 +26,16 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
   };
 
   // Check if Firebase Storage is initialized
-  if (!storage) {
-    console.error("Firebase Storage nu este inițializat în EditProductsTab!");
-    toast.error("Eroare: Firebase Storage nu este disponibil");
-  }
+  useEffect(() => {
+    if (!storage) {
+      console.error("Firebase Storage nu este inițializat în EditProductsTab!");
+      toast.error("Eroare: Firebase Storage nu este disponibil");
+      setStorageAvailable(false);
+    } else {
+      console.log("Firebase Storage este disponibil în EditProductsTab");
+      setStorageAvailable(true);
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -69,6 +76,13 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
           </Select>
         </div>
       </div>
+
+      {!storageAvailable && (
+        <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4">
+          <p className="font-bold">Atenție!</p>
+          <p>Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
+        </div>
+      )}
 
       {category && subcategory ? (
         <AdminCategoryEditor 
