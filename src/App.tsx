@@ -37,7 +37,7 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-  // Simplul component pentru a proteja rutele
+  // Simple component to protect routes
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (isLoading) return <div>Încărcare...</div>;
     
