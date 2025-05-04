@@ -45,5 +45,7 @@ export {
   createUserWithEmailAndPassword,
   signInWithPopup,
   googleProvider,
-  facebookProvider
+  facebookProvider,
+  onAuthStateChanged,
+  User
 };
