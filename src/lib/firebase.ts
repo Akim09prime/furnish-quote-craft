@@ -7,13 +7,13 @@ import { toast } from "sonner";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID,
-  measurementId: import.meta.env.VITE_MEASUREMENT_ID
+  apiKey: "AIzaSyAqtFRhZ1o3ub5MGkjRx-5mtIrjmTNANKf",
+  authDomain: "mail-63f7e.firebaseapp.com",
+  projectId: "mail-63f7e",
+  storageBucket: "mail-63f7e.appspot.com",
+  messagingSenderId: "367987796071",
+  appId: "1:367987796071:web:ed2cda80af01f49a9e0cc2",
+  measurementId: "G-RZ7BXEF429"
 };
 
 // Log environment variables for debugging (will be stripped in production)
