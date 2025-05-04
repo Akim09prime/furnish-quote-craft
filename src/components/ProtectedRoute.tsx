@@ -26,9 +26,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
   
+  // Verificare dacă utilizatorul este autentificat
   if (!currentUser) {
+    console.log("Utilizator neautentificat, redirecționare către pagina de login");
     return <Navigate to="/login" replace />;
   }
+  
+  console.log("Utilizator autentificat:", currentUser.email);
   
   // In this simplified version we don't check for admin role
   // All authenticated users have access

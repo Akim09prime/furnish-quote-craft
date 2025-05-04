@@ -5,12 +5,16 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   User,
-  onAuthStateChanged
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signInWithPopup
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Firebase configuration
+// NOTĂ: Această configurație ar trebui să corespundă proiectului dvs. Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBqqK6ajS6FWM6uBwDl2nWI_ZoGEokhSZQ",
   authDomain: "mail-63f7e.firebaseapp.com",
@@ -27,11 +31,18 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
+// Auth providers
+const googleProvider = new GoogleAuthProvider();
+const facebookProvider = new FacebookAuthProvider();
+
 export {
   app,
   auth,
   db,
   storage,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  googleProvider,
+  facebookProvider
 };

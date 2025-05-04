@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,6 +56,9 @@ const LoginPage = () => {
         errorMessage = "Credențiale invalide. Verificați emailul și parola.";
       } else if (error.code === "auth/network-request-failed") {
         errorMessage = "Problemă de conexiune la rețea. Verificați conexiunea internet.";
+      } else if (error.code === "auth/api-key-not-valid") {
+        errorMessage = "Cheie API Firebase invalidă. Contactați administratorul.";
+        console.error("Eroare configurare Firebase - Cheie API invalidă");
       } else {
         errorMessage = `Eroare: ${error.message || error.code || "Necunoscut"}`;
       }
@@ -106,6 +108,9 @@ const LoginPage = () => {
         errorMessage = "Adresa de email este invalidă";
       } else if (error.code === "auth/weak-password") {
         errorMessage = "Parola este prea slabă";
+      } else if (error.code === "auth/api-key-not-valid") {
+        errorMessage = "Cheie API Firebase invalidă. Contactați administratorul.";
+        console.error("Eroare configurare Firebase - Cheie API invalidă", error);
       } else {
         errorMessage = `Eroare: ${error.message || error.code || "Necunoscut"}`;
       }
