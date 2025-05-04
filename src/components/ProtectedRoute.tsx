@@ -4,6 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { auth, onAuthStateChanged, type User } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import FirebaseSetupInstructions from './FirebaseSetupInstructions';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,22 +13,38 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [firebaseError, setFirebaseError] = useState<string | null>(null);
   const location = useLocation();
   
   useEffect(() => {
     console.log("ProtectedRoute: Verificare stare autentificare...");
     
-    // Ascultător pentru schimbări de stare autentificare
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("ProtectedRoute: Stare autentificare schimbată:", user ? "Autentificat" : "Neautentificat");
-      setCurrentUser(user);
+    // Check if Firebase auth is initialized
+    if (!auth) {
+      console.error("ProtectedRoute: Firebase Auth nu a fost inițializat corect");
+      setFirebaseError("Firebase Auth nu a fost inițializat corect");
       setIsLoading(false);
-      
-      if (!user) {
-        console.log("ProtectedRoute: Utilizator neautentificat");
-        toast.error("Trebuie să fiți autentificat pentru a accesa această pagină");
+      return () => {};
+    }
+    
+    // Ascultător pentru schimbări de stare autentificare
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
+        console.log("ProtectedRoute: Stare autentificare schimbată:", user ? "Autentificat" : "Neautentificat");
+        setCurrentUser(user);
+        setIsLoading(false);
+        
+        if (!user) {
+          console.log("ProtectedRoute: Utilizator neautentificat");
+          toast.error("Trebuie să fiți autentificat pentru a accesa această pagină");
+        }
+      },
+      (error) => {
+        console.error("ProtectedRoute: Eroare la verificarea autentificării:", error);
+        setFirebaseError(error.message);
+        setIsLoading(false);
       }
-    });
+    );
     
     // Curățare ascultător la demontare
     return () => {
@@ -45,6 +62,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         </div>
       </div>
     );
+  }
+  
+  if (firebaseError) {
+    return <FirebaseSetupInstructions />;
   }
   
   if (!currentUser) {

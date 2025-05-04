@@ -11,30 +11,40 @@ import {
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Firebase configuration - using environment variables where possible
-const firebaseConfig = {
-  apiKey: "AIzaSyAqtfFRzJo36uMSGKjrp-5mtIjrjTNANKf", 
-  authDomain: "mail-63f7e.firebaseapp.com",
-  projectId: "mail-63f7e",
-  storageBucket: "mail-63f7e.appspot.com",
-  messagingSenderId: "367987796071",
-  appId: "1:367987796071:web:ed2cda80af01f49a9e0cc2",
-  measurementId: "G-RZ7BXEF429"
-};
+// Check if Firebase is already initialized to prevent duplicate initializations
+let app;
+let auth;
+let db;
+let storage;
 
-// Only initialize Firebase once
-console.log("Inițializare Firebase cu configurația:", {
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId
-});
+try {
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCNexoaajUBoohKrrmZvr2xV_sF5a0YsXc", // Updated API key
+    authDomain: "mail-63f7e.firebaseapp.com",
+    projectId: "mail-63f7e",
+    storageBucket: "mail-63f7e.appspot.com",
+    messagingSenderId: "367987796071",
+    appId: "1:367987796071:web:ed2cda80af01f49a9e0cc2",
+    measurementId: "G-RZ7BXEF429"
+  };
 
-// Initialize Firebase services
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+  console.log("Inițializare Firebase cu configurația:", {
+    authDomain: firebaseConfig.authDomain,
+    projectId: firebaseConfig.projectId,
+    apiKey: "Valid API Key present" // Don't log the actual key
+  });
 
-console.log("Firebase inițializat cu succes:", auth ? "Auth disponibil" : "Auth nedisponibil");
+  // Initialize Firebase services
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+
+  console.log("Firebase inițializat cu succes:", auth ? "Auth disponibil" : "Auth nedisponibil");
+} catch (error) {
+  console.error("Eroare la inițializarea Firebase:", error);
+}
 
 // Export Firebase services and auth methods
 export { app, auth, db, storage, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut };

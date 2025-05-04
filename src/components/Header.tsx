@@ -16,11 +16,24 @@ const Header: React.FC = () => {
   // Monitorizare stare autentificare
   useEffect(() => {
     console.log("Header: Verificare stare autentificare...");
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Header: Stare autentificare:", user ? "Autentificat" : "Neautentificat");
-      setIsLoggedIn(!!user);
+    
+    if (!auth) {
+      console.error("Header: Firebase Auth nu a fost inițializat corect");
       setIsAuthInitialized(true);
-    });
+      return () => {};
+    }
+    
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
+        console.log("Header: Stare autentificare:", user ? "Autentificat" : "Neautentificat");
+        setIsLoggedIn(!!user);
+        setIsAuthInitialized(true);
+      },
+      (error) => {
+        console.error("Header: Eroare la verificarea autentificării:", error);
+        setIsAuthInitialized(true);
+      }
+    );
     
     return () => {
       console.log("Header: Curățare ascultător");
@@ -30,6 +43,11 @@ const Header: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      if (!auth) {
+        toast.error("Firebase Auth nu este disponibil");
+        return;
+      }
+      
       console.log("Header: Deconectare în curs...");
       await signOut(auth);
       console.log("Header: Deconectare reușită");
