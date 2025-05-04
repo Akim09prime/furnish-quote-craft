@@ -11,20 +11,20 @@ import {
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Firebase configuration from environment variables
+// Firebase configuration - hardcoded temporarily to fix the issue
+// IMPORTANT: In production, these should be moved to environment variables
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyAqtfFRzJo36uMSGKjrp-5mtIjrjTNANKf",
+  authDomain: "mail-63f7e.firebaseapp.com",
+  projectId: "mail-63f7e",
+  storageBucket: "mail-63f7e.appspot.com",
+  messagingSenderId: "367987796071",
+  appId: "1:367987796071:web:ed2cda80af01f49a9e0cc2",
+  measurementId: "G-RZ7BXEF429"
 };
 
 // Log the API key (will appear in the console when the app initializes)
-console.log("Firebase API Key being used:", import.meta.env.VITE_FIREBASE_API_KEY.substring(0, 5) + "..." + import.meta.env.VITE_FIREBASE_API_KEY.substring(import.meta.env.VITE_FIREBASE_API_KEY.length - 5));
-console.log("Firebase API key:", import.meta.env.VITE_FIREBASE_API_KEY); // Added verification log
+console.log("Firebase API Key being used:", firebaseConfig.apiKey.substring(0, 5) + "..." + firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5));
 
 // Initialize Firebase services
 const app = initializeApp(firebaseConfig);
