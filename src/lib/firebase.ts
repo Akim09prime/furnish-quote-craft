@@ -24,6 +24,8 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
+console.log("Initializing Firebase with config:", { ...firebaseConfig, apiKey: "HIDDEN" });
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);

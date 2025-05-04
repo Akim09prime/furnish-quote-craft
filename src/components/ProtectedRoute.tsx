@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { auth } from '@/lib/firebase';
+import { auth, onAuthStateChanged } from '@/lib/firebase';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,10 +12,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   adminOnly = true
 }) => {
-  const currentUser = auth.currentUser;
+  const [currentUser, setCurrentUser] = useState<User | null | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Simple loading state
-  const isLoading = false; // We're not tracking loading state in this simplified version
+  useEffect(() => {
+    console.log("Setting up auth state listener in ProtectedRoute");
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Auth state changed:", user ? `User ${user.email}` : "No user");
+      setCurrentUser(user);
+      setIsLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, []);
   
   if (isLoading) {
     return (

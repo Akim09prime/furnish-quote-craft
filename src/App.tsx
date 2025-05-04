@@ -10,9 +10,9 @@ import Database from "./pages/Database";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import FirebaseSetup from "./pages/FirebaseSetup";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./lib/firebase";
 import { useState, useEffect } from "react";
+import { auth, onAuthStateChanged } from "./lib/firebase";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Create a new QueryClient
 const queryClient = new QueryClient({
@@ -29,24 +29,15 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log("Setting up auth state listener in App");
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Auth state changed in App:", user ? `User ${user.email}` : "No user");
       setCurrentUser(user);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
-
-  // Simple component to protect routes
-  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (isLoading) return <div>Încărcare...</div>;
-    
-    if (!currentUser) {
-      return <LoginPage />;
-    }
-    
-    return <>{children}</>;
-  };
 
   return (
     <QueryClientProvider client={queryClient}>
