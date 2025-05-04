@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import QuoteDetailsDrawer from './QuoteDetailsDrawer';
 import QuoteMetadataDialog from './QuoteMetadataDialog';
-import { Eye, Printer } from 'lucide-react';
+import { Eye, Printer, Building } from 'lucide-react';
 
 interface QuoteSummaryProps {
   quote: Quote;
@@ -61,9 +61,9 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
 
   return (
     <>
-      <Card className="bg-white print:shadow-none">
+      <Card className="bg-white shadow-md rounded-xl animate-fade-in print:shadow-none">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl">
+          <CardTitle className="text-xl font-semibold tracking-tight">
             Sumar Ofertă {quoteType === 'internal' ? '(Intern)' : '(Client)'}
           </CardTitle>
         </CardHeader>
@@ -110,13 +110,16 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
               <div className="mt-6 print:hidden space-y-2">
                 <Button 
                   onClick={handleViewDetails}
-                  className="w-full mb-2"
+                  className="w-full mb-2 transition-all duration-200 hover:scale-[1.02]"
                   variant="outline"
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   Vezi Oferta Finală
                 </Button>
-                <Button onClick={handlePrint} className="w-full">
+                <Button 
+                  onClick={handlePrint} 
+                  className="w-full transition-all duration-200 hover:scale-[1.02]"
+                >
                   <Printer className="mr-2 h-4 w-4" />
                   Printează Oferta
                 </Button>
@@ -124,11 +127,92 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
             </>
           )}
           
-          {/* Display quote metadata if available - visible in print mode */}
-          <div className="hidden print:block mt-4 text-center">
-            {quote.title && <h3 className="text-xl font-bold">{quote.title}</h3>}
-            {quote.beneficiary && <p className="text-md">Client: {quote.beneficiary}</p>}
-            <p className="text-md">Data: {new Date().toLocaleDateString('ro-RO')}</p>
+          {/* Print page styling for the quote - visible only in print mode */}
+          <div className="hidden print:block">
+            <div className="quote-print-header">
+              <div className="logo-placeholder">
+                <div className="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center">
+                  <Building size={32} className="text-gray-400" />
+                </div>
+              </div>
+              <div className="business-info text-right">
+                <h3 className="font-bold text-lg">FurnishQuoteCraft SRL</h3>
+                <p>office@furnishquote.com</p>
+                <p>+40 722 123 456</p>
+              </div>
+            </div>
+            
+            <div className="quote-print-title">
+              {quote.title || "Ofertă Mobilier"}
+            </div>
+            
+            <div className="quote-client-info">
+              <p><strong>Client:</strong> {quote.beneficiary || "Client"}</p>
+              <p><strong>Data:</strong> {new Date().toLocaleDateString('ro-RO')}</p>
+              <p><strong>Nr. Ofertă:</strong> {Math.floor(Math.random() * 10000)}</p>
+            </div>
+            
+            <table className="quote-print-table">
+              <thead>
+                <tr>
+                  <th>Nr.</th>
+                  <th>Produs</th>
+                  <th>Descriere</th>
+                  <th>Cantitate</th>
+                  {quoteType === 'internal' && <th>Preț/buc</th>}
+                  {quoteType === 'internal' && <th>Total</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {quote.items.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>{index + 1}</td>
+                    <td>{item.categoryName}</td>
+                    <td>
+                      {Object.entries(item.productDetails)
+                        .filter(([key]) => !['id', 'cod', 'pret'].includes(key) && typeof item.productDetails[key] !== 'object')
+                        .map(([key, value]) => (
+                          <div key={key}>
+                            {quoteType === 'internal' ? (
+                              <><span className="font-medium">{key}:</span> {String(value)}</>
+                            ) : (
+                              <>{String(value)}</>
+                            )}
+                          </div>
+                        ))}
+                    </td>
+                    <td>{item.quantity}</td>
+                    {quoteType === 'internal' && <td>{item.pricePerUnit.toFixed(2)} RON</td>}
+                    {quoteType === 'internal' && <td>{item.total.toFixed(2)} RON</td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            <div className="quote-print-summary">
+              <table className="quote-print-summary-table">
+                <tbody>
+                  <tr>
+                    <td className="font-medium">Subtotal:</td>
+                    <td>{quote.subtotal.toFixed(2)} RON</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Manoperă ({quote.laborPercentage}%):</td>
+                    <td>{quote.laborCost.toFixed(2)} RON</td>
+                  </tr>
+                  <tr className="font-bold">
+                    <td>Total:</td>
+                    <td>{quote.total.toFixed(2)} RON</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="quote-print-footer">
+              <p>Vă mulțumim pentru încrederea acordată!</p>
+              <p>www.furnishquotecraft.ro | office@furnishquotecraft.ro | +40 722 123 456</p>
+              <p>Oferta este valabilă 30 de zile de la data emiterii.</p>
+            </div>
           </div>
         </CardContent>
       </Card>
