@@ -12,19 +12,42 @@ const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOU
  */
 export const checkCloudinaryAvailability = async (): Promise<boolean> => {
   try {
-    // În loc să folosim endpoint-ul /ping care poate fi blocat de CORS,
-    // vom folosi o abordare alternativă verificând dacă putem accesa
-    // resurse publice de la Cloudinary
-    const response = await fetch(
-      `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/v1/sample.jpg`,
-      { method: 'HEAD', mode: 'no-cors' }
-    );
+    // Verificăm dacă putem accesa endpoint-ul de upload făcând un request OPTIONS
+    // care ar trebui să returneze CORS headers dacă API-ul este disponibil și configurat corect
+    const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+      method: 'OPTIONS',
+    });
     
-    // Dacă ajungem aici, înseamnă că serverul Cloudinary este accesibil
-    // response.ok va fi undefined din cauza no-cors, dar abordăm asta
-    return true;
+    // Pentru a verifica și configurarea upload preset-ului, facem o cerere de test minimală
+    // care va eșua cu un mesaj specific dacă upload preset-ul nu există sau nu este configurat ca unsigned
+    const testFormData = new FormData();
+    testFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    // Adăugăm un blob mic de text în loc de o imagine pentru a minimiza transferul
+    const smallBlob = new Blob(['test'], { type: 'text/plain' });
+    testFormData.append('file', smallBlob, 'test.txt');
+    
+    const uploadResponse = await fetch(CLOUDINARY_UPLOAD_URL, {
+      method: 'POST',
+      body: testFormData,
+    });
+    
+    const result = await uploadResponse.json();
+    
+    if (result.error) {
+      console.error('Cloudinary test upload failed:', result.error);
+      // Verificăm dacă eroarea este din cauza unui preset invalid
+      if (result.error.message.includes('Unknown API key') || 
+          result.error.message.includes('Invalid upload preset') ||
+          result.error.message.includes('not found')) {
+        return false;
+      }
+    }
+    
+    // Dacă nu am primit o eroare despre upload preset sau am fost autorizați, 
+    // înseamnă că API-ul este disponibil
+    return response.ok || uploadResponse.ok || result.secure_url !== undefined;
   } catch (error) {
-    console.error('Eroare la verificarea Cloudinary:', error);
+    console.error('Eroare la verificarea disponibilității Cloudinary:', error);
     return false;
   }
 };

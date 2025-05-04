@@ -37,7 +37,7 @@ const Admin = () => {
         });
       } else {
         console.error("Cloudinary API nu răspunde cum trebuie");
-        toast.error("Cloudinary API nu răspunde cum trebuie. Verificați dacă upload preset-ul 'default_upload' există și este configurat ca 'unsigned'.", {
+        toast.error("Cloudinary API nu răspunde cum trebuie. Verificați dacă cloud name-ul 'velmyra' și upload preset-ul 'default_upload' sunt corecte și dacă preset-ul este configurat ca 'unsigned'.", {
           duration: 5000
         });
       }

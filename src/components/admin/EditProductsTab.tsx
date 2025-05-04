@@ -46,7 +46,7 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
         toast.success("Cloudinary API este disponibil");
       } else {
         console.error("Cloudinary API nu este disponibil");
-        toast.error("Eroare: Cloudinary API nu este disponibil. Verificați dacă upload preset-ul 'default_upload' există și este configurat ca 'unsigned'.");
+        toast.error("Eroare: Cloudinary API nu este disponibil. Verificați dacă cloud name-ul 'velmyra' și upload preset-ul 'default_upload' există și dacă preset-ul este configurat ca 'unsigned'.");
       }
     } catch (error) {
       console.error("Eroare la verificarea Cloudinary:", error);
@@ -108,6 +108,7 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
               <li>Cloud name-ul este corect: 'velmyra'</li>
               <li>Upload preset-ul 'default_upload' există în contul Cloudinary</li>
               <li>Upload preset-ul este configurat ca 'unsigned'</li>
+              <li>Eroare specifică: "Unknown API key" - Verificați dacă cloud name-ul și/sau upload preset-ul sunt corecte</li>
             </ul>
             <Button 
               variant="outline" 
