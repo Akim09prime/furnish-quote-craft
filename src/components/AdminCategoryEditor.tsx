@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
@@ -15,9 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Save, Trash2, Upload, Image, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { PlusCircle, Save, Trash2, Upload, Image, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadProductImage, deleteProductImage, storage } from '@/lib/firebase';
+import { uploadProductImage, deleteProductImage } from '@/lib/cloudinary';
 import { Progress } from "@/components/ui/progress";
 
 interface AdminCategoryEditorProps {
@@ -45,7 +44,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const newImageInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [storageAvailable, setStorageAvailable] = useState(false);
+  const [cloudinaryAvailable, setCloudinaryAvailable] = useState(true);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadTimeout, setUploadTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -54,29 +53,6 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     // Reset products list when category or subcategory changes
     setProducts([...subcategory.products]);
   }, [subcategory]);
-
-  // Verify Firebase Storage is available
-  useEffect(() => {
-    const checkStorage = async () => {
-      try {
-        if (!storage) {
-          console.error("Firebase Storage nu este inițializat în AdminCategoryEditor!");
-          toast.error("Eroare: Firebase Storage nu este disponibil");
-          setStorageAvailable(false);
-          return;
-        }
-        
-        console.log("Firebase Storage este disponibil în AdminCategoryEditor");
-        setStorageAvailable(true);
-      } catch (error) {
-        console.error("Error checking Firebase Storage:", error);
-        toast.error("Eroare la verificarea Firebase Storage");
-        setStorageAvailable(false);
-      }
-    };
-    
-    checkStorage();
-  }, []);
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -190,8 +166,8 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
 
     console.log("Selected image for product:", file.name, file.type, file.size);
     
-    if (!storageAvailable) {
-      toast.error('Firebase Storage nu este disponibil. Încărcarea imaginilor nu este posibilă.');
+    if (!cloudinaryAvailable) {
+      toast.error('Cloudinary API nu este disponibil. Încărcarea imaginilor nu este posibilă.');
       resetUploadState();
       return;
     }
@@ -203,16 +179,13 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     try {
       toast.info("Încărcare imagine...", { id: "upload-toast" });
       
-      // Create a unique path for the image - simplified to avoid any path issues
-      const timestamp = Date.now();
-      const imagePath = `products/${timestamp}-${file.name}`;
+      // Folder pentru organizarea imaginilor în Cloudinary
+      const folder = `furniture-app/${category.name}/${subcategory.name}`;
       
-      console.log(`Using simplified image path: ${imagePath}`);
-      
-      // Upload image with progress tracking
+      // Încărcăm imaginea în Cloudinary
       const imageUrl = await uploadProductImage(
         file, 
-        imagePath,
+        folder,
         (progress) => {
           console.log(`Upload progress update: ${progress}%`);
           setUploadProgress(progress);
@@ -261,8 +234,8 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       return;
     }
 
-    if (selectedImage && !storageAvailable) {
-      toast.error('Firebase Storage nu este disponibil. Încărcarea imaginilor nu este posibilă.');
+    if (selectedImage && !cloudinaryAvailable) {
+      toast.error('Cloudinary API nu este disponibil. Încărcarea imaginilor nu este posibilă.');
       return;
     }
     
@@ -275,17 +248,16 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       let imageUrl;
 
       // Upload image if available
-      if (selectedImage && storageAvailable) {
+      if (selectedImage && cloudinaryAvailable) {
         console.log("Încărcare imagine pentru produsul nou:", selectedImage.name);
         toast.info("Încărcare imagine pentru produs nou...");
         
-        // Create a unique path for the image to avoid caching issues
-        const timestamp = Date.now();
-        const imagePath = `${category.name}/${subcategory.name}/${timestamp}-new-product-${tempProductId}`;
+        // Folder pentru organizarea imaginilor în Cloudinary
+        const folder = `furniture-app/${category.name}/${subcategory.name}`;
         
         imageUrl = await uploadProductImage(
           selectedImage, 
-          imagePath,
+          folder,
           (progress) => {
             setUploadProgress(progress);
           }
@@ -332,16 +304,21 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     try {
       // First try to delete the image if it exists
       const product = products.find(p => p.id === productId);
-      if (product?.imageUrl && storageAvailable) {
+      if (product?.imageUrl && cloudinaryAvailable) {
         toast.info("Ștergere imagine...");
         
-        // Extract the path from the URL
-        const urlParts = product.imageUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1].split('?')[0];
-        const imagePath = `${category.name}/${subcategory.name}/${fileName}`;
-        
+        // Extract the public_id from the URL
+        // Cloudinary URLs tipic au formatul: https://res.cloudinary.com/cloud_name/image/upload/v123456789/folder/file.jpg
+        // Ne interesează folder/file.jpg ca public_id
         try {
-          await deleteProductImage(imagePath);
+          const urlObj = new URL(product.imageUrl);
+          const pathParts = urlObj.pathname.split('/');
+          // Eliminăm primele 3 componente: "", "image", "upload" și posibil versiunea "v12345"
+          const relevantParts = pathParts.slice(3);
+          // Combinăm părțile rămase pentru a obține public_id
+          const publicId = relevantParts.join('/').replace(/\.\w+$/, ''); // Îndepărtăm extensia
+          
+          await deleteProductImage(publicId);
           console.log("Product image deleted successfully");
         } catch (imageError) {
           console.error("Failed to delete product image:", imageError);
@@ -377,13 +354,13 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         </div>
       </div>
 
-      {!storageAvailable && (
+      {!cloudinaryAvailable && (
         <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4 rounded">
           <p className="font-bold flex items-center gap-2">
             <AlertCircle size={16} />
             Atenție!
           </p>
-          <p>Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
+          <p>Cloudinary API nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
         </div>
       )}
 
@@ -436,7 +413,6 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                   accept="image/*"
                   onChange={handleImageChange}
                   className="flex-1"
-                  disabled={!storageAvailable}
                 />
               </div>
               {previewUrl && (
@@ -552,7 +528,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                       {product.imageUrl ? (
                         <div className="relative group">
                           <img 
-                            src={`${product.imageUrl}?t=${Date.now()}`} 
+                            src={`${product.imageUrl}`} 
                             alt={product.cod} 
                             className="h-12 w-12 object-cover rounded-md"
                             onError={(e) => {
@@ -563,8 +539,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleProductImageChange(product)} 
-                            disabled={!storageAvailable || isUploading}
+                            onClick={() => handleProductImageChange(product)}
                             className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-black/50 rounded-md text-white"
                           >
                             {isUploading && uploadingProductId === product.id ? (
@@ -578,8 +553,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleProductImageChange(product)} 
-                          disabled={isUploading || !storageAvailable}
+                          onClick={() => handleProductImageChange(product)}
                           className="h-12 w-12 flex items-center justify-center"
                         >
                           {isUploading && uploadingProductId === product.id ? (
@@ -680,7 +654,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
               className="h-6 w-6 p-0"
             >
               <span className="sr-only">Anulează</span>
-              <RefreshCw size={14} className="text-red-500" />
+              <Trash2 size={14} className="text-red-500" />
             </Button>
           </div>
           <Progress value={uploadProgress} className="h-2" />

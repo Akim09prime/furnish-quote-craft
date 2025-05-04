@@ -7,13 +7,10 @@ import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { validateFirebaseCredentials, app } from '@/lib/firebase';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [firebaseValid, setFirebaseValid] = useState(true);
 
   const loadDatabaseData = () => {
     setIsLoading(true);
@@ -23,35 +20,31 @@ const Admin = () => {
   };
 
   useEffect(() => {
-    // Initialize Firebase if needed
-    if (!app) {
-      console.error("Firebase app is not initialized in Admin component");
-      setFirebaseValid(false);
-      toast.error("Firebase nu este inițializat corect. Verificați consola pentru detalii.", {
-        duration: 10000
-      });
-    }
-    
-    // Check Firebase credentials
-    const checkFirebase = async () => {
-      const isValid = await validateFirebaseCredentials();
-      console.log("Firebase credentials validation result:", isValid);
-      setFirebaseValid(isValid);
+    loadDatabaseData();
+    // Verificare Cloudinary (opțional)
+    checkCloudinary();
+  }, []);
+  
+  const checkCloudinary = async () => {
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/velmyra/ping`);
       
-      if (!isValid) {
-        toast.error("Configurația Firebase nu este validă. Verificați variabilele de mediu. Folosim configurația de test.", {
-          duration: 10000
-        });
-      } else {
-        toast.success("Configurația Firebase este validă!", {
+      if (response.status === 200) {
+        toast.success("Cloudinary API este disponibil", {
           duration: 3000
         });
+      } else {
+        toast.error("Cloudinary API nu răspunde cum trebuie", {
+          duration: 5000
+        });
       }
-    };
-    
-    checkFirebase();
-    loadDatabaseData();
-  }, []);
+    } catch (error) {
+      console.error("Eroare la verificarea Cloudinary:", error);
+      toast.error("Nu se poate accesa Cloudinary API", {
+        duration: 5000
+      });
+    }
+  };
 
   const handleDatabaseUpdate = (updatedDb: Database) => {
     try {
@@ -103,16 +96,6 @@ const Admin = () => {
             Reset la valorile inițiale
           </Button>
         </div>
-        
-        {!firebaseValid && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertTitle>Atenție: Firebase folosește configurația implicită!</AlertTitle>
-            <AlertDescription>
-              Configurația Firebase folosește chei de test. Încărcarea imaginilor va funcționa, dar nu pentru o aplicație de producție. 
-              Verificați documentația pentru a configura Firebase corect.
-            </AlertDescription>
-          </Alert>
-        )}
         
         <AdminPanel database={database} onDatabaseUpdate={handleDatabaseUpdate} />
       </div>
