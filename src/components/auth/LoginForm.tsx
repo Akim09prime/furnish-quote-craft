@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, LogIn } from 'lucide-react';
-import { login } from '@/services/AuthService';
+import { Mail, Lock, LogIn, KeyRound } from 'lucide-react';
+import { login, sendPasswordResetEmail } from '@/services/AuthService';
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from 'sonner';
 
 interface LoginFormProps {
   email: string;
@@ -24,6 +26,19 @@ const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Load saved email from localStorage on component mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    const rememberMeSetting = localStorage.getItem('rememberMe') === 'true';
+    
+    if (savedEmail && rememberMeSetting) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, [setEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +54,41 @@ const LoginForm: React.FC<LoginFormProps> = ({
     
     try {
       await login(email, password);
+      
+      // Save email if remember me is checked
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberMe');
+      }
+      
       onSuccess();
     } catch (error: any) {
       setAuthError(error.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setAuthError("Vă rugăm să introduceți adresa de email pentru resetarea parolei");
+      return;
+    }
+
+    setIsResettingPassword(true);
+    
+    try {
+      await sendPasswordResetEmail(email);
+      toast.success("Email de resetare trimis", {
+        description: "Verificați căsuța de email pentru instrucțiuni",
+      });
+    } catch (error: any) {
+      setAuthError(error.message);
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -66,7 +111,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           placeholder="exemplu@email.com" 
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isResettingPassword}
         />
       </div>
       
@@ -81,14 +126,41 @@ const LoginForm: React.FC<LoginFormProps> = ({
           placeholder="••••••••" 
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isResettingPassword}
         />
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="remember-me" 
+            checked={rememberMe}
+            onCheckedChange={(checked) => setRememberMe(checked === true)}
+          />
+          <label
+            htmlFor="remember-me"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Ține-mă minte
+          </label>
+        </div>
+        
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="sm" 
+          className="text-sm text-blue-600 hover:text-blue-800"
+          onClick={handleForgotPassword}
+          disabled={isSubmitting || isResettingPassword}
+        >
+          {isResettingPassword ? 'Se trimite...' : 'Am uitat parola'}
+        </Button>
       </div>
       
       <Button 
         type="submit" 
         className="w-full flex items-center justify-center gap-2" 
-        disabled={isSubmitting}
+        disabled={isSubmitting || isResettingPassword}
       >
         {isSubmitting ? (
           <span className="flex items-center">

@@ -1,10 +1,10 @@
-
 import { 
   auth, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
   type User
 } from '@/lib/firebase';
 
@@ -18,6 +18,8 @@ const errorMessages = {
   'auth/invalid-email': 'Adresa de email este invalidă',
   'auth/weak-password': 'Parola este prea slabă',
   'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'Cheie API Firebase invalidă. Contactați administratorul aplicației.',
+  'auth/missing-email': 'Vă rugăm să introduceți adresa de email',
+  'auth/too-many-requests': 'Prea multe încercări. Vă rugăm să încercați mai târziu.',
 };
 
 // Login function
@@ -51,6 +53,26 @@ export const register = async (email: string, password: string) => {
     return userCredential.user;
   } catch (error: any) {
     console.error("Eroare înregistrare:", error);
+    
+    const errorCode = error.code;
+    const customMessage = errorMessages[errorCode as keyof typeof errorMessages] || 
+                         `Eroare: ${error.message || error.code || "Necunoscut"}`;
+    
+    throw new Error(customMessage);
+  }
+};
+
+// Password reset function
+export const sendPasswordResetEmail = async (email: string) => {
+  if (!auth) throw new Error('Firebase Auth nu este inițializat');
+  
+  try {
+    console.log("AuthService: Trimitere email resetare parolă...");
+    await firebaseSendPasswordResetEmail(auth, email);
+    console.log("AuthService: Email resetare parolă trimis!");
+    return true;
+  } catch (error: any) {
+    console.error("Eroare trimitere email resetare parolă:", error);
     
     const errorCode = error.code;
     const customMessage = errorMessages[errorCode as keyof typeof errorMessages] || 
