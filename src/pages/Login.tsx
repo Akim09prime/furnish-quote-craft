@@ -9,7 +9,7 @@ import { AlertTriangle } from 'lucide-react';
 import { subscribeToAuthState } from '@/services/AuthService';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
-import { auth } from '@/lib/firebase';
+import { auth, validateFirebaseCredentials } from '@/lib/firebase';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -19,12 +19,24 @@ const LoginPage = () => {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/admin';
 
-  // Verificăm dacă Firebase este inițializat corect
+  // Verificăm dacă Firebase este inițializat corect și cheia API este validă
   useEffect(() => {
-    if (!auth) {
-      setFirebaseError(true);
-      console.error("LoginPage: Firebase Auth nu a fost inițializat corect");
-    }
+    const checkFirebaseSetup = async () => {
+      if (!auth) {
+        console.error("LoginPage: Firebase Auth nu a fost inițializat corect");
+        setFirebaseError(true);
+        return;
+      }
+      
+      // Verifică validitatea cheii API
+      const isValid = await validateFirebaseCredentials();
+      if (!isValid) {
+        console.error("LoginPage: Cheia API Firebase este invalidă");
+        setFirebaseError(true);
+      }
+    };
+    
+    checkFirebaseSetup();
   }, []);
 
   // Verificăm dacă utilizatorul este deja autentificat

@@ -30,7 +30,7 @@ import {
 // Configurație Firebase implicită de test pentru dezvoltare
 // Va fi înlocuită cu configrația din env dacă este disponibilă
 const defaultTestConfig = {
-  apiKey: "AIzaSyBxOQ8IlbIWm1T22XPQ_cBop6Z3PxuHoOQ",
+  apiKey: "AIzaSyAqtFRhz1O3ub5MGKjRx-5mtIrjmTNANfk",
   authDomain: "test-project.firebaseapp.com",
   projectId: "test-project",
   storageBucket: "test-project.appspot.com",
@@ -143,6 +143,22 @@ export const deleteProductImage = async (imagePath: string): Promise<void> => {
   } catch (error) {
     console.error("Error deleting image:", error);
     throw error;
+  }
+};
+
+// Validează cheia API Firebase
+export const validateFirebaseCredentials = async (): Promise<boolean> => {
+  if (!auth) return false;
+  
+  try {
+    // Încercăm o operație simplă pentru a verifica dacă cheia API este validă
+    // Folosim getAuth() care va arunca o eroare dacă cheia API este invalidă
+    await auth.app.options;
+    console.log("Cheia API Firebase este validă");
+    return true;
+  } catch (error) {
+    console.error("Validare cheie API Firebase eșuată:", error);
+    return false;
   }
 };
 
