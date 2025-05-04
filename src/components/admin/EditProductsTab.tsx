@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,10 +31,10 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
 
   // Verificăm dacă putem accesa Cloudinary
   useEffect(() => {
-    checkCloudinaryAvailability();
+    checkCloudinaryStatus();
   }, []);
 
-  const checkCloudinaryAvailability = async () => {
+  const checkCloudinaryStatus = async () => {
     setIsCheckingService(true);
     try {
       // Verificăm dacă putem accesa API-ul Cloudinary folosind metoda nouă
@@ -106,7 +107,7 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
               variant="outline" 
               size="sm" 
               className="mt-2 flex items-center gap-1" 
-              onClick={checkCloudinaryAvailability}
+              onClick={checkCloudinaryStatus}
               disabled={isCheckingService}
             >
               <RefreshCw className="h-3 w-3" />
