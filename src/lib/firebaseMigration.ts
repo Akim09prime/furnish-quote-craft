@@ -1,6 +1,6 @@
 
 import { db } from "@/lib/firebase";
-import { collection, doc, setDoc, getDoc } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, getDocs } from "firebase/firestore";
 import { Database, Category, Quote, loadDatabase, loadQuote } from "@/lib/db";
 
 // Migration function to transfer local database to Firestore
