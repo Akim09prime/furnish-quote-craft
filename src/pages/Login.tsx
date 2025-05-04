@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 import { subscribeToAuthState } from '@/services/AuthService';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
-import FirebaseSetupInstructions from '@/components/FirebaseSetupInstructions';
+import { auth } from '@/lib/firebase';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -17,8 +19,18 @@ const LoginPage = () => {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/admin';
 
+  // Verificăm dacă Firebase este inițializat corect
+  useEffect(() => {
+    if (!auth) {
+      setFirebaseError(true);
+      console.error("LoginPage: Firebase Auth nu a fost inițializat corect");
+    }
+  }, []);
+
   // Verificăm dacă utilizatorul este deja autentificat
   useEffect(() => {
+    if (firebaseError) return;
+    
     console.log("LoginPage: Verificare stare autentificare...");
     
     try {
@@ -46,7 +58,7 @@ const LoginPage = () => {
       setFirebaseError(true);
       return () => {};
     }
-  }, [navigate, from]);
+  }, [navigate, from, firebaseError]);
 
   const handleAuthSuccess = () => {
     toast.success("Autentificare reușită!");
@@ -55,7 +67,26 @@ const LoginPage = () => {
 
   // Show Firebase setup instructions if we detect Firebase initialization errors
   if (firebaseError) {
-    return <FirebaseSetupInstructions />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl flex items-center justify-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Eroare de configurare
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>Firebase nu este configurat corect. Pentru a continua, este necesară configurarea Firebase.</p>
+            <div className="flex justify-center">
+              <Link to="/firebase-setup">
+                <Button>Vezi instrucțiuni de configurare</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -65,7 +65,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   if (firebaseError) {
-    return <FirebaseSetupInstructions />;
+    return <Navigate to="/firebase-setup" />;
   }
   
   if (!currentUser) {

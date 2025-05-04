@@ -9,6 +9,7 @@ import Admin from "./pages/Admin";
 import Database from "./pages/Database";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
+import FirebaseSetup from "./pages/FirebaseSetup";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Create a new QueryClient
@@ -31,6 +32,7 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/firebase-setup" element={<FirebaseSetup />} />
               <Route path="/" element={<Index />} />
               <Route 
                 path="/admin" 

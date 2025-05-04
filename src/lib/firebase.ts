@@ -1,4 +1,3 @@
-
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
@@ -27,17 +26,33 @@ import {
   getDocs 
 } from "firebase/firestore";
 
-// Firebase configuration object - will be populated from env variables
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+// Configurație Firebase implicită de test pentru dezvoltare
+// Va fi înlocuită cu configrația din env dacă este disponibilă
+const defaultTestConfig = {
+  apiKey: "AIzaSyBxOQ8IlbIWm1T22XPQ_cBop6Z3PxuHoOQ",
+  authDomain: "test-project.firebaseapp.com",
+  projectId: "test-project",
+  storageBucket: "test-project.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abc123def456ghi789jkl"
 };
 
-// Initialize Firebase only if configuration is available
+// Firebase configuration object - se va încerca folosirea variabilelor de mediu
+// Dacă nu sunt disponibile, se folosește configurația implicită de test
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || defaultTestConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultTestConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || defaultTestConfig.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || defaultTestConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultTestConfig.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultTestConfig.appId
+};
+
+// Inițializare Firebase
+console.log("Inițializare Firebase cu configurația:", 
+  import.meta.env.VITE_FIREBASE_API_KEY ? "din variabile de mediu" : "implicită de test");
+
+// Initialize Firebase
 let app;
 let auth;
 let storage;
@@ -45,31 +60,16 @@ let googleProvider;
 let db;
 
 try {
-  // Check if required config is available
-  const requiredConfig = [
-    "apiKey", 
-    "authDomain", 
-    "projectId", 
-    "storageBucket"
-  ];
-  
-  const missingKeys = requiredConfig.filter(key => !firebaseConfig[key]);
-  
-  if (missingKeys.length > 0) {
-    console.error(`Firebase initialization failed. Missing: ${missingKeys.join(", ")}`);
-    throw new Error("Incomplete Firebase configuration");
-  }
-  
-  // Initialize the Firebase app
+  // Inițializare Firebase
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   storage = getStorage(app);
   db = getFirestore(app);
   googleProvider = new GoogleAuthProvider();
   
-  console.log("Firebase initialized successfully!");
+  console.log("Firebase inițializat cu succes!");
 } catch (error) {
-  console.error("Firebase initialization error:", error);
+  console.error("Eroare la inițializarea Firebase:", error);
   // Keep variables undefined if initialization fails
 }
 
