@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { auth, onAuthStateChanged, type User } from '@/lib/firebase';
+import { auth, onAuthStateChanged, type User, isFirebaseInitialized } from '@/lib/firebase';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,6 +17,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   useEffect(() => {
     console.log("Setting up auth state listener in ProtectedRoute");
+    
+    // Check if Firebase is properly initialized
+    if (!isFirebaseInitialized()) {
+      console.error("Firebase not properly initialized, redirecting to Firebase setup page");
+      setIsLoading(false);
+      return () => {};
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log("Auth state changed:", user ? `User ${user.email}` : "No user");
       setCurrentUser(user);
@@ -33,6 +41,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <p className="text-lg">Se încarcă...</p>
       </div>
     );
+  }
+  
+  // Check if Firebase is not initialized and redirect to setup page
+  if (!isFirebaseInitialized()) {
+    console.log("Firebase not properly initialized, redirecting to Firebase setup");
+    return <Navigate to="/firebase-setup" replace />;
   }
   
   // Verificare dacă utilizatorul este autentificat

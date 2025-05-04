@@ -11,7 +11,7 @@ import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import FirebaseSetup from "./pages/FirebaseSetup";
 import { useState, useEffect } from "react";
-import { auth, onAuthStateChanged } from "./lib/firebase";
+import { auth, onAuthStateChanged, isFirebaseInitialized } from "./lib/firebase";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Create a new QueryClient
@@ -30,6 +30,14 @@ const App = () => {
 
   useEffect(() => {
     console.log("Setting up auth state listener in App");
+    
+    // Only set up Firebase listener if properly initialized
+    if (!isFirebaseInitialized()) {
+      console.error("Firebase not properly initialized in App component");
+      setIsLoading(false);
+      return () => {};
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log("Auth state changed in App:", user ? `User ${user.email}` : "No user");
       setCurrentUser(user);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'sonner';
-import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '@/lib/firebase';
-import { Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, isFirebaseInitialized } from '@/lib/firebase';
+import { Mail, Lock, UserPlus, LogIn, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate as useRouterNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -18,8 +20,32 @@ const LoginPage = () => {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Check if Firebase is initialized
+    if (!isFirebaseInitialized()) {
+      toast.error("Firebase nu este configurat corect", {
+        description: "Veți fi redirecționat către pagina de configurare Firebase.",
+        duration: 5000
+      });
+      
+      setTimeout(() => {
+        navigate('/firebase-setup');
+      }, 2000);
+    }
+  }, [navigate]);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check Firebase initialization first
+    if (!isFirebaseInitialized()) {
+      setAuthError("Firebase nu este configurat corect. Mergeți la pagina de configurare Firebase.");
+      toast.error("Eroare de configurare Firebase", {
+        description: "Firebase nu este configurat corect. Mergeți la pagina de configurare Firebase."
+      });
+      setTimeout(() => navigate('/firebase-setup'), 2000);
+      return;
+    }
     
     setAuthError(null);
     setAuthSuccess(null);
@@ -57,8 +83,9 @@ const LoginPage = () => {
       } else if (error.code === "auth/network-request-failed") {
         errorMessage = "Problemă de conexiune la rețea. Verificați conexiunea internet.";
       } else if (error.code === "auth/api-key-not-valid") {
-        errorMessage = "Cheie API Firebase invalidă. Contactați administratorul.";
+        errorMessage = "Configurație Firebase invalidă. Veți fi redirecționat către pagina de configurare.";
         console.error("Eroare configurare Firebase - Cheie API invalidă");
+        setTimeout(() => navigate('/firebase-setup'), 2000);
       } else {
         errorMessage = `Eroare: ${error.message || error.code || "Necunoscut"}`;
       }
@@ -72,6 +99,16 @@ const LoginPage = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check Firebase initialization first
+    if (!isFirebaseInitialized()) {
+      setAuthError("Firebase nu este configurat corect. Mergeți la pagina de configurare Firebase.");
+      toast.error("Eroare de configurare Firebase", {
+        description: "Firebase nu este configurat corect. Mergeți la pagina de configurare Firebase."
+      });
+      setTimeout(() => navigate('/firebase-setup'), 2000);
+      return;
+    }
     
     setAuthError(null);
     setAuthSuccess(null);
@@ -109,8 +146,9 @@ const LoginPage = () => {
       } else if (error.code === "auth/weak-password") {
         errorMessage = "Parola este prea slabă";
       } else if (error.code === "auth/api-key-not-valid") {
-        errorMessage = "Cheie API Firebase invalidă. Contactați administratorul.";
+        errorMessage = "Configurație Firebase invalidă. Veți fi redirecționat către pagina de configurare.";
         console.error("Eroare configurare Firebase - Cheie API invalidă", error);
+        setTimeout(() => navigate('/firebase-setup'), 2000);
       } else {
         errorMessage = `Eroare: ${error.message || error.code || "Necunoscut"}`;
       }
@@ -121,6 +159,36 @@ const LoginPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  // If Firebase is not initialized, show a special error message
+  if (!isFirebaseInitialized()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl flex items-center justify-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Configurație Firebase necesară
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>
+                Firebase nu este configurat corect. Trebuie să configurați Firebase pentru a putea utiliza aplicația.
+              </AlertDescription>
+            </Alert>
+            
+            <Button 
+              onClick={() => navigate('/firebase-setup')} 
+              className="w-full mt-4"
+            >
+              Mergi la pagina de configurare Firebase
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
