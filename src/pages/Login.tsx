@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useFirebase } from '@/context/FirebaseContext';
@@ -8,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Facebook, Mail, LogIn, User, Lock, Google } from 'lucide-react';
+import { Facebook, Mail, LogIn, User, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -279,7 +278,7 @@ const LoginPage = () => {
                 onClick={() => handleSocialLogin('google')}
                 className="flex items-center justify-center gap-2"
               >
-                <Google className="h-4 w-4" />
+                <Mail className="h-4 w-4" />
                 Google
               </Button>
               
