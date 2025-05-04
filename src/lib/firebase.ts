@@ -1,5 +1,15 @@
+
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  User
+} from "firebase/auth";
 import { 
   getStorage, 
   ref as storageRef, 
@@ -8,6 +18,14 @@ import {
   deleteObject,
   uploadBytesResumable
 } from "firebase/storage";
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs 
+} from "firebase/firestore";
 
 // Firebase configuration object - will be populated from env variables
 const firebaseConfig = {
@@ -24,6 +42,7 @@ let app;
 let auth;
 let storage;
 let googleProvider;
+let db;
 
 try {
   // Check if required config is available
@@ -45,6 +64,7 @@ try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   storage = getStorage(app);
+  db = getFirestore(app);
   googleProvider = new GoogleAuthProvider();
   
   console.log("Firebase initialized successfully!");
@@ -125,4 +145,19 @@ export const deleteProductImage = async (imagePath: string): Promise<void> => {
   }
 };
 
-export { app, auth, storage, googleProvider };
+// Export Firebase modules and auth functions
+export { 
+  app, 
+  auth, 
+  storage, 
+  db, 
+  googleProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail
+};
+
+// Re-export User type from firebase/auth
+export type { User };
