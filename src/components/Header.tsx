@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { auth, signOut, onAuthStateChanged } from "@/lib/firebase";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LogIn, LogOut } from 'lucide-react';
+import { subscribeToAuthState, logout } from '@/services/AuthService';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -17,39 +17,34 @@ const Header: React.FC = () => {
   useEffect(() => {
     console.log("Header: Verificare stare autentificare...");
     
-    if (!auth) {
-      console.error("Header: Firebase Auth nu a fost inițializat corect");
+    try {
+      const unsubscribe = subscribeToAuthState(
+        (user) => {
+          console.log("Header: Stare autentificare:", user ? "Autentificat" : "Neautentificat");
+          setIsLoggedIn(!!user);
+          setIsAuthInitialized(true);
+        },
+        (error) => {
+          console.error("Header: Eroare la verificarea autentificării:", error);
+          setIsAuthInitialized(true);
+        }
+      );
+      
+      return () => {
+        console.log("Header: Curățare ascultător");
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error("Header: Eroare la inițializarea verificării autentificării:", error);
       setIsAuthInitialized(true);
       return () => {};
     }
-    
-    const unsubscribe = onAuthStateChanged(auth, 
-      (user) => {
-        console.log("Header: Stare autentificare:", user ? "Autentificat" : "Neautentificat");
-        setIsLoggedIn(!!user);
-        setIsAuthInitialized(true);
-      },
-      (error) => {
-        console.error("Header: Eroare la verificarea autentificării:", error);
-        setIsAuthInitialized(true);
-      }
-    );
-    
-    return () => {
-      console.log("Header: Curățare ascultător");
-      unsubscribe();
-    };
   }, []);
 
   const handleLogout = async () => {
     try {
-      if (!auth) {
-        toast.error("Firebase Auth nu este disponibil");
-        return;
-      }
-      
       console.log("Header: Deconectare în curs...");
-      await signOut(auth);
+      await logout();
       console.log("Header: Deconectare reușită");
       toast.success("V-ați deconectat cu succes!");
       navigate("/");
