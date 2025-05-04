@@ -14,7 +14,8 @@ import {
   signInWithPopup,
   signOut,
   sendPasswordResetEmail,
-  onAuthStateChanged
+  onAuthStateChanged,
+  UserCredential
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -27,11 +28,11 @@ interface FirebaseContextType {
   currentUser: User | null;
   isLoading: boolean;
   isAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
+  loginWithGoogle: () => Promise<UserCredential>;
+  loginWithFacebook: () => Promise<UserCredential>;
   resetPassword: (email: string) => Promise<void>;
 }
 
@@ -44,12 +45,12 @@ const FirebaseContext = createContext<FirebaseContextType>({
   currentUser: null,
   isLoading: true,
   isAdmin: false,
-  login: async () => {},
-  signup: async () => {},
-  logout: async () => {},
-  loginWithGoogle: async () => {},
-  loginWithFacebook: async () => {},
-  resetPassword: async () => {},
+  login: async () => { throw new Error("Not implemented"); },
+  signup: async () => { throw new Error("Not implemented"); },
+  logout: async () => { throw new Error("Not implemented"); },
+  loginWithGoogle: async () => { throw new Error("Not implemented"); },
+  loginWithFacebook: async () => { throw new Error("Not implemented"); },
+  resetPassword: async () => { throw new Error("Not implemented"); },
 });
 
 export const useFirebase = () => useContext(FirebaseContext);
