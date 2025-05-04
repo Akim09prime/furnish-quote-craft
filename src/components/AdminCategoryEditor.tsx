@@ -15,8 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Save, Trash2, Upload, Image } from 'lucide-react';
+import { PlusCircle, Save, Trash2, Upload, Image, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadProductImage } from '@/lib/firebase';
 
 interface AdminCategoryEditorProps {
   database: Database;
@@ -40,6 +41,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleProductChange = (product: Product, field: string, value: any) => {
     const updatedProducts = products.map(p => {
@@ -55,7 +57,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     setNewProduct(prev => ({ ...prev, [field]: value }));
   };
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
     let updatedDb = { ...database };
     
     // Update existing products
@@ -106,7 +108,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     }
   };
 
-  const handleExistingProductImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExistingProductImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -120,10 +122,11 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     const productId = fileInputRef.current?.dataset.productId;
     if (!productId) return;
     
-    // Create preview URL and update product
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const imageUrl = reader.result as string;
+    setIsUploading(true);
+
+    try {
+      // Upload image to Firebase Storage
+      const imageUrl = await uploadProductImage(file, `product-${productId}`);
       
       // Update product with new image URL
       const updatedProducts = products.map(p => {
@@ -135,34 +138,59 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       
       setProducts(updatedProducts);
       toast.success("Imaginea a fost încărcată");
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Eroare la încărcarea imaginii");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const addNewProduct = () => {
+  const addNewProduct = async () => {
     // Validate required fields
     if (!newProduct.cod || newProduct.pret === undefined) {
       toast.error("Completează codul și prețul");
       return;
     }
 
-    // Add image URL to product if available
-    const productToAdd = { 
-      ...newProduct, 
-      pret: Number(newProduct.pret),
-      imageUrl: previewUrl || undefined
-    };
+    setIsUploading(true);
     
-    // Add product to database
-    const updatedDb = addProduct(database, category.name, subcategory.name, productToAdd);
-    
-    // Reset form and update UI
-    setNewProduct({ cod: '', pret: 0 });
-    setShowNewProductForm(false);
-    setSelectedImage(null);
-    setPreviewUrl(null);
-    onDatabaseUpdate(updatedDb);
-    toast.success("Produs adăugat");
+    try {
+      // Create product with or without image
+      const tempProductId = Date.now().toString();
+      let imageUrl;
+
+      // Upload image if available
+      if (selectedImage) {
+        imageUrl = await uploadProductImage(selectedImage, `product-${tempProductId}`);
+      } else if (previewUrl) {
+        // If we have a preview URL (from a data URL), upload it
+        imageUrl = await uploadProductImage(previewUrl, `product-${tempProductId}`);
+      }
+      
+      // Add image URL to product if available
+      const productToAdd = { 
+        ...newProduct, 
+        pret: Number(newProduct.pret),
+        imageUrl
+      };
+      
+      // Add product to database
+      const updatedDb = addProduct(database, category.name, subcategory.name, productToAdd);
+      
+      // Reset form and update UI
+      setNewProduct({ cod: '', pret: 0 });
+      setShowNewProductForm(false);
+      setSelectedImage(null);
+      setPreviewUrl(null);
+      onDatabaseUpdate(updatedDb);
+      toast.success("Produs adăugat");
+    } catch (error) {
+      console.error("Error adding product:", error);
+      toast.error("Eroare la adăugarea produsului");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -287,8 +315,22 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
             <Button variant="outline" onClick={() => setShowNewProductForm(false)}>
               Anulează
             </Button>
-            <Button onClick={addNewProduct}>
-              Adaugă Produs
+            <Button 
+              onClick={addNewProduct} 
+              disabled={isUploading}
+              className="gap-2"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Se încarcă...</span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle size={16} />
+                  <span>Adaugă Produs</span>
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -330,9 +372,14 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                           variant="outline" 
                           size="sm"
                           onClick={() => handleProductImageChange(product)} 
+                          disabled={isUploading}
                           className="h-12 w-12 flex items-center justify-center"
                         >
-                          <Image size={16} />
+                          {isUploading && fileInputRef.current?.dataset.productId === product.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Image size={16} />
+                          )}
                         </Button>
                       )}
                     </div>
