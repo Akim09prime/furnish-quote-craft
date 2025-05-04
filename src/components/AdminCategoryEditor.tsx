@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
@@ -48,7 +47,6 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [storageAvailable, setStorageAvailable] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadTimeout, setUploadTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Reset products list when category or subcategory changes
@@ -132,12 +130,6 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       return;
     }
 
-    // Validate if it's an image
-    if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/i)) {
-      toast.error('Vă rugăm să selectați un fișier imagine (jpg, png, gif, webp)');
-      return;
-    }
-
     console.log("Selected image file:", file.name, file.type, file.size);
     setSelectedImage(file);
     
@@ -188,13 +180,6 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       return;
     }
 
-    // Validate if it's an image
-    if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/i)) {
-      toast.error('Vă rugăm să selectați un fișier imagine (jpg, png, gif, webp)');
-      setUploadingProductId(null);
-      return;
-    }
-    
     console.log("Selected image for product:", file.name, file.type, file.size);
     
     if (!storageAvailable) {
@@ -207,31 +192,22 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     setUploadProgress(0);
     setUploadError(null);
 
-    // Set a timeout to reset the upload state if there's no progress for 30 seconds
-    const timeout = setTimeout(() => {
-      if (isUploading && uploadProgress < 100) {
-        toast.error("Încărcarea a expirat. Vă rugăm să încercați din nou.");
-        resetUploadState();
-      }
-    }, 30000);
-    
-    setUploadTimeout(timeout);
-
     try {
       console.log("Încărcarea imaginii pentru produsul cu ID:", uploadingProductId);
       toast.info("Încărcare imagine...", { id: "upload-toast" });
       
       // Create a unique path for the image to avoid caching issues
-      const timestamp = new Date().getTime();
-      const imagePath = `${category.name}/${subcategory.name}/product-${uploadingProductId}-${timestamp}`;
+      const timestamp = Date.now();
+      const imagePath = `${category.name}/${subcategory.name}/${timestamp}-product-${uploadingProductId}`;
       
       console.log(`Using image path: ${imagePath}`);
       
-      // Upload image to Firebase Storage
+      // Upload image to Firebase Storage with the simplified approach
       const imageUrl = await uploadProductImage(
         file, 
         imagePath,
         (progress) => {
+          console.log(`Upload progress update: ${progress}%`);
           setUploadProgress(progress);
           if (progress === 100) {
             toast.success("Imagine încărcată", { id: "upload-toast" });
@@ -267,10 +243,6 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       setUploadError(errorMessage);
       toast.error(`Eroare la încărcarea imaginii: ${errorMessage}`);
     } finally {
-      if (uploadTimeout) {
-        clearTimeout(uploadTimeout);
-        setUploadTimeout(null);
-      }
       resetUploadState();
     }
   };
@@ -301,8 +273,8 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         toast.info("Încărcare imagine pentru produs nou...");
         
         // Create a unique path for the image to avoid caching issues
-        const timestamp = new Date().getTime();
-        const imagePath = `${category.name}/${subcategory.name}/product-${tempProductId}-${timestamp}`;
+        const timestamp = Date.now();
+        const imagePath = `${category.name}/${subcategory.name}/${timestamp}-new-product-${tempProductId}`;
         
         imageUrl = await uploadProductImage(
           selectedImage, 
@@ -356,8 +328,18 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       if (product?.imageUrl && storageAvailable) {
         toast.info("Ștergere imagine...");
         
-        await deleteProductImage(`${category.name}/${subcategory.name}/product-${productId}`);
-        console.log("Product image deleted successfully");
+        // Extract the path from the URL
+        const urlParts = product.imageUrl.split('/');
+        const fileName = urlParts[urlParts.length - 1].split('?')[0];
+        const imagePath = `${category.name}/${subcategory.name}/${fileName}`;
+        
+        try {
+          await deleteProductImage(imagePath);
+          console.log("Product image deleted successfully");
+        } catch (imageError) {
+          console.error("Failed to delete product image:", imageError);
+          // Continue with product deletion even if image deletion fails
+        }
       }
       
       const updatedDb = deleteProduct(database, category.name, subcategory.name, productId);
@@ -365,7 +347,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       onDatabaseUpdate(updatedDb);
       toast.success("Produs șters");
     } catch (err) {
-      console.error("Failed to delete product or image:", err);
+      console.error("Failed to delete product:", err);
       toast.error("Eroare la ștergerea produsului");
     }
   };
@@ -407,7 +389,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         type="file"
         ref={fileInputRef}
         className="hidden"
-        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+        accept="image/*"
         onChange={handleExistingProductImageChange}
       />
 
@@ -557,7 +539,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                       {product.imageUrl ? (
                         <div className="relative group">
                           <img 
-                            src={`${product.imageUrl}?timestamp=${Date.now()}`} 
+                            src={`${product.imageUrl}?t=${Date.now()}`} 
                             alt={product.cod} 
                             className="h-12 w-12 object-cover rounded-md"
                             onError={(e) => {

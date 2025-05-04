@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { validateFirebaseCredentials } from '@/lib/firebase';
+import { validateFirebaseCredentials, app } from '@/lib/firebase';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
@@ -23,14 +23,28 @@ const Admin = () => {
   };
 
   useEffect(() => {
+    // Initialize Firebase if needed
+    if (!app) {
+      console.error("Firebase app is not initialized in Admin component");
+      setFirebaseValid(false);
+      toast.error("Firebase nu este inițializat corect. Verificați consola pentru detalii.", {
+        duration: 10000
+      });
+    }
+    
     // Check Firebase credentials
     const checkFirebase = async () => {
       const isValid = await validateFirebaseCredentials();
+      console.log("Firebase credentials validation result:", isValid);
       setFirebaseValid(isValid);
       
       if (!isValid) {
-        toast.error("Configurația Firebase nu este validă. Verificați variabilele de mediu.", {
+        toast.error("Configurația Firebase nu este validă. Verificați variabilele de mediu. Folosim configurația de test.", {
           duration: 10000
+        });
+      } else {
+        toast.success("Configurația Firebase este validă!", {
+          duration: 3000
         });
       }
     };
@@ -92,10 +106,10 @@ const Admin = () => {
         
         {!firebaseValid && (
           <Alert variant="destructive" className="mb-4">
-            <AlertTitle>Eroare Firebase</AlertTitle>
+            <AlertTitle>Atenție: Firebase folosește configurația implicită!</AlertTitle>
             <AlertDescription>
-              Configurația Firebase nu este validă. Asigurați-vă că ați setat corect cheile API în fișierul .env.
-              Încărcarea imaginilor și alte funcționalități Firebase nu vor funcționa corect.
+              Configurația Firebase folosește chei de test. Încărcarea imaginilor va funcționa, dar nu pentru o aplicație de producție. 
+              Verificați documentația pentru a configura Firebase corect.
             </AlertDescription>
           </Alert>
         )}
