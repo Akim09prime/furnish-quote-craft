@@ -15,7 +15,8 @@ import {
   ref, 
   uploadBytes, 
   getDownloadURL,
-  uploadString 
+  uploadString,
+  deleteObject
 } from "firebase/storage";
 
 // Check if Firebase is already initialized to prevent duplicate initializations
@@ -49,6 +50,7 @@ try {
   storage = getStorage(app);
 
   console.log("Firebase inițializat cu succes:", auth ? "Auth disponibil" : "Auth nedisponibil");
+  console.log("Firebase Storage inițializat:", storage ? "Storage disponibil" : "Storage nedisponibil");
 } catch (error) {
   console.error("Eroare la inițializarea Firebase:", error);
 }
@@ -62,12 +64,16 @@ export const uploadProductImage = async (imageFile, productId) => {
     
     // If it's a File object
     if (imageFile instanceof File) {
+      console.log("Încărcare fișier imagine:", imageFile.name, imageFile.type);
       const snapshot = await uploadBytes(storageRef, imageFile);
+      console.log("Imagine încărcată cu succes:", snapshot.ref.fullPath);
       return await getDownloadURL(snapshot.ref);
     } 
     // If it's a data URL (base64)
     else if (typeof imageFile === 'string' && imageFile.startsWith('data:')) {
+      console.log("Încărcare imagine în format data URL");
       const snapshot = await uploadString(storageRef, imageFile, 'data_url');
+      console.log("Imagine încărcată cu succes:", snapshot.ref.fullPath);
       return await getDownloadURL(snapshot.ref);
     }
     
@@ -75,6 +81,21 @@ export const uploadProductImage = async (imageFile, productId) => {
   } catch (error) {
     console.error("Eroare la încărcarea imaginii:", error);
     throw error;
+  }
+};
+
+// Function to delete product image
+export const deleteProductImage = async (productId) => {
+  if (!storage) throw new Error('Firebase Storage nu este inițializat');
+  
+  try {
+    const storageRef = ref(storage, `product-images/${productId}`);
+    await deleteObject(storageRef);
+    console.log("Imagine ștearsă cu succes:", productId);
+    return true;
+  } catch (error) {
+    console.error("Eroare la ștergerea imaginii:", error);
+    return false;
   }
 };
 
@@ -86,6 +107,9 @@ export {
   storage, 
   ref, 
   getDownloadURL,
+  uploadBytes,
+  uploadString,
+  deleteObject,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   onAuthStateChanged, 

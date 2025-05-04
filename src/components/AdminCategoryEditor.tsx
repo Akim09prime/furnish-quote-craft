@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Category, 
   Subcategory, 
@@ -10,14 +10,14 @@ import {
   Database,
   saveDatabase
 } from '@/lib/db';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlusCircle, Save, Trash2, Upload, Image, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { uploadProductImage } from '@/lib/firebase';
+import { uploadProductImage, deleteProductImage } from '@/lib/firebase';
 
 interface AdminCategoryEditorProps {
   database: Database;
@@ -40,8 +40,14 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const [showNewProductForm, setShowNewProductForm] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    // Reset products list when category or subcategory changes
+    setProducts([...subcategory.products]);
+  }, [subcategory]);
 
   const handleProductChange = (product: Product, field: string, value: any) => {
     const updatedProducts = products.map(p => {
@@ -100,49 +106,64 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   };
 
   const handleProductImageChange = (product: Product) => {
+    // Store the current product ID
+    setUploadingProductId(product.id);
+    
     // Trigger file input
     if (fileInputRef.current) {
-      // Store the current product ID to associate the uploaded image with it
-      fileInputRef.current.dataset.productId = product.id;
       fileInputRef.current.click();
     }
   };
 
   const handleExistingProductImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !uploadingProductId) {
+      setUploadingProductId(null);
+      return;
+    }
 
     // Validate if it's an image
     if (!file.type.startsWith('image/')) {
       toast.error('Vă rugăm să selectați un fișier imagine');
+      setUploadingProductId(null);
       return;
     }
-
-    // Get product ID from dataset
-    const productId = fileInputRef.current?.dataset.productId;
-    if (!productId) return;
     
     setIsUploading(true);
 
     try {
+      console.log("Încărcarea imaginii pentru produsul cu ID:", uploadingProductId);
+      
       // Upload image to Firebase Storage
-      const imageUrl = await uploadProductImage(file, `product-${productId}`);
+      const imageUrl = await uploadProductImage(file, `product-${uploadingProductId}`);
+      console.log("Imagine încărcată cu succes, URL:", imageUrl);
       
       // Update product with new image URL
       const updatedProducts = products.map(p => {
-        if (p.id === productId) {
+        if (p.id === uploadingProductId) {
           return { ...p, imageUrl };
         }
         return p;
       });
       
       setProducts(updatedProducts);
+      
+      // Save changes to database
+      let updatedDb = { ...database };
+      const productToUpdate = updatedProducts.find(p => p.id === uploadingProductId);
+      if (productToUpdate) {
+        updatedDb = updateProduct(updatedDb, category.name, subcategory.name, productToUpdate);
+        saveDatabase(updatedDb);
+        onDatabaseUpdate(updatedDb);
+      }
+      
       toast.success("Imaginea a fost încărcată");
     } catch (error) {
       console.error("Error uploading image:", error);
       toast.error("Eroare la încărcarea imaginii");
     } finally {
       setIsUploading(false);
+      setUploadingProductId(null);
     }
   };
 
@@ -162,10 +183,14 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
 
       // Upload image if available
       if (selectedImage) {
+        console.log("Încărcare imagine pentru produsul nou:", selectedImage.name);
         imageUrl = await uploadProductImage(selectedImage, `product-${tempProductId}`);
+        console.log("Imagine încărcată cu succes, URL:", imageUrl);
       } else if (previewUrl) {
         // If we have a preview URL (from a data URL), upload it
+        console.log("Încărcare imagine din data URL pentru produsul nou");
         imageUrl = await uploadProductImage(previewUrl, `product-${tempProductId}`);
+        console.log("Imagine încărcată cu succes din data URL, URL:", imageUrl);
       }
       
       // Add image URL to product if available
@@ -177,6 +202,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       
       // Add product to database
       const updatedDb = addProduct(database, category.name, subcategory.name, productToAdd);
+      saveDatabase(updatedDb);
       
       // Reset form and update UI
       setNewProduct({ cod: '', pret: 0 });
@@ -194,7 +220,16 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   };
 
   const handleDeleteProduct = (productId: string) => {
+    // First try to delete the image if it exists
+    const product = products.find(p => p.id === productId);
+    if (product?.imageUrl) {
+      deleteProductImage(productId).catch(err => {
+        console.error("Failed to delete product image:", err);
+      });
+    }
+    
     const updatedDb = deleteProduct(database, category.name, subcategory.name, productId);
+    saveDatabase(updatedDb);
     onDatabaseUpdate(updatedDb);
     toast.success("Produs șters");
   };
@@ -242,7 +277,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
               <Input 
                 type="number" 
                 value={newProduct.pret || ''} 
-                onChange={(e) => handleNewProductChange('pret', parseFloat(e.target.value))} 
+                onChange={(e) => handleNewProductChange('pret', parseFloat(e.target.value) || 0)} 
               />
             </div>
 
@@ -273,7 +308,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                 
                 {field.type === 'select' && field.options && (
                   <Select 
-                    value={newProduct[field.name] || undefined} 
+                    value={newProduct[field.name] || ''} 
                     onValueChange={(val) => handleNewProductChange(field.name, val)}
                   >
                     <SelectTrigger>
@@ -303,7 +338,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                     value={newProduct[field.name] || ""} 
                     onChange={(e) => handleNewProductChange(
                       field.name, 
-                      field.type === 'number' ? parseFloat(e.target.value) : e.target.value
+                      field.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
                     )}
                   />
                 )}
@@ -312,7 +347,11 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
           </div>
           
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowNewProductForm(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowNewProductForm(false);
+              setSelectedImage(null);
+              setPreviewUrl(null);
+            }}>
               Anulează
             </Button>
             <Button 
@@ -362,20 +401,30 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                   <TableCell>
                     <div className="flex items-center">
                       {product.imageUrl ? (
-                        <img 
-                          src={product.imageUrl} 
-                          alt={product.cod} 
-                          className="h-12 w-12 object-cover rounded-md"
-                        />
+                        <div className="relative group">
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.cod} 
+                            className="h-12 w-12 object-cover rounded-md"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleProductImageChange(product)} 
+                            className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-black/50 rounded-md text-white"
+                          >
+                            <Upload size={16} />
+                          </Button>
+                        </div>
                       ) : (
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleProductImageChange(product)} 
-                          disabled={isUploading}
+                          disabled={isUploading && uploadingProductId === product.id}
                           className="h-12 w-12 flex items-center justify-center"
                         >
-                          {isUploading && fileInputRef.current?.dataset.productId === product.id ? (
+                          {isUploading && uploadingProductId === product.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Image size={16} />
@@ -395,7 +444,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                     <Input
                       type="number"
                       value={product.pret}
-                      onChange={(e) => handleProductChange(product, 'pret', parseFloat(e.target.value))}
+                      onChange={(e) => handleProductChange(product, 'pret', parseFloat(e.target.value) || 0)}
                       className="h-8 w-24"
                     />
                   </TableCell>
@@ -404,7 +453,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                     <TableCell key={field.name}>
                       {field.type === 'select' && field.options && (
                         <Select 
-                          value={product[field.name] || undefined} 
+                          value={product[field.name] || ''} 
                           onValueChange={(val) => handleProductChange(product, field.name, val)}
                         >
                           <SelectTrigger className="h-8">
@@ -434,7 +483,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                           onChange={(e) => handleProductChange(
                             product, 
                             field.name, 
-                            field.type === 'number' ? parseFloat(e.target.value) : e.target.value
+                            field.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
                           )}
                           className="h-8"
                         />

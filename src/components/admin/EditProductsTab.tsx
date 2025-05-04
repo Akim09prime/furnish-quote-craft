@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from '@/components/ui/card';
 import AdminCategoryEditor from '@/components/AdminCategoryEditor';
+import { toast } from 'sonner';
 
 interface EditProductsTabProps {
   database: Database;
@@ -11,8 +12,8 @@ interface EditProductsTabProps {
 }
 
 const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseUpdate }) => {
-  const [selectedCategory, setSelectedCategory] = React.useState("");
-  const [selectedSubcategory, setSelectedSubcategory] = React.useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
 
   const category = database.categories.find(c => c.name === selectedCategory);
   const subcategory = category?.subcategories.find(s => s.name === selectedSubcategory);
