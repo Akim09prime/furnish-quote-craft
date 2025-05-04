@@ -11,7 +11,7 @@ const FirebaseSetupInstructions = () => {
         <CardTitle className="text-2xl font-bold">Instrucțiuni de configurare Firebase</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert variant="warning" className="border-amber-500 bg-amber-50">
+        <Alert variant="destructive" className="border-amber-500 bg-amber-50">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
           <AlertTitle className="text-amber-800 font-medium">Configurație Firebase necesară</AlertTitle>
           <AlertDescription className="text-amber-700">
