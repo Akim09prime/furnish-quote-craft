@@ -15,7 +15,8 @@ import {
   uploadBytes, 
   getDownloadURL, 
   deleteObject,
-  uploadBytesResumable
+  uploadBytesResumable,
+  UploadTask
 } from "firebase/storage";
 import { 
   getFirestore, 
@@ -87,7 +88,7 @@ export const uploadProductImage = async (
     console.log(`Uploading image to path: ${imagePath}`, typeof imageFile, imageFile instanceof File ? imageFile.type : 'string');
     const storageReference = storageRef(storage, imagePath);
     
-    let uploadTask;
+    let uploadTask: UploadTask;
     
     if (typeof imageFile === 'string') {
       // Handle data URL
@@ -104,7 +105,7 @@ export const uploadProductImage = async (
       }
     } else if (imageFile instanceof File) {
       // Handle File object
-      console.log("File type:", imageFile.type);
+      console.log("File type:", imageFile.type, "File size:", imageFile.size);
       
       // Verificăm dacă tipul fișierului este permis
       if (!imageFile.type.match(/image\/(jpeg|jpg|png|gif|webp)/i)) {
@@ -129,7 +130,7 @@ export const uploadProductImage = async (
       uploadTask.on('state_changed', 
         (snapshot) => {
           const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          console.log(`Upload progress: ${progress}%`);
+          console.log(`Upload progress: ${progress}%`, snapshot.bytesTransferred, snapshot.totalBytes);
           if (onProgress) {
             onProgress(progress);
           }

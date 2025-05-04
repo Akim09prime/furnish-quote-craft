@@ -7,10 +7,13 @@ import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { validateFirebaseCredentials } from '@/lib/firebase';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [firebaseValid, setFirebaseValid] = useState(true);
 
   const loadDatabaseData = () => {
     setIsLoading(true);
@@ -20,6 +23,19 @@ const Admin = () => {
   };
 
   useEffect(() => {
+    // Check Firebase credentials
+    const checkFirebase = async () => {
+      const isValid = await validateFirebaseCredentials();
+      setFirebaseValid(isValid);
+      
+      if (!isValid) {
+        toast.error("Configurația Firebase nu este validă. Verificați variabilele de mediu.", {
+          duration: 10000
+        });
+      }
+    };
+    
+    checkFirebase();
     loadDatabaseData();
   }, []);
 
@@ -73,6 +89,17 @@ const Admin = () => {
             Reset la valorile inițiale
           </Button>
         </div>
+        
+        {!firebaseValid && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTitle>Eroare Firebase</AlertTitle>
+            <AlertDescription>
+              Configurația Firebase nu este validă. Asigurați-vă că ați setat corect cheile API în fișierul .env.
+              Încărcarea imaginilor și alte funcționalități Firebase nu vor funcționa corect.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <AdminPanel database={database} onDatabaseUpdate={handleDatabaseUpdate} />
       </div>
     </div>

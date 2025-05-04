@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import AdminCategoryEditor from '@/components/AdminCategoryEditor';
 import { toast } from 'sonner';
 import { storage } from '@/lib/firebase';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from 'lucide-react';
 
 interface EditProductsTabProps {
   database: Database;
@@ -89,10 +91,14 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
       </div>
 
       {!storageAvailable && (
-        <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4">
-          <p className="font-bold">Atenție!</p>
-          <p>Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Atenție!</AlertTitle>
+          <AlertDescription>
+            Firebase Storage nu este disponibil. Încărcarea imaginilor nu va funcționa.
+            Verificați consola pentru mai multe detalii.
+          </AlertDescription>
+        </Alert>
       )}
 
       {category && subcategory ? (
