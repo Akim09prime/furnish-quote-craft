@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// For debugging - display Firebase config is being used
+// Pentru debugging - afișăm informații despre configurația Firebase
 console.log("=============================================");
 console.log("LOADING APPLICATION WITH FIREBASE CONFIGURATION");
 console.log("=============================================");

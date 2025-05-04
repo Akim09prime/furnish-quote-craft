@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'sonner';
-import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from '@/lib/firebase';
+import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from '@/lib/firebase';
 import { Mail, Lock, UserPlus, LogIn } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -17,6 +17,20 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Verificăm dacă utilizatorul este deja autentificat
+  useEffect(() => {
+    console.log("LoginPage: Verificare stare autentificare...");
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("LoginPage: Stare autentificare:", user ? "Autentificat" : "Neautentificat");
+      if (user) {
+        console.log("LoginPage: Utilizator deja autentificat, redirecționare către /admin");
+        navigate('/admin', { replace: true });
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +45,9 @@ const LoginPage = () => {
     console.log("Încercare de autentificare cu:", email);
     
     try {
+      console.log("LoginPage: Autentificare în curs...");
       await signInWithEmailAndPassword(auth, email, password);
+      console.log("LoginPage: Autentificare reușită!");
       toast.success("Autentificare reușită!");
       navigate("/admin");
     } catch (error: any) {
@@ -73,7 +89,9 @@ const LoginPage = () => {
     console.log("Încercare de înregistrare cu:", email);
     
     try {
+      console.log("LoginPage: Înregistrare în curs...");
       await createUserWithEmailAndPassword(auth, email, password);
+      console.log("LoginPage: Înregistrare reușită!");
       toast.success("Cont creat cu succes!");
       navigate("/admin");
     } catch (error: any) {

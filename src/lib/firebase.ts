@@ -13,7 +13,7 @@ import { getStorage } from "firebase/storage";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD1fNubvZz8lV9QyPnPvCQZhTsYR8A5WsQ",
+  apiKey: "AIzaSyAqtfFRzJo36uMSGKjrp-5mtIjrjTNANKf", // Folosim cheia API corectă
   authDomain: "mail-63f7e.firebaseapp.com",
   projectId: "mail-63f7e",
   storageBucket: "mail-63f7e.appspot.com",
@@ -22,26 +22,21 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
-// Prevent multiple Firebase app initializations
-let app;
-try {
-  app = initializeApp(firebaseConfig);
-  console.log("Firebase initialized successfully");
-} catch (error) {
-  // If Firebase app already exists, use the existing one
-  if (error.code === 'app/duplicate-app') {
-    console.log("Firebase app already exists, using existing app");
-    app = initializeApp();
-  } else {
-    console.error("Firebase initialization error:", error);
-    throw error;
-  }
-}
+console.log("Inițializare Firebase cu configurația:", {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId
+});
 
-// Initialize Firebase services
+// Inițializare Firebase simplificată
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+// Adăugăm un listener pentru debugging
+auth.onAuthStateChanged((user) => {
+  console.log("Stare autentificare globală schimbată:", user ? `Utilizator autentificat: ${user.email}` : "Niciun utilizator");
+});
 
 // Export Firebase services and auth methods
 export { app, auth, db, storage, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut };

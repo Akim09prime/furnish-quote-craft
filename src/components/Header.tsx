@@ -12,18 +12,25 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Monitor auth state
+  // Monitorizare stare autentificare
   useEffect(() => {
+    console.log("Header: Verificare stare autentificare...");
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Header: Stare autentificare:", user ? "Autentificat" : "Neautentificat");
       setIsLoggedIn(!!user);
     });
     
-    return () => unsubscribe();
+    return () => {
+      console.log("Header: Curățare ascultător");
+      unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
     try {
+      console.log("Header: Deconectare în curs...");
       await signOut(auth);
+      console.log("Header: Deconectare reușită");
       toast.success("V-ați deconectat cu succes!");
       navigate("/");
     } catch (error) {

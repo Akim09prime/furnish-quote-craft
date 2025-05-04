@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { auth, onAuthStateChanged, type User } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,28 +12,38 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   
   useEffect(() => {
-    console.log("ProtectedRoute: verifică starea autentificării");
+    console.log("ProtectedRoute: Verificare stare autentificare...");
     
-    // Unsubscribe from the previous listener if it exists
+    // Ascultător pentru schimbări de stare autentificare
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed:", user ? "User authenticated" : "No user");
+      console.log("ProtectedRoute: Stare autentificare schimbată:", user ? "Autentificat" : "Neautentificat");
       setCurrentUser(user);
       setIsLoading(false);
       
       if (!user) {
+        console.log("ProtectedRoute: Redirecționare către /login");
         toast.error("Trebuie să fiți autentificat pentru a accesa această pagină");
+        navigate('/login', { replace: true });
       }
     });
     
-    return () => unsubscribe();
-  }, []);
+    // Curățare ascultător la demontare
+    return () => {
+      console.log("ProtectedRoute: Curățare ascultător");
+      unsubscribe();
+    };
+  }, [navigate]);
   
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+          <p>Verificare autentificare...</p>
+        </div>
       </div>
     );
   }
