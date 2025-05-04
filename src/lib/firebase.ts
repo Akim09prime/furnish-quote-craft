@@ -1,21 +1,13 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  FacebookAuthProvider, 
-  connectAuthEmulator 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
 } from "firebase/auth";
-import { 
-  getFirestore, 
-  connectFirestoreEmulator 
-} from "firebase/firestore";
-import { 
-  getStorage, 
-  connectStorageEmulator 
-} from "firebase/storage";
-import { toast } from "sonner";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
-// ✅ Configurație Firebase scrisă direct, fără import.meta.env
+// ✅ Configurația reală (fără variabile din .env)
 const firebaseConfig = {
   apiKey: "AIzaSyAqtFRhZ1o3ub5MGkjRx-5mtIrjmTNANKf",
   authDomain: "mail-63f7e.firebaseapp.com",
@@ -26,53 +18,19 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
-// 🔄 Inițializare Firebase și servicii
-let app;
-let auth;
-let db;
-let storage;
-let googleProvider;
-let facebookProvider;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+const googleProvider = new GoogleAuthProvider();
+const facebookProvider = new FacebookAuthProvider();
 
-  googleProvider = new GoogleAuthProvider();
-  googleProvider.setCustomParameters({ prompt: "select_account" });
-
-  facebookProvider = new FacebookAuthProvider();
-
-  // 🔧 Emulatoare (doar în dezvoltare locală, opțional)
-  // Dacă vrei să le activezi pe localhost, decomentează mai jos:
-  /*
-  connectAuthEmulator(auth, "http://localhost:9099");
-  connectFirestoreEmulator(db, "localhost", 8080);
-  connectStorageEmulator(storage, "localhost", 9199);
-  */
-
-  console.log("✅ Firebase a fost inițializat corect.");
-} catch (error) {
-  console.error("❌ Eroare la inițializarea Firebase:", error);
-  toast.error("Eroare la conectarea cu Firebase.");
-  
-  // fallback ca să nu crape aplicația
-  if (!app) app = {} as any;
-  if (!auth) auth = {} as any;
-  if (!db) db = {} as any;
-  if (!storage) storage = {} as any;
-  if (!googleProvider) googleProvider = {} as any;
-  if (!facebookProvider) facebookProvider = {} as any;
-}
-
-// 🔁 Exportăm instanțele
-export { 
-  app as default,
+export {
+  app,
   auth,
   db,
   storage,
   googleProvider,
-  facebookProvider
+  facebookProvider,
 };
