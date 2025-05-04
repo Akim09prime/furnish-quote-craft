@@ -29,7 +29,7 @@ import {
 // Configurație Firebase implicită de test pentru dezvoltare
 // Va fi înlocuită cu configrația din env dacă este disponibilă
 const defaultTestConfig = {
-  apiKey: "AIzaSyBxOQ8IlbIWm1T22XPQ_cBop6Z3PxuHoOQ",
+  apiKey: "AIzaSyCqfaY6THbc8PWHFJYi7kd46Q9yZjXioZio",
   authDomain: "test-project.firebaseapp.com",
   projectId: "test-project",
   storageBucket: "test-project.appspot.com",
