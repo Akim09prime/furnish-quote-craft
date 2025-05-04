@@ -43,16 +43,43 @@ const QuoteItem: React.FC<QuoteItemProps> = ({ item, onUpdateQuantity, onRemove 
     });
   };
 
+  // Placeholder image for the thumbnail
+  const placeholderImage = "/placeholder.svg";
+
   return (
-    <div className="border rounded-md p-4 bg-white shadow-sm">
+    <div className="bg-white shadow-lg rounded-lg p-4 mb-4 hover:shadow-xl transition-shadow duration-200">
       <div className="flex justify-between items-start mb-2">
-        <div>
-          <h4 className="font-medium">{item.productDetails.cod}</h4>
-          <div className="text-sm text-gray-500">
-            {item.categoryName} &gt; {item.subcategoryName}
+        <div className="flex w-full">
+          {/* Left column: Thumbnail */}
+          <div className="w-1/6 mr-4">
+            <img 
+              src={placeholderImage} 
+              alt={item.productDetails.cod} 
+              className="object-cover rounded-md w-full h-16" 
+            />
+          </div>
+          
+          {/* Right column: Item details */}
+          <div className="w-5/6">
+            <h4 className="text-lg font-semibold">{item.productDetails.cod}</h4>
+            <div className="text-sm text-gray-600">
+              {item.categoryName} &gt; {item.subcategoryName}
+            </div>
+            
+            {!editing && (
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-sm text-gray-600">
+                  {item.quantity} x {item.pricePerUnit.toFixed(2)} RON
+                </span>
+                <span className="text-xl font-bold text-furniture-purple">
+                  {item.total.toFixed(2)} RON
+                </span>
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex gap-2">
+        
+        <div className="flex gap-2 ml-2 shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -81,10 +108,10 @@ const QuoteItem: React.FC<QuoteItemProps> = ({ item, onUpdateQuantity, onRemove 
           ))}
       </div>
 
-      {editing ? (
+      {editing && (
         <div className="flex flex-wrap gap-2 items-end mt-3">
           <div className="space-y-1">
-            <div className="text-xs text-gray-500">Cantitate</div>
+            <div className="text-sm text-gray-500">Cantitate</div>
             <Input
               type="number"
               min="1"
@@ -93,16 +120,20 @@ const QuoteItem: React.FC<QuoteItemProps> = ({ item, onUpdateQuantity, onRemove 
               className="w-20 h-8"
             />
           </div>
-          <Button size="sm" onClick={handleSaveQuantity}>Salvează</Button>
-          <Button size="sm" variant="outline" onClick={handleCancelEdit}>Anulează</Button>
-        </div>
-      ) : (
-        <div className="flex justify-between items-center mt-3 border-t pt-2">
-          <div className="flex gap-2 items-baseline">
-            <span className="font-medium">{item.pricePerUnit.toFixed(2)} RON</span>
-            <span className="text-sm text-gray-500">x {item.quantity}</span>
-          </div>
-          <div className="font-bold">{item.total.toFixed(2)} RON</div>
+          <Button 
+            size="sm" 
+            onClick={handleSaveQuantity}
+            className="bg-furniture-purple hover:bg-furniture-purple-dark"
+          >
+            Salvează
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleCancelEdit}
+          >
+            Anulează
+          </Button>
         </div>
       )}
     </div>

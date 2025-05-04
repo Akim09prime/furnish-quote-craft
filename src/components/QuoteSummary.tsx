@@ -75,7 +75,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
           ) : (
             <>
               <div className="space-y-2 print:hidden">
-                <Label htmlFor="labor">Procent Manoperă (%)</Label>
+                <Label htmlFor="labor" className="text-sm text-gray-500">Procent Manoperă (%)</Label>
                 <div className="flex gap-2">
                   <Input
                     id="labor"
@@ -84,9 +84,14 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                     step="0.5"
                     value={laborPct}
                     onChange={handleLaborChange}
-                    className="max-w-[100px]"
+                    className="max-w-[100px] bg-furniture-purple hover:bg-furniture-purple-dark"
                   />
-                  <Button onClick={handleApplyLabor}>Aplică</Button>
+                  <Button 
+                    onClick={handleApplyLabor}
+                    className="bg-furniture-purple hover:bg-furniture-purple-dark text-white rounded-md px-4 py-2"
+                  >
+                    Aplică
+                  </Button>
                 </div>
               </div>
 
@@ -101,9 +106,8 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                   <span className="font-medium">{quote.laborCost.toFixed(2)} RON</span>
                 </div>
                 
-                <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-                  <span>Total:</span>
-                  <span>{quote.total.toFixed(2)} RON</span>
+                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-lg text-2xl font-bold text-center mt-4">
+                  Total final: {quote.total.toFixed(2)} RON
                 </div>
               </div>
 
