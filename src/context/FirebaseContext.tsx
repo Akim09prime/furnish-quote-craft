@@ -44,14 +44,18 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth state changed:", user ? `User: ${user.email}` : "No user");
       setCurrentUser(user);
       
       if (user) {
         try {
           // Check if user is an admin by checking the 'admins' collection
+          console.log(`Checking admin status for user: ${user.uid}`);
           const adminRef = doc(db, "admins", user.uid);
           const adminDoc = await getDoc(adminRef);
-          setIsAdmin(adminDoc.exists());
+          const isUserAdmin = adminDoc.exists();
+          console.log(`Admin status for ${user.email}: ${isUserAdmin ? "Admin" : "Not admin"}`);
+          setIsAdmin(isUserAdmin);
         } catch (error) {
           console.error("Error checking admin status:", error);
           setIsAdmin(false);
@@ -68,33 +72,49 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Authentication functions
   const login = (email: string, password: string) => {
+    console.log(`Attempting login for: ${email}`);
     return signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => userCredential.user);
+      .then((userCredential) => {
+        console.log(`Login successful for: ${email}`);
+        return userCredential.user;
+      });
   };
 
   const signup = (email: string, password: string) => {
+    console.log(`Attempting signup for: ${email}`);
     return createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => userCredential.user);
+      .then((userCredential) => {
+        console.log(`Signup successful for: ${email}`);
+        return userCredential.user;
+      });
   };
 
   const logout = () => {
+    console.log("Logging out current user");
     return signOut(auth);
   };
 
   const loginWithProvider = (provider: AuthProvider) => {
+    console.log(`Attempting login with provider: ${provider.providerId}`);
     return signInWithPopup(auth, provider)
-      .then((result) => result.user);
+      .then((result) => {
+        console.log(`Provider login successful for: ${result.user.email}`);
+        return result.user;
+      });
   };
 
   const loginWithGoogle = () => {
+    console.log("Attempting Google login");
     return loginWithProvider(googleProvider);
   };
 
   const loginWithFacebook = () => {
+    console.log("Attempting Facebook login");
     return loginWithProvider(facebookProvider);
   };
 
   const resetPassword = (email: string) => {
+    console.log(`Attempting password reset for: ${email}`);
     return sendPasswordResetEmail(auth, email);
   };
 

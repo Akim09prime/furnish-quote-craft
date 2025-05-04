@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useFirebase } from '@/context/FirebaseContext';
@@ -7,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Facebook, Mail, LogIn, User, Lock } from 'lucide-react';
+import { Facebook, Mail, LogIn, User, Lock, AlertTriangle, Info } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +23,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const passwordResetSchema = z.object({
   email: z.string().email("Email invalid"),
+});
+
+const loginSchema = z.object({
+  email: z.string().email("Adresa de email nu este validă"),
+  password: z.string().min(6, "Parola trebuie să aibă cel puțin 6 caractere"),
 });
 
 const LoginPage = () => {
@@ -33,6 +40,7 @@ const LoginPage = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { login, signup, loginWithGoogle, loginWithFacebook, resetPassword, currentUser } = useFirebase();
   const navigate = useNavigate();
   
@@ -51,25 +59,34 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setAuthError(null);
+    
     if (!email || !password) {
       toast.error("Vă rugăm să introduceți email și parolă");
+      setAuthError("Vă rugăm să introduceți email și parolă");
       return;
     }
     
     setIsSubmitting(true);
     
     try {
+      console.log(`Încercare de ${isSignup ? 'înregistrare' : 'autentificare'} pentru email: ${email}`);
+      
       if (isSignup) {
         await signup(email, password);
+        console.log("Înregistrare reușită");
         toast.success("Cont creat cu succes!");
       } else {
         await login(email, password);
+        console.log("Autentificare reușită");
         toast.success("Autentificare reușită!");
       }
       
       navigate("/");
     } catch (error: any) {
-      console.error("Authentication error:", error);
+      console.error("Eroare de autentificare:", error);
+      console.error("Cod eroare:", error.code);
+      console.error("Mesaj eroare:", error.message);
       
       let errorMessage = "A apărut o eroare la autentificare";
       
@@ -83,9 +100,14 @@ const LoginPage = () => {
         errorMessage = "Credențiale invalide. Verificați emailul și parola.";
       } else if (error.code === "auth/network-request-failed") {
         errorMessage = "Problemă de conexiune la rețea. Verificați conexiunea internet.";
+      } else if (error.code === "auth/internal-error") {
+        errorMessage = "Eroare internă Firebase. Verificați configurația Firebase.";
+      } else {
+        errorMessage = `Eroare neașteptată: ${error.message || error.code || "Necunoscut"}`;
       }
       
       toast.error(errorMessage);
+      setAuthError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -93,15 +115,22 @@ const LoginPage = () => {
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     try {
+      setAuthError(null);
+      console.log(`Încercare de autentificare cu ${provider}`);
+      
       if (provider === 'google') {
         await loginWithGoogle();
       } else {
         await loginWithFacebook();
       }
+      
+      console.log(`Autentificare cu ${provider} reușită`);
       toast.success("Autentificare reușită!");
       navigate("/");
     } catch (error: any) {
-      console.error("Social login error:", error);
+      console.error(`Eroare la autentificarea cu ${provider}:`, error);
+      console.error("Cod eroare:", error.code);
+      console.error("Mesaj eroare:", error.message);
       
       let errorMessage = "A apărut o eroare la autentificare";
       
@@ -109,31 +138,48 @@ const LoginPage = () => {
         errorMessage = "Autentificarea a fost anulată";
       } else if (error.code === "auth/account-exists-with-different-credential") {
         errorMessage = "Există deja un cont cu acest email, dar folosind altă metodă de autentificare";
+      } else if (error.code === "auth/operation-not-allowed") {
+        errorMessage = "Această metodă de autentificare nu este activată. Verificați configurația Firebase.";
+      } else if (error.code === "auth/popup-blocked") {
+        errorMessage = "Popup-ul a fost blocat de browser. Verificați setările browserului.";
+      } else {
+        errorMessage = `Eroare neașteptată: ${error.message || error.code || "Necunoscut"}`;
       }
       
       toast.error(errorMessage);
+      setAuthError(errorMessage);
     }
   };
 
   const onSubmitResetPassword = async (values: z.infer<typeof passwordResetSchema>) => {
     setIsResetSubmitting(true);
+    setAuthError(null);
     
     try {
+      console.log("Încercare de resetare parolă pentru email:", values.email);
       await resetPassword(values.email);
+      console.log("Email de resetare trimis cu succes");
       toast.success("Email de resetare trimis. Verificați căsuța de email.", {
         duration: 5000,
       });
       form.reset();
     } catch (error: any) {
-      console.error("Password reset error:", error);
+      console.error("Eroare la resetarea parolei:", error);
+      console.error("Cod eroare:", error.code);
+      console.error("Mesaj eroare:", error.message);
       
       let errorMessage = "A apărut o eroare la trimiterea emailului de resetare";
       
       if (error.code === "auth/user-not-found") {
         errorMessage = "Nu există niciun cont asociat acestui email";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Adresa de email nu este validă";
+      } else {
+        errorMessage = `Eroare neașteptată: ${error.message || error.code || "Necunoscut"}`;
       }
       
       toast.error(errorMessage);
+      setAuthError(errorMessage);
     } finally {
       setIsResetSubmitting(false);
     }
@@ -148,6 +194,14 @@ const LoginPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Eroare</AlertTitle>
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
@@ -304,6 +358,16 @@ const LoginPage = () => {
               <User className="h-4 w-4" />
               {isSignup ? "Ai deja cont? Autentifică-te" : "Nu ai cont? Creează unul"}
             </button>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <Alert className="bg-blue-50 border-blue-200">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>Notă:</strong> Pentru a utiliza autentificarea cu Google și Facebook, 
+                trebuie să activați aceste furnizori în consola Firebase.
+              </AlertDescription>
+            </Alert>
           </div>
         </CardContent>
       </Card>

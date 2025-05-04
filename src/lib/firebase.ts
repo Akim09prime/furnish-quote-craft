@@ -25,6 +25,15 @@ export const storage = getStorage(app);
 
 // Initialize providers for social login
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 export const facebookProvider = new FacebookAuthProvider();
+
+// Enable console logs for Firebase Auth in development mode
+if (process.env.NODE_ENV === 'development') {
+  console.log("Firebase debugging enabled");
+}
 
 export default app;
