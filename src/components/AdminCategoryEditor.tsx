@@ -121,11 +121,12 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     }
 
     // Validate if it's an image
-    if (!file.type.startsWith('image/')) {
-      toast.error('Vă rugăm să selectați un fișier imagine');
+    if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/i)) {
+      toast.error('Vă rugăm să selectați un fișier imagine (jpg, png, gif, webp)');
       return;
     }
 
+    console.log("Selected image file:", file.name, file.type, file.size);
     setSelectedImage(file);
     
     // Create preview URL
@@ -154,11 +155,13 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     }
 
     // Validate if it's an image
-    if (!file.type.startsWith('image/')) {
-      toast.error('Vă rugăm să selectați un fișier imagine');
+    if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/i)) {
+      toast.error('Vă rugăm să selectați un fișier imagine (jpg, png, gif, webp)');
       setUploadingProductId(null);
       return;
     }
+    
+    console.log("Selected image for product:", file.name, file.type, file.size);
     
     if (!storageAvailable) {
       toast.error('Firebase Storage nu este disponibil. Încărcarea imaginilor nu este posibilă.');
@@ -209,7 +212,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       toast.success("Imaginea a fost încărcată și salvată");
     } catch (error) {
       console.error("Error uploading image:", error);
-      toast.error("Eroare la încărcarea imaginii");
+      toast.error(`Eroare la încărcarea imaginii: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`);
     } finally {
       setIsUploading(false);
       setUploadingProductId(null);

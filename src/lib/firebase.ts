@@ -85,21 +85,36 @@ export const uploadProductImage = async (
   }
   
   try {
-    console.log(`Uploading image to path: ${imagePath}`);
+    console.log(`Uploading image to path: ${imagePath}`, typeof imageFile, imageFile instanceof File ? imageFile.type : 'string');
     const storageReference = storageRef(storage, imagePath);
     
     let uploadTask;
     
-    if (typeof imageFile === 'string' && imageFile.startsWith('data:')) {
+    if (typeof imageFile === 'string') {
       // Handle data URL
-      const response = await fetch(imageFile);
-      const blob = await response.blob();
-      uploadTask = uploadBytesResumable(storageReference, blob);
+      if (imageFile.startsWith('data:')) {
+        const mimeType = imageFile.split(';')[0].split(':')[1];
+        console.log("Data URL MIME type:", mimeType);
+        
+        const response = await fetch(imageFile);
+        const blob = await response.blob();
+        console.log("Converted blob:", blob.type, blob.size);
+        uploadTask = uploadBytesResumable(storageReference, blob);
+      } else {
+        throw new Error("Invalid image format: String is not a data URL");
+      }
     } else if (imageFile instanceof File) {
       // Handle File object
+      console.log("File type:", imageFile.type);
+      
+      // Verificăm dacă tipul fișierului este permis
+      if (!imageFile.type.match(/image\/(jpeg|jpg|png|gif|webp)/i)) {
+        throw new Error(`Tip de fișier nepermis: ${imageFile.type}. Sunt acceptate doar imagini (jpg, png, gif, webp).`);
+      }
+      
       uploadTask = uploadBytesResumable(storageReference, imageFile);
     } else {
-      throw new Error("Invalid image format");
+      throw new Error("Invalid image format: Must be a File object or data URL");
     }
     
     // Listen for upload progress
@@ -108,6 +123,7 @@ export const uploadProductImage = async (
         (snapshot) => {
           const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
           onProgress(progress);
+          console.log(`Upload progress: ${progress}%`);
         },
         (error) => {
           console.error("Upload error:", error);
