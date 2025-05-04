@@ -14,9 +14,8 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Firebase configuration
-// NOTĂ: Această configurație ar trebui să corespundă proiectului dvs. Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBqqK6ajS6FWM6uBwDl2nWI_ZoGEokhSZQ",
+  apiKey: "AIzaSyAqtFRhZ1o3ub5MGkjRx-5mtIrjmTNANKf",
   authDomain: "mail-63f7e.firebaseapp.com",
   projectId: "mail-63f7e",
   storageBucket: "mail-63f7e.appspot.com",
