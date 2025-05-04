@@ -2,21 +2,30 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const FirebaseSetupInstructions = () => {
+  const copyEnvTemplate = () => {
+    const template = `VITE_FIREBASE_API_KEY=your-api-key-here`;
+    navigator.clipboard.writeText(template)
+      .then(() => toast.success("Șablon .env.local copiat în clipboard"))
+      .catch(() => toast.error("Nu s-a putut copia în clipboard"));
+  };
+  
   return (
     <Card className="w-full max-w-3xl mx-auto my-8">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">Instrucțiuni de configurare Firebase</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert variant="destructive" className="border-amber-500 bg-amber-50">
+        <Alert className="border-amber-500 bg-amber-50">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
           <AlertTitle className="text-amber-800 font-medium">Configurație Firebase necesară</AlertTitle>
           <AlertDescription className="text-amber-700">
-            Aplicația folosește în prezent o cheie API Firebase de tip placeholder. 
-            Autentificarea și alte funcționalități Firebase nu vor funcționa până când nu configurați corect Firebase.
+            Aplicația folosește în prezent o cheie API Firebase temporară sau de tip placeholder. 
+            Pentru funcționalitate completă și securizată, trebuie să configurați propria cheie API Firebase.
           </AlertDescription>
         </Alert>
         
@@ -53,12 +62,25 @@ const FirebaseSetupInstructions = () => {
             </div>
             
             <div className="space-y-2">
-              <h4 className="font-medium">4. Înlocuiți configurația în proiect</h4>
+              <h4 className="font-medium">4. Adăugați cheia API în variabila de mediu</h4>
               <p className="text-gray-700">
-                Deschideți fișierul <code className="bg-gray-100 px-1 py-0.5 rounded">src/lib/firebase.ts</code> și 
-                înlocuiți obiectul <code className="bg-gray-100 px-1 py-0.5 rounded">firebaseConfig</code> cu cel obținut 
-                din consola Firebase.
+                Creați un fișier <code className="bg-gray-100 px-1 py-0.5 rounded">.env.local</code> în rădăcina proiectului 
+                și adăugați cheia API:
               </p>
+              <div className="flex items-center space-x-2">
+                <pre className="bg-gray-100 p-3 rounded-md text-sm overflow-x-auto flex-1">
+                  VITE_FIREBASE_API_KEY=your-api-key-here
+                </pre>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={copyEnvTemplate}
+                  className="flex items-center gap-1"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>Copiază</span>
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -68,15 +90,6 @@ const FirebaseSetupInstructions = () => {
                 Email/Password. Opțional, activați și metodele de autentificare socială (Google, Facebook).
               </p>
             </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-medium">6. Configurați baza de date și regulile de securitate</h4>
-              <p className="text-gray-700">
-                Accesați <strong>Firestore Database</strong> și <strong>Storage</strong> pentru a le configura 
-                conform nevoilor aplicației. Folosiți regulile de securitate din fișierele <code>firestore.rules</code> 
-                și <code>storage.rules</code>.
-              </p>
-            </div>
           </div>
         </div>
         
@@ -84,9 +97,9 @@ const FirebaseSetupInstructions = () => {
           <Info className="h-5 w-5 text-blue-600" />
           <AlertTitle className="text-blue-800 font-medium">Notă importantă</AlertTitle>
           <AlertDescription className="text-blue-700">
-            Pentru instrucțiuni detaliate, consultați fișierul <code className="bg-blue-100 px-1 py-0.5 rounded">FIREBASE_README.md</code> din 
-            rădăcina proiectului. Pentru suport suplimentar, consultați <a href="https://firebase.google.com/docs" 
-            target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">documentația oficială Firebase</a>.
+            Pentru funcționalitate completă, va trebui să restartați aplicația după configurarea Firebase. 
+            Asigurați-vă că fișierul <code className="bg-blue-100 px-1 py-0.5 rounded">.env.local</code> este 
+            creat corect și conține cheia API validă.
           </AlertDescription>
         </Alert>
       </CardContent>

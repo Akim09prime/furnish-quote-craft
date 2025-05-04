@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useFirebase } from '@/context/FirebaseContext';
@@ -23,6 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { isUsingPlaceholderKey } from '@/lib/firebase';
 
 const passwordResetSchema = z.object({
   email: z.string().email("Email invalid"),
@@ -33,14 +35,18 @@ const loginSchema = z.object({
   password: z.string().min(6, "Parola trebuie să aibă cel puțin 6 caractere"),
 });
 
+// Pentru mod demo/test - utilizator și parolă demo
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
+const DEMO_EMAIL = DEMO_MODE ? (import.meta.env.VITE_DEMO_EMAIL || "demo@example.com") : null;
+const DEMO_PASSWORD = DEMO_MODE ? (import.meta.env.VITE_DEMO_PASSWORD || "demo123456") : null;
+
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(DEMO_EMAIL || '');
+  const [password, setPassword] = useState(DEMO_PASSWORD || '');
   const [isSignup, setIsSignup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isPlaceholderApi, setIsPlaceholderApi] = useState(false);
   const { login, signup, loginWithGoogle, loginWithFacebook, resetPassword, currentUser } = useFirebase();
   const navigate = useNavigate();
   
@@ -51,32 +57,22 @@ const LoginPage = () => {
     },
   });
   
-  // Verificăm dacă se folosește cheia API de placeholder
   useEffect(() => {
-    // Această verificare se bazează pe avertismentul din consolă definit în firebase.ts
-    const originalConsoleWarn = console.warn;
-    console.warn = (...args) => {
-      if (args[0] && typeof args[0] === 'string' && args[0].includes('cheie API Firebase de test')) {
-        setIsPlaceholderApi(true);
-      }
-      originalConsoleWarn(...args);
-    };
+    // Show demo mode message if enabled
+    if (DEMO_MODE) {
+      toast.info(
+        "Mod demo activ! Utilizați credențialele pre-completate pentru testare.",
+        { duration: 5000 }
+      );
+    }
     
-    // Simulăm o verificare pentru a declanșa avertismentul dacă există
-    const checkConfig = async () => {
-      try {
-        await import('@/lib/firebase');
-      } catch (error) {
-        console.error("Eroare la încărcarea configurației Firebase:", error);
-      }
-    };
-    
-    checkConfig();
-    
-    // Restabilim funcția console.warn originală
-    return () => {
-      console.warn = originalConsoleWarn;
-    };
+    // Show API key warning if using placeholder
+    if (isUsingPlaceholderKey) {
+      toast.warning(
+        "Cheie API Firebase nevalidă detectată. Configurați Firebase pentru funcționalitate completă.",
+        { duration: 8000 }
+      );
+    }
   }, []);
   
   // If user is already logged in, redirect to home
@@ -92,12 +88,6 @@ const LoginPage = () => {
     if (!email || !password) {
       toast.error("Vă rugăm să introduceți email și parolă");
       setAuthError("Vă rugăm să introduceți email și parolă");
-      return;
-    }
-    
-    if (isPlaceholderApi) {
-      toast.error("Configurație Firebase invalidă. Contactați administratorul.");
-      setAuthError("Autentificarea nu va funcționa cu cheia API placeholder. Vă rugăm să configurați Firebase corect.");
       return;
     }
     
@@ -136,7 +126,7 @@ const LoginPage = () => {
         errorMessage = "Problemă de conexiune la rețea. Verificați conexiunea internet.";
       } else if (error.code === "auth/internal-error") {
         errorMessage = "Eroare internă Firebase. Verificați configurația Firebase.";
-      } else if (error.code === "auth/api-key-not-valid.-please-pass-a-valid-api-key.") {
+      } else if (error.code?.includes("api-key-not-valid")) {
         errorMessage = "Cheie API Firebase invalidă. Vă rugăm să verificați configurația Firebase.";
       } else {
         errorMessage = `Eroare neașteptată: ${error.message || error.code || "Necunoscut"}`;
@@ -165,8 +155,6 @@ const LoginPage = () => {
       navigate("/");
     } catch (error: any) {
       console.error(`Eroare la autentificarea cu ${provider}:`, error);
-      console.error("Cod eroare:", error.code);
-      console.error("Mesaj eroare:", error.message);
       
       let errorMessage = "A apărut o eroare la autentificare";
       
@@ -178,6 +166,8 @@ const LoginPage = () => {
         errorMessage = "Această metodă de autentificare nu este activată. Verificați configurația Firebase.";
       } else if (error.code === "auth/popup-blocked") {
         errorMessage = "Popup-ul a fost blocat de browser. Verificați setările browserului.";
+      } else if (error.code?.includes("api-key-not-valid")) {
+        errorMessage = "Cheie API Firebase invalidă. Vă rugăm să verificați configurația Firebase.";
       } else {
         errorMessage = `Eroare neașteptată: ${error.message || error.code || "Necunoscut"}`;
       }
@@ -201,8 +191,6 @@ const LoginPage = () => {
       form.reset();
     } catch (error: any) {
       console.error("Eroare la resetarea parolei:", error);
-      console.error("Cod eroare:", error.code);
-      console.error("Mesaj eroare:", error.message);
       
       let errorMessage = "A apărut o eroare la trimiterea emailului de resetare";
       
@@ -210,6 +198,8 @@ const LoginPage = () => {
         errorMessage = "Nu există niciun cont asociat acestui email";
       } else if (error.code === "auth/invalid-email") {
         errorMessage = "Adresa de email nu este validă";
+      } else if (error.code?.includes("api-key-not-valid")) {
+        errorMessage = "Cheie API Firebase invalidă. Vă rugăm să verificați configurația Firebase.";
       } else {
         errorMessage = `Eroare neașteptată: ${error.message || error.code || "Necunoscut"}`;
       }
@@ -230,29 +220,35 @@ const LoginPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isPlaceholderApi && (
-            <Alert variant="destructive" className="mb-4 border-red-500 bg-red-50">
+          {isUsingPlaceholderKey && (
+            <Alert className="mb-4 border-red-500 bg-red-50">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Configurație Firebase invalidă</AlertTitle>
               <AlertDescription className="text-sm">
-                <p>Se utilizează o cheie API Firebase de test (placeholder). Autentificarea nu va funcționa.</p> 
-                <p className="font-semibold mt-1">Pentru a rezolva această problemă:</p>
-                <ol className="list-decimal ml-4 mt-1 space-y-1">
-                  <li>Creați un proiect Firebase la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">console.firebase.google.com</a></li>
-                  <li>Obțineți configurația Firebase pentru aplicația web</li>
-                  <li>Înlocuiți valorile din src/lib/firebase.ts cu cele din configurația dvs.</li>
-                </ol>
+                <p>Aplicația folosește o cheie API Firebase de test. Pentru a înregistra și autentifica utilizatori:</p>
                 <div className="mt-2">
                   <Link to="/firebase-setup" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1">
                     <Info className="h-3.5 w-3.5" />
-                    <span>Vezi instrucțiuni detaliate</span>
+                    <span>Vezi instrucțiuni de configurare</span>
                   </Link>
                 </div>
               </AlertDescription>
             </Alert>
           )}
           
-          {authError && !isPlaceholderApi && (
+          {DEMO_MODE && (
+            <Alert className="mb-4 border-green-500 bg-green-50">
+              <Info className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800">Mod Demo Activ</AlertTitle>
+              <AlertDescription className="text-sm text-green-700">
+                <p>Credențiale pre-completate pentru testare rapidă:</p>
+                <p className="mt-1"><strong>Email:</strong> {DEMO_EMAIL}</p>
+                <p><strong>Parolă:</strong> {DEMO_PASSWORD}</p>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {authError && !isUsingPlaceholderKey && (
             <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Eroare</AlertTitle>
@@ -352,7 +348,7 @@ const LoginPage = () => {
             <Button 
               type="submit" 
               className="w-full flex items-center justify-center gap-2" 
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUsingPlaceholderKey}
             >
               {isSubmitting ? (
                 <span className="flex items-center">
@@ -389,6 +385,7 @@ const LoginPage = () => {
                 variant="outline"
                 onClick={() => handleSocialLogin('google')}
                 className="flex items-center justify-center gap-2"
+                disabled={isUsingPlaceholderKey}
               >
                 <Mail className="h-4 w-4" />
                 Google
@@ -399,6 +396,7 @@ const LoginPage = () => {
                 variant="outline"
                 onClick={() => handleSocialLogin('facebook')}
                 className="flex items-center justify-center gap-2"
+                disabled={isUsingPlaceholderKey}
               >
                 <Facebook className="h-4 w-4" />
                 Facebook
@@ -416,16 +414,6 @@ const LoginPage = () => {
               <User className="h-4 w-4" />
               {isSignup ? "Ai deja cont? Autentifică-te" : "Nu ai cont? Creează unul"}
             </button>
-          </div>
-          
-          <div className="mt-4 text-center">
-            <Alert className="bg-blue-50 border-blue-200">
-              <Info className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                <strong>Notă:</strong> Pentru a utiliza autentificarea cu Google și Facebook, 
-                trebuie să activați aceste furnizori în consola Firebase.
-              </AlertDescription>
-            </Alert>
           </div>
         </CardContent>
       </Card>
