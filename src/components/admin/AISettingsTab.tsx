@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Lock, Save, KeyRound, Check, AlertTriangle } from 'lucide-react';
+import { Lock, Save, KeyRound, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 
 const AISettingsTab: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isKeySet, setIsKeySet] = useState<boolean>(false);
+  const [isValidating, setIsValidating] = useState<boolean>(false);
+  const [isKeyValid, setIsKeyValid] = useState<boolean | null>(null);
   
   // Load API key from localStorage on component mount
   useEffect(() => {
@@ -21,7 +23,32 @@ const AISettingsTab: React.FC = () => {
     }
   }, []);
   
-  const handleSaveApiKey = () => {
+  const validateAPIKey = async (key: string) => {
+    if (!key || !key.trim().startsWith('sk-')) return false;
+    
+    setIsValidating(true);
+    try {
+      // Facem o cerere de test către API pentru a verifica dacă cheia este validă
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${key.trim()}`
+        }
+      });
+      
+      const isValid = response.ok;
+      setIsKeyValid(isValid);
+      return isValid;
+    } catch (error) {
+      console.error("Error validating API key:", error);
+      setIsKeyValid(false);
+      return false;
+    } finally {
+      setIsValidating(false);
+    }
+  };
+  
+  const handleSaveApiKey = async () => {
     if (!apiKey || apiKey.trim() === "" || apiKey === "•".repeat(20)) {
       toast.error("Vă rugăm să introduceți o cheie API validă");
       return;
@@ -35,6 +62,17 @@ const AISettingsTab: React.FC = () => {
     
     setIsSaving(true);
     
+    // Verificăm dacă cheia API este validă
+    const isValid = await validateAPIKey(apiKey.trim());
+    
+    if (!isValid) {
+      setIsSaving(false);
+      toast.error("Cheia API pare să fie invalidă. Verificați dacă ați copiat corect cheia de pe platforma OpenAI.", {
+        description: "Asigurați-vă că ați copiat întreaga cheie și că aceasta este activă în contul dvs. OpenAI."
+      });
+      return;
+    }
+    
     try {
       // Stocăm cheia în localStorage
       localStorage.setItem('openai-api-key', apiKey.trim());
@@ -43,7 +81,7 @@ const AISettingsTab: React.FC = () => {
         setIsSaving(false);
         setIsKeySet(true);
         setApiKey("•".repeat(20)); // Înlocuim cu puncte pentru securitate
-        toast.success("Cheia API a fost salvată cu succes", {
+        toast.success("Cheia API a fost salvată și validată cu succes", {
           description: "Acum puteți utiliza funcționalitatea de Asistent AI"
         });
       }, 500);
@@ -58,6 +96,7 @@ const AISettingsTab: React.FC = () => {
     localStorage.removeItem('openai-api-key');
     setApiKey("");
     setIsKeySet(false);
+    setIsKeyValid(null);
     toast.info("Cheia API a fost ștearsă");
   };
   
@@ -104,7 +143,10 @@ const AISettingsTab: React.FC = () => {
                 type="password"
                 placeholder="sk-..."
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setIsKeyValid(null); // Reset validation when key changes
+                }}
                 className="flex-1"
               />
               {isKeySet ? (
@@ -116,32 +158,39 @@ const AISettingsTab: React.FC = () => {
                 </Button>
               ) : null}
             </div>
+            {isKeyValid === false && (
+              <p className="text-red-500 text-sm mt-1">
+                Cheia API nu este validă sau a expirat. Verificați dacă ați copiat corect cheia de pe platforma OpenAI.
+              </p>
+            )}
           </div>
           
           <div className="flex space-x-2 pt-2">
             <Button 
               onClick={handleSaveApiKey} 
-              disabled={isSaving || !apiKey || apiKey.trim() === ""}
+              disabled={isSaving || isValidating || !apiKey || apiKey.trim() === ""}
               className="flex items-center gap-2"
             >
-              {isSaving ? 
-                "Se salvează..." : 
-                isKeySet ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Actualizează cheia API
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Salvează cheia API
-                  </>
-                )
-              }
+              {isSaving || isValidating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  {isValidating ? "Se verifică..." : "Se salvează..."}
+                </>
+              ) : isKeySet ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Actualizează cheia API
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Salvează cheia API
+                </>
+              )}
             </Button>
           </div>
           
-          {isKeySet && (
+          {isKeySet && isKeyValid !== false && (
             <div className="mt-4 bg-green-50 border border-green-200 rounded-md p-4">
               <p className="text-green-700 text-sm flex items-center">
                 <Check className="h-5 w-5 mr-2" />
