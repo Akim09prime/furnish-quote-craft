@@ -26,12 +26,6 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
-// Check if using a placeholder API key (for UI warnings)
-export const isUsingPlaceholderKey = firebaseConfig.apiKey === "AIzaSyAqtFRhZ1o3ub5MGkjRx-5mtIrjmTNANKf" || 
-  firebaseConfig.apiKey === "your-api-key-here" || 
-  firebaseConfig.apiKey.includes("placeholder") || 
-  !firebaseConfig.apiKey;
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);

@@ -5,7 +5,6 @@ import {
   db,
   googleProvider,
   facebookProvider,
-  isUsingPlaceholderKey
 } from "@/lib/firebase";
 import {
   User,
