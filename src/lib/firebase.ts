@@ -7,7 +7,7 @@ import { getStorage } from "firebase/storage";
 // Configurația Firebase
 // Trebuie să înlocuiți aceste valori cu configurația reală a proiectului dvs. Firebase
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyDummyKey-ThisIsAPlaceholder",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKey-ThisIsAPlaceholder",
   authDomain: "furniture-quote.firebaseapp.com",
   projectId: "furniture-quote",
   storageBucket: "furniture-quote.appspot.com",
@@ -38,7 +38,7 @@ googleProvider.setCustomParameters({
 export const facebookProvider = new FacebookAuthProvider();
 
 // Activarea jurnalelor de consolă pentru Firebase Auth în modul de dezvoltare
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   console.log("Firebase debugging enabled");
 }
 
