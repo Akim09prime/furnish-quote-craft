@@ -36,6 +36,10 @@ const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 const facebookProvider = new FacebookAuthProvider();
 
+// Export the User type correctly using 'export type'
+export type { User };
+
+// Export other values normally
 export {
   app,
   auth,
@@ -46,6 +50,5 @@ export {
   signInWithPopup,
   googleProvider,
   facebookProvider,
-  onAuthStateChanged,
-  User
+  onAuthStateChanged
 };
