@@ -4,10 +4,10 @@ import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from "firebase/auth
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration
-// Replace these with your actual Firebase project configuration
+// Configurația Firebase
+// Trebuie să înlocuiți aceste valori cu configurația reală a proiectului dvs. Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyDummyKey-ThisIsAPlaceholder",
+  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyDummyKey-ThisIsAPlaceholder",
   authDomain: "furniture-quote.firebaseapp.com",
   projectId: "furniture-quote",
   storageBucket: "furniture-quote.appspot.com",
@@ -15,15 +15,21 @@ const firebaseConfig = {
   appId: "1:123456789012:web:abcdef1234567890"
 };
 
-// Initialize Firebase
+// Verificăm și afișăm un avertisment dacă se folosește cheia API de placeholder
+if (firebaseConfig.apiKey === "AIzaSyDummyKey-ThisIsAPlaceholder") {
+  console.warn("🔥 ATENȚIE: Folosiți o cheie API Firebase de test! Autentificarea nu va funcționa corect. " +
+               "Vă rugăm să înlocuiți cheia API din firebase.ts cu cea reală din consola Firebase.");
+}
+
+// Inițializarea Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
+// Inițializarea serviciilor Firebase
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Initialize providers for social login
+// Inițializarea furnizorilor pentru autentificare socială
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
@@ -31,7 +37,7 @@ googleProvider.setCustomParameters({
 
 export const facebookProvider = new FacebookAuthProvider();
 
-// Enable console logs for Firebase Auth in development mode
+// Activarea jurnalelor de consolă pentru Firebase Auth în modul de dezvoltare
 if (process.env.NODE_ENV === 'development') {
   console.log("Firebase debugging enabled");
 }

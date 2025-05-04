@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useFirebase } from '@/context/FirebaseContext';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,6 +40,7 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isPlaceholderApi, setIsPlaceholderApi] = useState(false);
   const { login, signup, loginWithGoogle, loginWithFacebook, resetPassword, currentUser } = useFirebase();
   const navigate = useNavigate();
   
@@ -50,6 +50,34 @@ const LoginPage = () => {
       email: "",
     },
   });
+  
+  // Verificăm dacă se folosește cheia API de placeholder
+  useEffect(() => {
+    // Această verificare se bazează pe avertismentul din consolă definit în firebase.ts
+    const originalConsoleWarn = console.warn;
+    console.warn = (...args) => {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('cheie API Firebase de test')) {
+        setIsPlaceholderApi(true);
+      }
+      originalConsoleWarn(...args);
+    };
+    
+    // Simulăm o verificare pentru a declanșa avertismentul dacă există
+    const checkConfig = async () => {
+      try {
+        await import('@/lib/firebase');
+      } catch (error) {
+        console.error("Eroare la încărcarea configurației Firebase:", error);
+      }
+    };
+    
+    checkConfig();
+    
+    // Restabilim funcția console.warn originală
+    return () => {
+      console.warn = originalConsoleWarn;
+    };
+  }, []);
   
   // If user is already logged in, redirect to home
   if (currentUser) {
@@ -64,6 +92,12 @@ const LoginPage = () => {
     if (!email || !password) {
       toast.error("Vă rugăm să introduceți email și parolă");
       setAuthError("Vă rugăm să introduceți email și parolă");
+      return;
+    }
+    
+    if (isPlaceholderApi) {
+      toast.error("Configurație Firebase invalidă. Contactați administratorul.");
+      setAuthError("Autentificarea nu va funcționa cu cheia API placeholder. Vă rugăm să configurați Firebase corect.");
       return;
     }
     
@@ -102,6 +136,8 @@ const LoginPage = () => {
         errorMessage = "Problemă de conexiune la rețea. Verificați conexiunea internet.";
       } else if (error.code === "auth/internal-error") {
         errorMessage = "Eroare internă Firebase. Verificați configurația Firebase.";
+      } else if (error.code === "auth/api-key-not-valid.-please-pass-a-valid-api-key.") {
+        errorMessage = "Cheie API Firebase invalidă. Vă rugăm să verificați configurația Firebase.";
       } else {
         errorMessage = `Eroare neașteptată: ${error.message || error.code || "Necunoscut"}`;
       }
@@ -194,7 +230,29 @@ const LoginPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {authError && (
+          {isPlaceholderApi && (
+            <Alert variant="destructive" className="mb-4 border-red-500 bg-red-50">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Configurație Firebase invalidă</AlertTitle>
+              <AlertDescription className="text-sm">
+                <p>Se utilizează o cheie API Firebase de test (placeholder). Autentificarea nu va funcționa.</p> 
+                <p className="font-semibold mt-1">Pentru a rezolva această problemă:</p>
+                <ol className="list-decimal ml-4 mt-1 space-y-1">
+                  <li>Creați un proiect Firebase la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">console.firebase.google.com</a></li>
+                  <li>Obțineți configurația Firebase pentru aplicația web</li>
+                  <li>Înlocuiți valorile din src/lib/firebase.ts cu cele din configurația dvs.</li>
+                </ol>
+                <div className="mt-2">
+                  <Link to="/firebase-setup" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1">
+                    <Info className="h-3.5 w-3.5" />
+                    <span>Vezi instrucțiuni detaliate</span>
+                  </Link>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {authError && !isPlaceholderApi && (
             <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Eroare</AlertTitle>
