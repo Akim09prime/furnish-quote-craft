@@ -7,18 +7,17 @@ import { toast } from "sonner";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKey-ThisIsAPlaceholder",
-  authDomain: "furniture-quote.firebaseapp.com",
-  projectId: "furniture-quote",
-  storageBucket: "furniture-quote.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID,
+  measurementId: import.meta.env.VITE_MEASUREMENT_ID
 };
 
-// Check if we're using the placeholder API key
-const isUsingPlaceholderKey = 
-  !import.meta.env.VITE_FIREBASE_API_KEY || 
-  firebaseConfig.apiKey === "AIzaSyDummyKey-ThisIsAPlaceholder";
+// Check if we're using valid API keys
+const isUsingPlaceholderKey = !import.meta.env.VITE_API_KEY;
 
 // Initialize Firebase with error handling
 let app;
