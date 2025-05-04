@@ -20,9 +20,7 @@ import QuoteItem from '@/components/QuoteItem';
 import QuoteSummary from '@/components/QuoteSummary';
 import Header from '@/components/Header';
 import QuoteTypeSelector from '@/components/QuoteTypeSelector';
-import Login from '@/components/Login';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -33,7 +31,6 @@ const Index = () => {
   const [quoteType, setQuoteType] = useState<'client' | 'internal'>('internal');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showLoginForm, setShowLoginForm] = useState(true);  // Stare pentru afișarea formularului de login
 
   // Initialize database and quote on mount
   useEffect(() => {
@@ -218,144 +215,131 @@ const Index = () => {
         <Header />
       </div>
       
-      {showLoginForm ? (
-        <div className="container mx-auto px-4 py-6 flex-grow flex items-center justify-center">
-          <Login />
-          <Button 
-            onClick={() => setShowLoginForm(false)} 
-            variant="outline"
-            className="fixed bottom-4 right-4"
-          >
-            Continuă la aplicație
-          </Button>
-        </div>
-      ) : (
-        <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
-          <div className="lg:col-span-2 space-y-8 print:col-span-2">
-            <div className="print:hidden">
-              <QuoteTypeSelector 
-                quoteType={quoteType} 
-                onChangeQuoteType={handleQuoteTypeChange}
+      <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+        <div className="lg:col-span-2 space-y-8 print:col-span-2">
+          <div className="print:hidden">
+            <QuoteTypeSelector 
+              quoteType={quoteType} 
+              onChangeQuoteType={handleQuoteTypeChange}
+            />
+            
+            {!selectedCategory ? (
+              <CategorySelector
+                database={database}
+                selectedCategory={selectedCategory}
+                onSelectCategory={handleSelectCategory}
               />
-              
-              {!selectedCategory ? (
-                <CategorySelector
-                  database={database}
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={handleSelectCategory}
-                />
-              ) : category ? (
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">{category.name}</h2>
-                    <button 
-                      onClick={() => setSelectedCategory(null)}
-                      className="text-sm text-gray-500 hover:text-furniture-purple"
-                    >
-                      Schimbă categoria
-                    </button>
-                  </div>
-                  <ProductSelector 
-                    category={category}
-                    onAddToQuote={handleAddToQuote}
-                    onAddManualItem={handleAddManualItem}
-                  />
+            ) : category ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">{category.name}</h2>
+                  <button 
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-sm text-gray-500 hover:text-furniture-purple"
+                  >
+                    Schimbă categoria
+                  </button>
                 </div>
-              ) : null}
+                <ProductSelector 
+                  category={category}
+                  onAddToQuote={handleAddToQuote}
+                  onAddManualItem={handleAddManualItem}
+                />
+              </div>
+            ) : null}
+          </div>
+          
+          <div className="print:block">
+            <div className="print:mb-8">
+              <h2 className="text-2xl font-bold mb-4 print:text-3xl print:text-center">
+                {quote.title || "Ofertă Mobilier"}
+              </h2>
+              {quote.beneficiary && (
+                <p className="text-gray-700 print:text-center print:text-lg">
+                  Client: {quote.beneficiary}
+                </p>
+              )}
+              <p className="text-gray-500 print:text-center print:text-lg">
+                Data: {new Date().toLocaleDateString('ro-RO')}
+              </p>
             </div>
             
-            <div className="print:block">
-              <div className="print:mb-8">
-                <h2 className="text-2xl font-bold mb-4 print:text-3xl print:text-center">
-                  {quote.title || "Ofertă Mobilier"}
-                </h2>
-                {quote.beneficiary && (
-                  <p className="text-gray-700 print:text-center print:text-lg">
-                    Client: {quote.beneficiary}
-                  </p>
-                )}
-                <p className="text-gray-500 print:text-center print:text-lg">
-                  Data: {new Date().toLocaleDateString('ro-RO')}
+            {quote.items.length > 0 ? (
+              <div className="space-y-4 print:mt-8">
+                <h3 className="text-xl font-medium print:text-2xl print:mb-4">
+                  Produse în ofertă
+                </h3>
+                <table className="w-full hidden print:table">
+                  <thead className="border-b">
+                    <tr>
+                      {quoteType === 'internal' && <th className="text-left py-2">Cod</th>}
+                      <th className="text-left py-2">Categorie</th>
+                      <th className="text-left py-2">Specificații</th>
+                      {quoteType === 'internal' && <th className="text-right py-2">Preț/buc</th>}
+                      <th className="text-right py-2">Cant.</th>
+                      {quoteType === 'internal' && <th className="text-right py-2">Total</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quote.items.map(item => (
+                      <tr key={item.id} className="border-b">
+                        {quoteType === 'internal' && <td className="py-2">{item.productDetails.cod}</td>}
+                        <td className="py-2">{item.categoryName}</td>
+                        <td className="py-2">
+                          {Object.entries(item.productDetails)
+                            .filter(([key]) => !['id', 'cod', 'pret'].includes(key) && typeof item.productDetails[key] !== 'object')
+                            .map(([key, value]) => (
+                              <div key={key}>
+                                {quoteType === 'internal' ? (
+                                  <><span className="font-medium">{key}:</span> {String(value)}</>
+                                ) : (
+                                  <>{String(value)}</>
+                                )}
+                              </div>
+                            ))}
+                        </td>
+                        {quoteType === 'internal' && <td className="py-2 text-right">{item.pricePerUnit.toFixed(2)} RON</td>}
+                        <td className="py-2 text-right">{item.quantity}</td>
+                        {quoteType === 'internal' && <td className="py-2 text-right font-medium">{item.total.toFixed(2)} RON</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden">
+                  {quote.items.map(item => (
+                    <QuoteItem
+                      key={item.id}
+                      item={item}
+                      onUpdateQuantity={handleUpdateQuantity}
+                      onRemove={handleRemoveItem}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-10 bg-gray-50 rounded-lg print:hidden">
+                <p className="text-gray-500">
+                  Nu există produse în ofertă. Selectează produse pentru a le adăuga.
                 </p>
               </div>
-              
-              {quote.items.length > 0 ? (
-                <div className="space-y-4 print:mt-8">
-                  <h3 className="text-xl font-medium print:text-2xl print:mb-4">
-                    Produse în ofertă
-                  </h3>
-                  <table className="w-full hidden print:table">
-                    <thead className="border-b">
-                      <tr>
-                        {quoteType === 'internal' && <th className="text-left py-2">Cod</th>}
-                        <th className="text-left py-2">Categorie</th>
-                        <th className="text-left py-2">Specificații</th>
-                        {quoteType === 'internal' && <th className="text-right py-2">Preț/buc</th>}
-                        <th className="text-right py-2">Cant.</th>
-                        {quoteType === 'internal' && <th className="text-right py-2">Total</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {quote.items.map(item => (
-                        <tr key={item.id} className="border-b">
-                          {quoteType === 'internal' && <td className="py-2">{item.productDetails.cod}</td>}
-                          <td className="py-2">{item.categoryName}</td>
-                          <td className="py-2">
-                            {Object.entries(item.productDetails)
-                              .filter(([key]) => !['id', 'cod', 'pret'].includes(key) && typeof item.productDetails[key] !== 'object')
-                              .map(([key, value]) => (
-                                <div key={key}>
-                                  {quoteType === 'internal' ? (
-                                    <><span className="font-medium">{key}:</span> {String(value)}</>
-                                  ) : (
-                                    <>{String(value)}</>
-                                  )}
-                                </div>
-                              ))}
-                          </td>
-                          {quoteType === 'internal' && <td className="py-2 text-right">{item.pricePerUnit.toFixed(2)} RON</td>}
-                          <td className="py-2 text-right">{item.quantity}</td>
-                          {quoteType === 'internal' && <td className="py-2 text-right font-medium">{item.total.toFixed(2)} RON</td>}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden">
-                    {quote.items.map(item => (
-                      <QuoteItem
-                        key={item.id}
-                        item={item}
-                        onUpdateQuantity={handleUpdateQuantity}
-                        onRemove={handleRemoveItem}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-10 bg-gray-50 rounded-lg print:hidden">
-                  <p className="text-gray-500">
-                    Nu există produse în ofertă. Selectează produse pentru a le adăuga.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="lg:col-span-1 print:col-span-1 print:mt-0">
-            <div className="sticky top-20 print:static">
-              <QuoteSummary 
-                quote={quote}
-                quoteType={quoteType}
-                onUpdateLabor={handleUpdateLabor} 
-                onUpdateQuantity={handleUpdateQuantity}
-                onRemoveItem={handleRemoveItem}
-                onUpdateMetadata={handleUpdateMetadata}
-              />
-            </div>
+            )}
           </div>
         </div>
-      )}
+
+        <div className="lg:col-span-1 print:col-span-1 print:mt-0">
+          <div className="sticky top-20 print:static">
+            <QuoteSummary 
+              quote={quote}
+              quoteType={quoteType}
+              onUpdateLabor={handleUpdateLabor} 
+              onUpdateQuantity={handleUpdateQuantity}
+              onRemoveItem={handleRemoveItem}
+              onUpdateMetadata={handleUpdateMetadata}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
