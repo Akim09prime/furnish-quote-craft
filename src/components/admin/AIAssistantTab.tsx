@@ -36,6 +36,9 @@ const AIAssistantTab: React.FC = () => {
     setIsLoading(true);
     
     try {
+      // Trimitem doar primele caractere ale cheii pentru a proteja cheia API în log-uri
+      console.log(`Folosim cheia API care începe cu: ${apiKey.substring(0, 5)}...`);
+      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -62,7 +65,8 @@ const AIAssistantTab: React.FC = () => {
       });
       
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Eroare necunoscută'}`);
       }
       
       const data = await response.json();

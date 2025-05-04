@@ -27,22 +27,22 @@ const AISettingsTab: React.FC = () => {
       return;
     }
     
-    // Simple validation for OpenAI API key format (typically starts with "sk-")
-    if (!apiKey.startsWith('sk-')) {
+    // Verificăm formatul cheii OpenAI (începe cu "sk-")
+    if (!apiKey.trim().startsWith('sk-')) {
       toast.warning("Cheia API nu pare să fie în format OpenAI (ar trebui să înceapă cu 'sk-')");
       return;
     }
     
     setIsSaving(true);
     
-    // Save to localStorage
     try {
-      localStorage.setItem('openai-api-key', apiKey);
+      // Stocăm cheia în localStorage
+      localStorage.setItem('openai-api-key', apiKey.trim());
       
       setTimeout(() => {
         setIsSaving(false);
         setIsKeySet(true);
-        setApiKey("•".repeat(20)); // Replace with dots for security
+        setApiKey("•".repeat(20)); // Înlocuim cu puncte pentru securitate
         toast.success("Cheia API a fost salvată cu succes", {
           description: "Acum puteți utiliza funcționalitatea de Asistent AI"
         });
