@@ -46,12 +46,12 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
         toast.success("Cloudinary API este disponibil");
       } else {
         console.error("Cloudinary API nu este disponibil");
-        toast.error("Eroare: Cloudinary API nu este disponibil");
+        toast.error("Eroare: Cloudinary API nu este disponibil. Verificați dacă upload preset-ul 'default_upload' există și este configurat ca 'unsigned'.");
       }
     } catch (error) {
       console.error("Eroare la verificarea Cloudinary:", error);
       setCloudinaryAvailable(false);
-      toast.error("Eroare la verificarea Cloudinary");
+      toast.error("Eroare la verificarea Cloudinary. Verificați conexiunea la internet.");
     } finally {
       setIsCheckingService(false);
     }
@@ -103,6 +103,12 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
           <AlertTitle>Atenție!</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>Cloudinary API nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
+            <p>Verificați dacă:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Cloud name-ul este corect: 'velmyra'</li>
+              <li>Upload preset-ul 'default_upload' există în contul Cloudinary</li>
+              <li>Upload preset-ul este configurat ca 'unsigned'</li>
+            </ul>
             <Button 
               variant="outline" 
               size="sm" 

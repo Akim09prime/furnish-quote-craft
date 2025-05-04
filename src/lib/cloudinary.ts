@@ -64,14 +64,15 @@ export const uploadProductImage = async (
       formData.append('folder', folder);
     }
 
-    // Facem cererea de upload
+    // Facem cererea de upload cu verificarea erorilor
     const response = await fetch(CLOUDINARY_UPLOAD_URL, {
       method: 'POST',
       body: formData
     });
 
     if (!response.ok) {
-      throw new Error(`Eroare la încărcarea imaginii: ${response.statusText}`);
+      const errorData = await response.json();
+      throw new Error(`Eroare la încărcarea imaginii: ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();

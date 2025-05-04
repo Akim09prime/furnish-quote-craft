@@ -22,7 +22,7 @@ const Admin = () => {
 
   useEffect(() => {
     loadDatabaseData();
-    // Verificare Cloudinary (opțional)
+    // Verificare Cloudinary
     checkCloudinary();
   }, []);
   
@@ -31,17 +31,19 @@ const Admin = () => {
       const isAvailable = await checkCloudinaryAvailability();
       
       if (isAvailable) {
+        console.log("Cloudinary API este disponibil");
         toast.success("Cloudinary API este disponibil", {
           duration: 3000
         });
       } else {
-        toast.error("Cloudinary API nu răspunde cum trebuie", {
+        console.error("Cloudinary API nu răspunde cum trebuie");
+        toast.error("Cloudinary API nu răspunde cum trebuie. Verificați dacă upload preset-ul 'default_upload' există și este configurat ca 'unsigned'.", {
           duration: 5000
         });
       }
     } catch (error) {
       console.error("Eroare la verificarea Cloudinary:", error);
-      toast.error("Nu se poate accesa Cloudinary API", {
+      toast.error("Nu se poate accesa Cloudinary API. Verificați conexiunea la internet și setările Cloudinary.", {
         duration: 5000
       });
     }
