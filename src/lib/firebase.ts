@@ -2,20 +2,14 @@
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  sendPasswordResetEmail,
   User,
   onAuthStateChanged
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Firebase configuration - folosim chei valide
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBqqK6ajS6FWM6uBwDl2nWI_ZoGEokhSZQ",
   authDomain: "mail-63f7e.firebaseapp.com",
@@ -26,19 +20,16 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
-
-const googleProvider = new GoogleAuthProvider();
-const facebookProvider = new FacebookAuthProvider();
 
 export {
   app,
   auth,
   db,
   storage,
-  googleProvider,
-  facebookProvider,
+  signInWithEmailAndPassword
 };

@@ -4,14 +4,15 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { FirebaseProvider } from "@/context/FirebaseContext";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Database from "./pages/Database";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import FirebaseSetup from "./pages/FirebaseSetup";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./lib/firebase";
+import { useState, useEffect } from "react";
 
 // Create a new QueryClient
 const queryClient = new QueryClient({
@@ -23,9 +24,32 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <FirebaseProvider>
+const App = () => {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Simplul component pentru a proteja rutele
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (isLoading) return <div>Încărcare...</div>;
+    
+    if (!currentUser) {
+      return <LoginPage />;
+    }
+    
+    return <>{children}</>;
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <div className="font-inter text-[#111827] bg-[#F9FAFB]">
           <Toaster />
@@ -43,14 +67,21 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
-              <Route path="/database" element={<Database />} />
+              <Route 
+                path="/database" 
+                element={
+                  <ProtectedRoute>
+                    <Database />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </div>
       </TooltipProvider>
-    </FirebaseProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+};
 
 export default App;
