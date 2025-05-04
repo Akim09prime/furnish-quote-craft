@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
@@ -29,7 +30,7 @@ import {
 // Configurație Firebase implicită de test pentru dezvoltare
 // Va fi înlocuită cu configrația din env dacă este disponibilă
 const defaultTestConfig = {
-  apiKey: "AIzaSyCqfaY6THbc8PWHFJYi7kd46Q9yZjXioZio",
+  apiKey: "AIzaSyBxOQ8IlbIWm1T22XPQ_cBop6Z3PxuHoOQ",
   authDomain: "test-project.firebaseapp.com",
   projectId: "test-project",
   storageBucket: "test-project.appspot.com",
