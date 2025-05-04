@@ -20,7 +20,7 @@ let storage;
 try {
   // Firebase configuration
   const firebaseConfig = {
-    apiKey: "AIzaSyCNexoaajUBoohKrrmZvr2xV_sF5a0YsXc", // Updated API key
+    apiKey: "AIzaSyDZxCfaYGb1MRc0PMVfJ1Xrd46o9gYZJio", // Updated API key
     authDomain: "mail-63f7e.firebaseapp.com",
     projectId: "mail-63f7e",
     storageBucket: "mail-63f7e.appspot.com",
