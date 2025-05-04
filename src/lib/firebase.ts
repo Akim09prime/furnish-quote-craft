@@ -11,10 +11,9 @@ import {
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Firebase configuration - hardcoded temporarily to fix the issue
-// IMPORTANT: In production, these should be moved to environment variables
+// Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAqtfFRzJo36uMSGKjrp-5mtIjrjTNANKf",
+  apiKey: "AIzaSyD1fNubvZz8lV9QyPnPvCQZhTsYR8A5WsQ", // Înlocuim cu o cheie API validă
   authDomain: "mail-63f7e.firebaseapp.com",
   projectId: "mail-63f7e",
   storageBucket: "mail-63f7e.appspot.com",

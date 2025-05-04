@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { auth, onAuthStateChanged, type User } from '@/lib/firebase';
+import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,9 +13,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
+    console.log("ProtectedRoute: verifică starea autentificării");
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setIsLoading(false);
+      
+      if (!user) {
+        toast.error("Trebuie să fiți autentificat pentru a accesa această pagină");
+      }
     });
     
     return () => unsubscribe();
