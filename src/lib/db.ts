@@ -1,4 +1,3 @@
-
 import { initialDB as dbInitialData } from "../data/initialDB";
 
 // Re-export initialDB
@@ -8,6 +7,7 @@ export type Product = {
   id: string;
   cod: string;
   pret: number;
+  imageUrl?: string; // Add optional imageUrl field
   [key: string]: any;
 };
 

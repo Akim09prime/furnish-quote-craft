@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Category, 
   Subcategory, 
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Save, Trash2 } from 'lucide-react';
+import { PlusCircle, Save, Trash2, Upload, Image } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AdminCategoryEditorProps {
@@ -37,6 +37,9 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     pret: 0
   });
   const [showNewProductForm, setShowNewProductForm] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProductChange = (product: Product, field: string, value: any) => {
     const updatedProducts = products.map(p => {
@@ -70,6 +73,72 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
     toast.success("Modificările au fost salvate");
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSelectedImage(null);
+      setPreviewUrl(null);
+      return;
+    }
+
+    // Validate if it's an image
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vă rugăm să selectați un fișier imagine');
+      return;
+    }
+
+    setSelectedImage(file);
+    
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleProductImageChange = (product: Product) => {
+    // Trigger file input
+    if (fileInputRef.current) {
+      // Store the current product ID to associate the uploaded image with it
+      fileInputRef.current.dataset.productId = product.id;
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleExistingProductImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate if it's an image
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vă rugăm să selectați un fișier imagine');
+      return;
+    }
+
+    // Get product ID from dataset
+    const productId = fileInputRef.current?.dataset.productId;
+    if (!productId) return;
+    
+    // Create preview URL and update product
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const imageUrl = reader.result as string;
+      
+      // Update product with new image URL
+      const updatedProducts = products.map(p => {
+        if (p.id === productId) {
+          return { ...p, imageUrl };
+        }
+        return p;
+      });
+      
+      setProducts(updatedProducts);
+      toast.success("Imaginea a fost încărcată");
+    };
+    reader.readAsDataURL(file);
+  };
+
   const addNewProduct = () => {
     // Validate required fields
     if (!newProduct.cod || newProduct.pret === undefined) {
@@ -77,13 +146,21 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
       return;
     }
 
+    // Add image URL to product if available
+    const productToAdd = { 
+      ...newProduct, 
+      pret: Number(newProduct.pret),
+      imageUrl: previewUrl || undefined
+    };
+    
     // Add product to database
-    const productToAdd = { ...newProduct, pret: Number(newProduct.pret) };
     const updatedDb = addProduct(database, category.name, subcategory.name, productToAdd);
     
     // Reset form and update UI
     setNewProduct({ cod: '', pret: 0 });
     setShowNewProductForm(false);
+    setSelectedImage(null);
+    setPreviewUrl(null);
     onDatabaseUpdate(updatedDb);
     toast.success("Produs adăugat");
   };
@@ -112,6 +189,15 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         </div>
       </div>
 
+      {/* Hidden file input for image uploads */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleExistingProductImageChange}
+      />
+
       {showNewProductForm && (
         <div className="bg-gray-50 p-4 rounded-md mb-6 border">
           <h4 className="font-medium mb-3">Adaugă Produs Nou</h4>
@@ -130,6 +216,27 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
                 value={newProduct.pret || ''} 
                 onChange={(e) => handleNewProductChange('pret', parseFloat(e.target.value))} 
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Imagine produs</label>
+              <div className="flex items-center space-x-2">
+                <Input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="flex-1"
+                />
+              </div>
+              {previewUrl && (
+                <div className="mt-2">
+                  <img 
+                    src={previewUrl} 
+                    alt="Preview" 
+                    className="h-16 w-16 object-cover rounded-md" 
+                  />
+                </div>
+              )}
             </div>
 
             {subcategory.fields.map(field => (
@@ -191,6 +298,7 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Imagine</TableHead>
               <TableHead>Cod</TableHead>
               <TableHead>Preț</TableHead>
               {subcategory.fields.map(field => (
@@ -202,13 +310,33 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={subcategory.fields.length + 3} className="text-center py-4">
+                <TableCell colSpan={subcategory.fields.length + 4} className="text-center py-4">
                   Nu există produse în această subcategorie
                 </TableCell>
               </TableRow>
             ) : (
               products.map((product) => (
                 <TableRow key={product.id}>
+                  <TableCell>
+                    <div className="flex items-center">
+                      {product.imageUrl ? (
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.cod} 
+                          className="h-12 w-12 object-cover rounded-md"
+                        />
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleProductImageChange(product)} 
+                          className="h-12 w-12 flex items-center justify-center"
+                        >
+                          <Image size={16} />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Input
                       value={product.cod}

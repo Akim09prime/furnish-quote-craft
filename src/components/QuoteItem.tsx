@@ -43,8 +43,8 @@ const QuoteItem: React.FC<QuoteItemProps> = ({ item, onUpdateQuantity, onRemove 
     });
   };
 
-  // Placeholder image for the thumbnail
-  const placeholderImage = "/placeholder.svg";
+  // Use the product's imageUrl if available, otherwise use a placeholder
+  const imageSrc = item.productDetails.imageUrl || "/placeholder.svg";
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-4 mb-4 hover:shadow-xl transition-shadow duration-200">
@@ -53,7 +53,7 @@ const QuoteItem: React.FC<QuoteItemProps> = ({ item, onUpdateQuantity, onRemove 
           {/* Left column: Thumbnail */}
           <div className="w-1/6 mr-4">
             <img 
-              src={placeholderImage} 
+              src={imageSrc} 
               alt={item.productDetails.cod} 
               className="object-cover rounded-md w-full h-16" 
             />
@@ -99,7 +99,7 @@ const QuoteItem: React.FC<QuoteItemProps> = ({ item, onUpdateQuantity, onRemove 
 
       <div className="text-sm space-y-1 mb-3">
         {Object.entries(item.productDetails)
-          .filter(([key]) => !['id', 'cod', 'pret'].includes(key))
+          .filter(([key]) => !['id', 'cod', 'pret', 'imageUrl'].includes(key))
           .map(([key, value]) => (
             <div key={key} className="flex justify-between">
               <span className="text-gray-500">{key}:</span>
