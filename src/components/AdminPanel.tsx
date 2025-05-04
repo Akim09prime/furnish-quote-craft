@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Database, saveDatabase } from '@/lib/db';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +10,8 @@ import CategoriesAdminTab from './admin/CategoriesAdminTab';
 import TypesEditorTab from './admin/TypesEditorTab';
 import ExportImportTab from './admin/ExportImportTab';
 import MaterialsTab from './admin/MaterialsTab';
+import AIAssistantTab from './admin/AIAssistantTab';
+import AISettingsTab from './admin/AISettingsTab';
 
 interface AdminPanelProps {
   database: Database;
@@ -89,6 +90,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
           <TabsTrigger value="balamale">Tipuri Balamale</TabsTrigger>
           <TabsTrigger value="export">Export/Import</TabsTrigger>
           <TabsTrigger value="aiAssistant">🧠 Asistent AI</TabsTrigger>
+          <TabsTrigger value="aiSettings">⚙️ Setări AI</TabsTrigger>
         </TabsList>
         
         <TabsContent value="edit">
@@ -184,19 +186,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
         </TabsContent>
 
         <TabsContent value="aiAssistant">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">🧠 Asistent AI</h2>
-            <p className="text-gray-600">
-              Folosește acest asistent AI pentru a primi ajutor cu baza de date, calcule, formule sau alte întrebări.
-            </p>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-            <p className="text-red-700 text-sm">
-              Acest feature necesită o cheie API pentru OpenAI. Adăugați o cheie API în setările aplicației.
-              <br />
-              Când cheia API va fi adăugată, veți putea folosi asistentul AI.
-            </p>
-          </div>
+          <AIAssistantTab />
+        </TabsContent>
+
+        <TabsContent value="aiSettings">
+          <AISettingsTab />
         </TabsContent>
       </Tabs>
     </div>

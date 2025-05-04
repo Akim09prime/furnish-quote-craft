@@ -1,18 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { BrainCircuit, Send, Trash, Loader2 } from "lucide-react";
 
-interface AIAssistantProps {
-  apiKey?: string;
-}
-
-const AIAssistantTab: React.FC<AIAssistantProps> = ({ apiKey }) => {
+const AIAssistantTab: React.FC = () => {
   const [prompt, setPrompt] = useState<string>("");
   const [response, setResponse] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  
+  // Load API key from localStorage on component mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('openai-api-key');
+    setApiKey(savedKey);
+  }, []);
   
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(e.target.value);
@@ -32,14 +36,45 @@ const AIAssistantTab: React.FC<AIAssistantProps> = ({ apiKey }) => {
     setIsLoading(true);
     
     try {
-      // This is a placeholder for the actual OpenAI API call
-      // In a real implementation, you'd make an API call to OpenAI
-      setResponse("Aceasta este o implementare viitoare. Răspunsul AI va apărea aici după configurarea cheii API.");
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini", // Using a cost-effective model
+          messages: [
+            {
+              role: "system",
+              content: "Ești un asistent specializat în administrarea și calcularea ofertelor pentru mobilier. " +
+                "Poți oferi sugestii legate de baza de date, calcule și formule pentru dimensiuni, materiale și prețuri. " +
+                "Răspunde în limba română, într-un mod clar și concis."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1500
+        })
+      });
       
-      toast.info("Funcționalitatea AI este în dezvoltare");
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        setResponse(data.choices[0].message.content);
+      } else {
+        throw new Error('Format de răspuns neașteptat de la OpenAI');
+      }
     } catch (error) {
-      console.error("Error generating AI response:", error);
-      toast.error("A apărut o eroare la generarea răspunsului");
+      console.error("Error calling OpenAI API:", error);
+      toast.error("A apărut o eroare la generarea răspunsului: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
     }
@@ -54,8 +89,9 @@ const AIAssistantTab: React.FC<AIAssistantProps> = ({ apiKey }) => {
     <div className="space-y-6">
       <Card className="bg-white shadow-md rounded-xl">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold tracking-tight">
-            🧠 Asistent AI
+          <CardTitle className="text-xl font-semibold tracking-tight flex items-center gap-2">
+            <BrainCircuit className="h-6 w-6 text-[#1A73E8]" />
+            Asistent AI
           </CardTitle>
           <CardDescription>
             Folosește asistentul AI pentru a primi ajutor cu baza de date, calcule, formule sau alte întrebări.
@@ -86,9 +122,19 @@ const AIAssistantTab: React.FC<AIAssistantProps> = ({ apiKey }) => {
             <Button 
               onClick={handleSubmit} 
               disabled={isLoading || !prompt.trim() || !apiKey}
-              className="flex-1"
+              className="flex-1 gap-2"
             >
-              {isLoading ? "Se procesează..." : "Generează răspuns"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Se procesează...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Generează răspuns
+                </>
+              )}
             </Button>
             
             <Button 
@@ -96,6 +142,7 @@ const AIAssistantTab: React.FC<AIAssistantProps> = ({ apiKey }) => {
               onClick={handleClear}
               disabled={isLoading || (!prompt && !response)}
             >
+              <Trash className="h-4 w-4 mr-2" />
               Șterge
             </Button>
           </div>
@@ -104,7 +151,7 @@ const AIAssistantTab: React.FC<AIAssistantProps> = ({ apiKey }) => {
             <div className="mt-6">
               <label className="text-sm font-medium text-gray-700">Răspunsul asistentului:</label>
               <div className="bg-gray-50 p-4 rounded-lg border mt-2">
-                <p className="whitespace-pre-wrap">{response}</p>
+                <p className="whitespace-pre-wrap text-gray-700">{response}</p>
               </div>
             </div>
           )}
