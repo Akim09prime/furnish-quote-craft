@@ -1,0 +1,44 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is the owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if user is an admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // Admin collection can only be read by admins, write is disabled
+    match /admins/{adminId} {
+      allow read: if isAuthenticated() && isOwner(adminId);
+      allow write: if false;
+    }
+    
+    // User data - allow read/write if authenticated user is the owner
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      
+      // Categories subcollection
+      match /categories/{categoryId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      }
+      
+      // Quotes subcollection
+      match /quotes/{quoteId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      }
+    }
+  }
+}

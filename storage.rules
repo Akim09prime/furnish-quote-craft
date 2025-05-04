@@ -1,0 +1,19 @@
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Only authenticated users can upload and only images
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                    request.auth.uid == userId && 
+                    request.resource.contentType.matches('image/.*') &&
+                    request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+  }
+}
