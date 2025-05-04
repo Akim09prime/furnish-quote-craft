@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { auth, onAuthStateChanged, type User } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
     console.log("ProtectedRoute: Verificare stare autentificare...");
@@ -24,9 +24,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       setIsLoading(false);
       
       if (!user) {
-        console.log("ProtectedRoute: Redirecționare către /login");
+        console.log("ProtectedRoute: Utilizator neautentificat");
         toast.error("Trebuie să fiți autentificat pentru a accesa această pagină");
-        navigate('/login', { replace: true });
       }
     });
     
@@ -35,7 +34,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       console.log("ProtectedRoute: Curățare ascultător");
       unsubscribe();
     };
-  }, [navigate]);
+  }, []);
   
   if (isLoading) {
     return (
@@ -49,7 +48,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   return <>{children}</>;

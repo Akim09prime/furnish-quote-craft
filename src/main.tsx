@@ -3,11 +3,15 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// Pentru debugging - afișăm informații despre configurația Firebase
+// Pentru debugging - afișăm informații despre încărcarea aplicației
 console.log("=============================================");
-console.log("LOADING APPLICATION WITH FIREBASE CONFIGURATION");
-console.log("=============================================");
-console.log("Build timestamp:", new Date().toISOString());
+console.log("ÎNCĂRCARE APLICAȚIE");
+console.log("Timestamp:", new Date().toISOString());
 console.log("=============================================");
 
-createRoot(document.getElementById("root")!).render(<App />);
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Elementul cu ID 'root' nu a fost găsit!");
+}
+
+createRoot(rootElement).render(<App />);

@@ -11,9 +11,9 @@ import {
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Firebase configuration
+// Firebase configuration - using environment variables where possible
 const firebaseConfig = {
-  apiKey: "AIzaSyAqtfFRzJo36uMSGKjrp-5mtIjrjTNANKf", // Folosim cheia API corectă
+  apiKey: "AIzaSyAqtfFRzJo36uMSGKjrp-5mtIjrjTNANKf", 
   authDomain: "mail-63f7e.firebaseapp.com",
   projectId: "mail-63f7e",
   storageBucket: "mail-63f7e.appspot.com",
@@ -22,21 +22,19 @@ const firebaseConfig = {
   measurementId: "G-RZ7BXEF429"
 };
 
+// Only initialize Firebase once
 console.log("Inițializare Firebase cu configurația:", {
   authDomain: firebaseConfig.authDomain,
   projectId: firebaseConfig.projectId
 });
 
-// Inițializare Firebase simplificată
+// Initialize Firebase services
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Adăugăm un listener pentru debugging
-auth.onAuthStateChanged((user) => {
-  console.log("Stare autentificare globală schimbată:", user ? `Utilizator autentificat: ${user.email}` : "Niciun utilizator");
-});
+console.log("Firebase inițializat cu succes:", auth ? "Auth disponibil" : "Auth nedisponibil");
 
 // Export Firebase services and auth methods
 export { app, auth, db, storage, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut };

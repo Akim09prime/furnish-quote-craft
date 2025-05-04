@@ -11,6 +11,7 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
 
   // Monitorizare stare autentificare
   useEffect(() => {
@@ -18,6 +19,7 @@ const Header: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log("Header: Stare autentificare:", user ? "Autentificat" : "Neautentificat");
       setIsLoggedIn(!!user);
+      setIsAuthInitialized(true);
     });
     
     return () => {
@@ -81,16 +83,18 @@ const Header: React.FC = () => {
             </Button>
           </nav>
 
-          {isLoggedIn ? (
-            <Button onClick={handleLogout} size="sm" variant="outline" className="ml-4">
-              <LogOut className="mr-2 h-4 w-4" />
-              Deconectare
-            </Button>
-          ) : (
-            <Button onClick={handleLogin} size="sm" variant="outline" className="ml-4">
-              <LogIn className="mr-2 h-4 w-4" />
-              Autentificare
-            </Button>
+          {isAuthInitialized && (
+            isLoggedIn ? (
+              <Button onClick={handleLogout} size="sm" variant="outline" className="ml-4">
+                <LogOut className="mr-2 h-4 w-4" />
+                Deconectare
+              </Button>
+            ) : (
+              <Button onClick={handleLogin} size="sm" variant="outline" className="ml-4">
+                <LogIn className="mr-2 h-4 w-4" />
+                Autentificare
+              </Button>
+            )
           )}
         </div>
       </div>
