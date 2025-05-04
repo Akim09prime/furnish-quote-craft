@@ -7,6 +7,7 @@ import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { checkCloudinaryAvailability } from '@/lib/cloudinary';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
@@ -27,9 +28,9 @@ const Admin = () => {
   
   const checkCloudinary = async () => {
     try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/velmyra/ping`);
+      const isAvailable = await checkCloudinaryAvailability();
       
-      if (response.status === 200) {
+      if (isAvailable) {
         toast.success("Cloudinary API este disponibil", {
           duration: 3000
         });

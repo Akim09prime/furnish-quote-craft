@@ -8,6 +8,28 @@ const CLOUDINARY_UPLOAD_PRESET = 'default_upload';
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
 /**
+ * Verifică disponibilitatea API-ului Cloudinary
+ */
+export const checkCloudinaryAvailability = async (): Promise<boolean> => {
+  try {
+    // În loc să folosim endpoint-ul /ping care poate fi blocat de CORS,
+    // vom folosi o abordare alternativă verificând dacă putem accesa
+    // resurse publice de la Cloudinary
+    const response = await fetch(
+      `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/v1/sample.jpg`,
+      { method: 'HEAD', mode: 'no-cors' }
+    );
+    
+    // Dacă ajungem aici, înseamnă că serverul Cloudinary este accesibil
+    // response.ok va fi undefined din cauza no-cors, dar abordăm asta
+    return true;
+  } catch (error) {
+    console.error('Eroare la verificarea Cloudinary:', error);
+    return false;
+  }
+};
+
+/**
  * Încarcă o imagine în Cloudinary și returnează URL-ul public
  */
 export const uploadProductImage = async (

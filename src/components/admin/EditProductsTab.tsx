@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +7,7 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { checkCloudinaryAvailability } from '@/lib/cloudinary';
 
 interface EditProductsTabProps {
   database: Database;
@@ -36,11 +36,11 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
   const checkCloudinaryAvailability = async () => {
     setIsCheckingService(true);
     try {
-      // Verificăm dacă putem accesa API-ul Cloudinary
-      const response = await fetch(`https://api.cloudinary.com/v1_1/velmyra/ping`);
-      setCloudinaryAvailable(response.status === 200);
+      // Verificăm dacă putem accesa API-ul Cloudinary folosind metoda nouă
+      const isAvailable = await checkCloudinaryAvailability();
+      setCloudinaryAvailable(isAvailable);
       
-      if (response.status === 200) {
+      if (isAvailable) {
         console.log("Cloudinary API este disponibil");
         toast.success("Cloudinary API este disponibil");
       } else {
