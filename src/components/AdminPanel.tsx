@@ -16,9 +16,14 @@ import AISettingsTab from './admin/AISettingsTab';
 interface AdminPanelProps {
   database: Database;
   onDatabaseUpdate: (db: Database) => void;
+  cloudinaryStatus?: 'checking' | 'available' | 'unavailable';
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ 
+  database, 
+  onDatabaseUpdate,
+  cloudinaryStatus = 'checking'
+}) => {
   const [activeTab, setActiveTab] = useState("edit");
 
   // Function to create a backup of the current database
@@ -94,7 +99,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ database, onDatabaseUpdate }) =
         </TabsList>
         
         <TabsContent value="edit">
-          <EditProductsTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
+          <EditProductsTab 
+            database={database} 
+            onDatabaseUpdate={onDatabaseUpdate} 
+            cloudinaryStatus={cloudinaryStatus}
+          />
         </TabsContent>
 
         <TabsContent value="manage">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Database, loadDatabase, saveDatabase } from '@/lib/db';
 import { initialDB } from '@/data/initialDB';
@@ -12,6 +11,7 @@ import { checkCloudinaryAvailability } from '@/lib/cloudinary';
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [cloudinaryStatus, setCloudinaryStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
 
   const loadDatabaseData = () => {
     setIsLoading(true);
@@ -27,25 +27,29 @@ const Admin = () => {
   }, []);
   
   const checkCloudinary = async () => {
+    setCloudinaryStatus('checking');
     try {
       const isAvailable = await checkCloudinaryAvailability();
       
       if (isAvailable) {
         console.log("Cloudinary API este disponibil");
-        toast.success("Cloudinary API este disponibil", {
+        toast.success("Cloudinary API este disponibil - folosim cloud name 'demo' și preset 'ml_default'", {
           duration: 3000
         });
+        setCloudinaryStatus('available');
       } else {
         console.error("Cloudinary API nu răspunde cum trebuie");
-        toast.error("Cloudinary API nu răspunde cum trebuie. Verificați dacă cloud name-ul 'velmyra' și upload preset-ul 'default_upload' sunt corecte și dacă preset-ul este configurat ca 'unsigned'.", {
+        toast.error("Cloudinary API nu răspunde cum trebuie. Verificați configurația actualizată: cloud name 'demo' și preset 'ml_default'.", {
           duration: 5000
         });
+        setCloudinaryStatus('unavailable');
       }
     } catch (error) {
       console.error("Eroare la verificarea Cloudinary:", error);
       toast.error("Nu se poate accesa Cloudinary API. Verificați conexiunea la internet și setările Cloudinary.", {
         duration: 5000
       });
+      setCloudinaryStatus('unavailable');
     }
   };
 
@@ -90,17 +94,33 @@ const Admin = () => {
       <div className="container mx-auto px-4 py-6 flex-grow">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">Administrare</h1>
-          <Button 
-            variant="outline" 
-            onClick={handleResetDatabase}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw size={16} />
-            Reset la valorile inițiale
-          </Button>
+          <div className="flex gap-2">
+            {cloudinaryStatus === 'unavailable' && (
+              <Button 
+                variant="outline" 
+                onClick={checkCloudinary}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw size={16} />
+                Verifică Cloudinary
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={handleResetDatabase}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw size={16} />
+              Reset la valorile inițiale
+            </Button>
+          </div>
         </div>
         
-        <AdminPanel database={database} onDatabaseUpdate={handleDatabaseUpdate} />
+        <AdminPanel 
+          database={database} 
+          onDatabaseUpdate={handleDatabaseUpdate} 
+          cloudinaryStatus={cloudinaryStatus}
+        />
       </div>
     </div>
   );

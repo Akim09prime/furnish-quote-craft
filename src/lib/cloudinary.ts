@@ -3,8 +3,9 @@
  * Utilitar pentru încărcarea imaginilor în Cloudinary
  */
 
-const CLOUDINARY_CLOUD_NAME = 'velmyra';
-const CLOUDINARY_UPLOAD_PRESET = 'default_upload';
+// Configurație Cloudinary
+const CLOUDINARY_CLOUD_NAME = 'demo'; // Modificat de la 'velmyra' la 'demo' (cloud name de test oficial Cloudinary)
+const CLOUDINARY_UPLOAD_PRESET = 'ml_default'; // Modificat la preset-ul implicit pentru contul demo
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
 /**
@@ -12,17 +13,16 @@ const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOU
  */
 export const checkCloudinaryAvailability = async (): Promise<boolean> => {
   try {
+    console.log(`Verificare Cloudinary API cu: ${CLOUDINARY_CLOUD_NAME} și preset: ${CLOUDINARY_UPLOAD_PRESET}`);
+    
     // Verificăm dacă putem accesa endpoint-ul de upload făcând un request OPTIONS
-    // care ar trebui să returneze CORS headers dacă API-ul este disponibil și configurat corect
     const response = await fetch(CLOUDINARY_UPLOAD_URL, {
       method: 'OPTIONS',
     });
     
-    // Pentru a verifica și configurarea upload preset-ului, facem o cerere de test minimală
-    // care va eșua cu un mesaj specific dacă upload preset-ul nu există sau nu este configurat ca unsigned
+    // Test upload minim pentru a verifica și preset-ul
     const testFormData = new FormData();
     testFormData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    // Adăugăm un blob mic de text în loc de o imagine pentru a minimiza transferul
     const smallBlob = new Blob(['test'], { type: 'text/plain' });
     testFormData.append('file', smallBlob, 'test.txt');
     
@@ -35,17 +35,11 @@ export const checkCloudinaryAvailability = async (): Promise<boolean> => {
     
     if (result.error) {
       console.error('Cloudinary test upload failed:', result.error);
-      // Verificăm dacă eroarea este din cauza unui preset invalid
-      if (result.error.message.includes('Unknown API key') || 
-          result.error.message.includes('Invalid upload preset') ||
-          result.error.message.includes('not found')) {
-        return false;
-      }
+      return false;
     }
     
-    // Dacă nu am primit o eroare despre upload preset sau am fost autorizați, 
-    // înseamnă că API-ul este disponibil
-    return response.ok || uploadResponse.ok || result.secure_url !== undefined;
+    // Dacă avem un URL securizat, înseamnă că upload-ul a funcționat
+    return result.secure_url !== undefined;
   } catch (error) {
     console.error('Eroare la verificarea disponibilității Cloudinary:', error);
     return false;
