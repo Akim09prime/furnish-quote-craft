@@ -12,6 +12,10 @@ import { checkCloudinaryAvailability } from '@/lib/cloudinary';
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [cloudinaryStatus, setCloudinaryStatus] = useState<{
+    available: boolean;
+    message?: string;
+  } | null>(null);
 
   const loadDatabaseData = () => {
     setIsLoading(true);
@@ -22,25 +26,30 @@ const Admin = () => {
 
   useEffect(() => {
     loadDatabaseData();
-    // Verificare Cloudinary (opțional)
+    // Verificare Cloudinary
     checkCloudinary();
   }, []);
   
   const checkCloudinary = async () => {
     try {
-      const isAvailable = await checkCloudinaryAvailability();
+      const status = await checkCloudinaryAvailability();
+      setCloudinaryStatus(status);
       
-      if (isAvailable) {
+      if (status.available) {
         toast.success("Cloudinary API este disponibil", {
           duration: 3000
         });
       } else {
-        toast.error("Cloudinary API nu răspunde cum trebuie", {
+        toast.error(`Cloudinary API nu este disponibil: ${status.message || 'Eroare necunoscută'}`, {
           duration: 5000
         });
       }
     } catch (error) {
       console.error("Eroare la verificarea Cloudinary:", error);
+      setCloudinaryStatus({
+        available: false,
+        message: error instanceof Error ? error.message : 'Eroare necunoscută'
+      });
       toast.error("Nu se poate accesa Cloudinary API", {
         duration: 5000
       });
@@ -98,7 +107,12 @@ const Admin = () => {
           </Button>
         </div>
         
-        <AdminPanel database={database} onDatabaseUpdate={handleDatabaseUpdate} />
+        <AdminPanel 
+          database={database} 
+          onDatabaseUpdate={handleDatabaseUpdate}
+          cloudinaryStatus={cloudinaryStatus} 
+          onCheckCloudinary={checkCloudinary}
+        />
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,17 +8,25 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { checkCloudinaryAvailability } from '@/lib/cloudinary';
 
 interface EditProductsTabProps {
   database: Database;
   onDatabaseUpdate: (db: Database) => void;
+  cloudinaryStatus: {
+    available: boolean;
+    message?: string;
+  } | null;
+  onCheckCloudinary: () => void;
 }
 
-const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseUpdate }) => {
+const EditProductsTab: React.FC<EditProductsTabProps> = ({ 
+  database, 
+  onDatabaseUpdate,
+  cloudinaryStatus,
+  onCheckCloudinary
+}) => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [cloudinaryAvailable, setCloudinaryAvailable] = useState(true);
   const [isCheckingService, setIsCheckingService] = useState(false);
 
   const category = database.categories.find(c => c.name === selectedCategory);
@@ -28,29 +37,11 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
     setSelectedSubcategory("");
   };
 
-  // Verificăm dacă putem accesa Cloudinary
-  useEffect(() => {
-    checkCloudinaryAvailability();
-  }, []);
-
-  const checkCloudinaryAvailability = async () => {
+  // Gestionăm verificarea Cloudinary din exterior
+  const handleCheckCloudinary = async () => {
     setIsCheckingService(true);
     try {
-      // Verificăm dacă putem accesa API-ul Cloudinary folosind metoda nouă
-      const isAvailable = await checkCloudinaryAvailability();
-      setCloudinaryAvailable(isAvailable);
-      
-      if (isAvailable) {
-        console.log("Cloudinary API este disponibil");
-        toast.success("Cloudinary API este disponibil");
-      } else {
-        console.error("Cloudinary API nu este disponibil");
-        toast.error("Eroare: Cloudinary API nu este disponibil");
-      }
-    } catch (error) {
-      console.error("Eroare la verificarea Cloudinary:", error);
-      setCloudinaryAvailable(false);
-      toast.error("Eroare la verificarea Cloudinary");
+      await onCheckCloudinary();
     } finally {
       setIsCheckingService(false);
     }
@@ -96,20 +87,35 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
         </div>
       </div>
 
-      {!cloudinaryAvailable && (
+      {cloudinaryStatus && !cloudinaryStatus.available && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Atenție!</AlertTitle>
           <AlertDescription className="space-y-2">
-            <p>Cloudinary API nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
+            <p>
+              Cloudinary API nu este disponibil. Încărcarea imaginilor nu va funcționa.
+            </p>
+            {cloudinaryStatus.message && (
+              <p className="text-sm font-mono bg-red-50 p-2 rounded">
+                {cloudinaryStatus.message}
+              </p>
+            )}
+            <p className="text-sm">
+              Verificați dacă:
+              <ul className="list-disc list-inside ml-2">
+                <li>Cloud name-ul este corect: 'velmyra'</li>
+                <li>Upload preset-ul este configurat corect</li>
+                <li>Aveți acces la contul Cloudinary</li>
+              </ul>
+            </p>
             <Button 
               variant="outline" 
               size="sm" 
               className="mt-2 flex items-center gap-1" 
-              onClick={checkCloudinaryAvailability}
+              onClick={handleCheckCloudinary}
               disabled={isCheckingService}
             >
-              <RefreshCw className="h-3 w-3" />
+              <RefreshCw className={`h-3 w-3 ${isCheckingService ? 'animate-spin' : ''}`} />
               {isCheckingService ? "Verificare..." : "Verifică din nou"}
             </Button>
           </AlertDescription>
@@ -122,6 +128,7 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseU
           category={category}
           subcategory={subcategory}
           onDatabaseUpdate={onDatabaseUpdate}
+          cloudinaryAvailable={cloudinaryStatus?.available || false}
         />
       ) : (
         <Card>

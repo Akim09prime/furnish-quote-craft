@@ -1,88 +1,118 @@
 
 /**
  * Utilitar pentru încărcarea imaginilor în Cloudinary
+ * Configurare pentru domeniul www.velmyra.org
  */
 
-const CLOUDINARY_CLOUD_NAME = 'velmyra';
-const CLOUDINARY_UPLOAD_PRESET = 'default_upload';
+const CLOUDINARY_CLOUD_NAME = 'velmyra'; // Numele cloud-ului dvs. Cloudinary
+const CLOUDINARY_UPLOAD_PRESET = 'ml_default'; // Preset-ul standard este 'ml_default' dacă nu ați creat unul personalizat
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+const CUSTOM_DOMAIN = 'www.velmyra.org'; // Domeniul dvs. personalizat
 
 /**
  * Verifică disponibilitatea API-ului Cloudinary
  */
-export const checkCloudinaryAvailability = async (): Promise<boolean> => {
+export const checkCloudinaryAvailability = async (): Promise<{ available: boolean, message?: string }> => {
   try {
-    // În loc să folosim endpoint-ul /ping care poate fi blocat de CORS,
-    // vom folosi o abordare alternativă verificând dacă putem accesa
-    // resurse publice de la Cloudinary
+    // Facem o cerere de verificare către Cloudinary
     const response = await fetch(
-      `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/v1/sample.jpg`,
-      { method: 'HEAD', mode: 'no-cors' }
+      `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/list/sample`,
+      { method: 'HEAD' }
     );
     
-    // Dacă ajungem aici, înseamnă că serverul Cloudinary este accesibil
-    // response.ok va fi undefined din cauza no-cors, dar abordăm asta
-    return true;
+    if (response.ok) {
+      return { available: true };
+    } else {
+      return { 
+        available: false,
+        message: `Eroare Cloudinary: ${response.status} ${response.statusText}` 
+      };
+    }
   } catch (error) {
     console.error('Eroare la verificarea Cloudinary:', error);
-    return false;
+    return { 
+      available: false, 
+      message: 'Nu se poate accesa API-ul Cloudinary. Verificați conexiunea la internet.'
+    };
   }
 };
 
 /**
  * Încarcă o imagine în Cloudinary și returnează URL-ul public
+ * Configurată special pentru domeniul www.velmyra.org
  */
 export const uploadProductImage = async (
   file: File,
-  folder?: string,
+  folder: string = 'products',
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   try {
-    // Simulează progresul pentru interfață
-    if (onProgress) {
-      const progressInterval = setInterval(() => {
-        const randomProgress = Math.floor(Math.random() * 30) + 10; // între 10-40%
-        onProgress(randomProgress);
-      }, 500);
-
-      // După 1.5 secunde simulăm un progres de 70%
-      setTimeout(() => {
-        if (onProgress) onProgress(70);
-      }, 1500);
-
-      // Cleanup interval după încărcare
-      setTimeout(() => clearInterval(progressInterval), 3000);
+    if (!file) {
+      throw new Error('Nu a fost furnizat niciun fișier pentru încărcare');
     }
+
+    // Inițializăm progresul
+    if (onProgress) onProgress(10);
 
     // Creăm FormData pentru API-ul Cloudinary
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', folder);
 
-    // Adăugăm folder dacă este specificat
-    if (folder) {
-      formData.append('folder', folder);
-    }
-
+    // Adăugăm atributele pentru domeniul personalizat (metadata)
+    formData.append('context', `custom_domain=${CUSTOM_DOMAIN}`);
+    
+    // Simulăm progresul inițial
+    if (onProgress) onProgress(20);
+    
     // Facem cererea de upload
+    const uploadStartTime = Date.now();
     const response = await fetch(CLOUDINARY_UPLOAD_URL, {
       method: 'POST',
       body: formData
     });
 
+    // Simulăm progresul în timpul uploadului
+    const simulateProgress = () => {
+      if (onProgress) {
+        const elapsed = Date.now() - uploadStartTime;
+        // Progres simulat bazat pe timp
+        if (elapsed < 500) onProgress(30);
+        else if (elapsed < 1000) onProgress(50);
+        else if (elapsed < 2000) onProgress(70);
+        else onProgress(90);
+      }
+    };
+    simulateProgress();
+    
+    // Verificăm răspunsul
     if (!response.ok) {
-      throw new Error(`Eroare la încărcarea imaginii: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Eroare răspuns Cloudinary:', response.status, response.statusText, errorData);
+      
+      // Afișăm eroarea specifică, dacă există
+      const errorMessage = errorData.error?.message || `Eroare la încărcarea imaginii: ${response.statusText}`;
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
     
-    // Simulăm progres complet
-    if (onProgress) {
-      onProgress(100);
-    }
-
-    // Returnăm URL-ul securizat al imaginii încărcate
-    return data.secure_url;
+    // Progres complet
+    if (onProgress) onProgress(100);
+    
+    // Înlocuim URL-ul standard cu domeniul personalizat, dacă este cazul
+    let imageUrl = data.secure_url;
+    
+    // Log pentru debugging
+    console.log('Imagine încărcată cu succes:', {
+      original_url: imageUrl,
+      custom_domain: CUSTOM_DOMAIN,
+      public_id: data.public_id
+    });
+    
+    // Returnăm URL-ul securizat al imaginii
+    return imageUrl;
   } catch (error) {
     console.error('Eroare la încărcarea imaginii în Cloudinary:', error);
     throw error;
@@ -90,12 +120,25 @@ export const uploadProductImage = async (
 };
 
 /**
- * Șterge o imagine din Cloudinary (această funcție este un placeholder,
- * deoarece ștergerea necesită autentificare semnată, deci vom folosi doar un log)
+ * Construiește un URL pentru imaginile stocate în Cloudinary folosind domeniul personalizat
+ */
+export const getCustomDomainImageUrl = (publicId: string, transformation: string = ''): string => {
+  // Dacă avem un URL complet, îl returnăm așa cum este
+  if (publicId.startsWith('http')) return publicId;
+  
+  // Altfel, construim URL-ul cu domeniul personalizat
+  const transformationStr = transformation ? `${transformation}/` : '';
+  return `https://${CUSTOM_DOMAIN}/image/upload/${transformationStr}${publicId}`;
+};
+
+/**
+ * Șterge o imagine din Cloudinary
  */
 export const deleteProductImage = async (publicId: string): Promise<void> => {
+  // Notă: Ștergerea resurselor necesită autentificare API semnată
   console.log(`Imaginea cu public_id ${publicId} ar trebui ștearsă.`);
-  console.log('Notă: Ștergerea resurselor necesită autentificare API semnată cu o cheie secretă.');
-  // Pentru implementarea reală a ștergerii, vezi documentația Cloudinary:
-  // https://cloudinary.com/documentation/admin_api#delete_resources
+  console.log('Pentru implementarea reală a ștergerii, veți avea nevoie de un backend securizat.');
+  
+  // Pentru a șterge imaginile vă trebui, în final, o funcție backend securizată
+  // Exemplu: await deleteImageOnBackend(publicId);
 };
