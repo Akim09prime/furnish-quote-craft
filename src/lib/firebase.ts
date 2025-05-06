@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 
 import { initializeApp } from "firebase/app";
@@ -55,19 +56,69 @@ if (!env.VITE_FIREBASE_MESSAGING_SENDER_ID)
   missingVars.push("VITE_FIREBASE_MESSAGING_SENDER_ID");
 if (!env.VITE_FIREBASE_APP_ID) missingVars.push("VITE_FIREBASE_APP_ID");
 
+// Define these variables in the module scope
+let app: any;
+let auth: any;
+let storage: any;
+let db: any;
+let googleProvider: any;
+
 if (missingVars.length) {
   console.error(
     `❌ [Firebase Config] Missing/Invalid: ${missingVars.join(", ")}`
   );
 } else {
   // Initialize Firebase only if all vars present
-  const app = initializeApp(firebaseConfig);
+  app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   storage = getStorage(app);
   db = getFirestore(app);
   googleProvider = new GoogleAuthProvider();
   console.log("✅ [Firebase] Initialized successfully.");
 }
+
+/**
+ * Validates Firebase API key and credentials by making a test request
+ * @returns {Promise<boolean>} True if credentials are valid, false otherwise
+ */
+export const validateFirebaseCredentials = async (): Promise<boolean> => {
+  try {
+    // Check if Firebase is initialized
+    if (!auth) {
+      console.error("Firebase Auth nu a fost inițializat");
+      return false;
+    }
+
+    // Test the Firebase API key by making a simple request
+    // This is a method that doesn't require authentication but will fail with an invalid API key
+    const apiKeyTest = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=${firebaseConfig.apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          continueUri: window.location.origin,
+          identifier: 'test@example.com',
+        }),
+      }
+    );
+
+    // If the request returns 400, it means the API key is valid but the request is malformed
+    // If it returns 403, the API key is invalid
+    if (apiKeyTest.status === 403) {
+      console.error("Firebase API key is invalid");
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error validating Firebase credentials:", error);
+    return false;
+  }
+};
+
 // ==== AUTH & FIRESTORE EXPORTS ====
 
 export { app, auth, storage, db, googleProvider };
@@ -79,3 +130,4 @@ export {
   sendPasswordResetEmail
 };
 export type { User };
+
