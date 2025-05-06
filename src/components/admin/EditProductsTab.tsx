@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,16 +12,12 @@ import { checkCloudinaryAvailability } from '@/lib/cloudinary';
 interface EditProductsTabProps {
   database: Database;
   onDatabaseUpdate: (db: Database) => void;
-  cloudinaryStatus?: 'checking' | 'available' | 'unavailable';
 }
 
-const EditProductsTab: React.FC<EditProductsTabProps> = ({ 
-  database, 
-  onDatabaseUpdate,
-  cloudinaryStatus = 'checking'
-}) => {
+const EditProductsTab: React.FC<EditProductsTabProps> = ({ database, onDatabaseUpdate }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [cloudinaryAvailable, setCloudinaryAvailable] = useState(true);
   const [isCheckingService, setIsCheckingService] = useState(false);
 
   const category = database.categories.find(c => c.name === selectedCategory);
@@ -33,21 +28,29 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({
     setSelectedSubcategory("");
   };
 
-  const checkCloudinaryStatus = async () => {
+  // Verificăm dacă putem accesa Cloudinary
+  useEffect(() => {
+    checkCloudinaryAvailability();
+  }, []);
+
+  const checkCloudinaryAvailability = async () => {
     setIsCheckingService(true);
     try {
+      // Verificăm dacă putem accesa API-ul Cloudinary folosind metoda nouă
       const isAvailable = await checkCloudinaryAvailability();
+      setCloudinaryAvailable(isAvailable);
       
       if (isAvailable) {
         console.log("Cloudinary API este disponibil");
-        toast.success("Cloudinary API este disponibil - folosim cloud name 'demo' și preset 'ml_default'");
+        toast.success("Cloudinary API este disponibil");
       } else {
         console.error("Cloudinary API nu este disponibil");
-        toast.error("Eroare: Cloudinary API nu este disponibil. Verificați noua configurație: cloud name 'demo' și upload preset 'ml_default'.");
+        toast.error("Eroare: Cloudinary API nu este disponibil");
       }
     } catch (error) {
       console.error("Eroare la verificarea Cloudinary:", error);
-      toast.error("Eroare la verificarea Cloudinary. Verificați conexiunea la internet.");
+      setCloudinaryAvailable(false);
+      toast.error("Eroare la verificarea Cloudinary");
     } finally {
       setIsCheckingService(false);
     }
@@ -93,27 +96,21 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({
         </div>
       </div>
 
-      {cloudinaryStatus !== 'available' && (
+      {!cloudinaryAvailable && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Atenție!</AlertTitle>
           <AlertDescription className="space-y-2">
-            <p>Cloudinary API nu este disponibil sau se verifică disponibilitatea. Încărcarea imaginilor nu va funcționa.</p>
-            <p>Am actualizat configurația Cloudinary pentru a folosi:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Cloud name: <strong>'demo'</strong> (contul oficial de demo Cloudinary)</li>
-              <li>Upload preset: <strong>'ml_default'</strong> (preset-ul implicit pentru contul demo)</li>
-              <li>Această configurație ar trebui să funcționeze fără probleme pentru teste</li>
-            </ul>
+            <p>Cloudinary API nu este disponibil. Încărcarea imaginilor nu va funcționa.</p>
             <Button 
               variant="outline" 
               size="sm" 
               className="mt-2 flex items-center gap-1" 
-              onClick={checkCloudinaryStatus}
-              disabled={isCheckingService || cloudinaryStatus === 'checking'}
+              onClick={checkCloudinaryAvailability}
+              disabled={isCheckingService}
             >
               <RefreshCw className="h-3 w-3" />
-              {isCheckingService || cloudinaryStatus === 'checking' ? "Verificare..." : "Verifică din nou"}
+              {isCheckingService ? "Verificare..." : "Verifică din nou"}
             </Button>
           </AlertDescription>
         </Alert>
