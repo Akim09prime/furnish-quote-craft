@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Chair, Couch, Bookcase, Cabinet, Bed } from 'lucide-react';
+import { Car, Armchair } from 'lucide-react';
 
 const Designer: React.FC = () => {
   const [selectedFurniture, setSelectedFurniture] = useState<string | null>(null);
@@ -32,11 +32,11 @@ const Designer: React.FC = () => {
   ];
 
   const furnitureTypes = [
-    { id: "canapea", name: "Canapea", icon: <Couch className="h-5 w-5" /> },
-    { id: "scaun", name: "Scaun", icon: <Chair className="h-5 w-5" /> },
-    { id: "biblioteca", name: "Bibliotecă", icon: <Bookcase className="h-5 w-5" /> },
-    { id: "dulap", name: "Dulap", icon: <Cabinet className="h-5 w-5" /> },
-    { id: "pat", name: "Pat", icon: <Bed className="h-5 w-5" /> },
+    { id: "canapea", name: "Canapea", icon: <Armchair className="h-5 w-5" /> },
+    { id: "scaun", name: "Scaun", icon: <Car className="h-5 w-5" /> },
+    { id: "biblioteca", name: "Bibliotecă", icon: <Armchair className="h-5 w-5" rotate={90} /> },
+    { id: "dulap", name: "Dulap", icon: <Armchair className="h-5 w-5" /> },
+    { id: "pat", name: "Pat", icon: <Car className="h-5 w-5" /> },
   ];
 
   const handleFurnitureSelect = (id: string) => {
@@ -134,7 +134,7 @@ const Designer: React.FC = () => {
               
               <TabsContent value="preview" className="border rounded-lg p-4 min-h-[400px] flex items-center justify-center bg-white">
                 <div className="text-center">
-                  <Couch className="h-32 w-32 mx-auto text-gray-400" strokeWidth={1} />
+                  <Armchair className="h-32 w-32 mx-auto text-gray-400" strokeWidth={1} />
                   <p className="mt-4 text-gray-500">
                     {selectedFurniture ? 
                       `Vizualizare ${furnitureTypes.find(f => f.id === selectedFurniture)?.name || ''} în culoarea ${colors.find(c => c.id === selectedColor)?.name || ''}` : 

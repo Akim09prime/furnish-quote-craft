@@ -1,14 +1,13 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from '@/components/ui/card';
 import AdminCategoryEditor from '@/components/AdminCategoryEditor';
-import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+// Define the props interface for EditProductsTab
 interface EditProductsTabProps {
   database: Database;
   onDatabaseUpdate: (db: Database) => void;
@@ -17,6 +16,16 @@ interface EditProductsTabProps {
     message?: string;
   } | null;
   onCheckCloudinary: () => void;
+}
+
+// Define the type for AdminCategoryEditorProps to match the component that's imported
+// We need to add the cloudinaryAvailable prop to make it match
+interface AdminCategoryEditorProps {
+  database: Database;
+  category: any;
+  subcategory: any;
+  onDatabaseUpdate: (db: Database) => void;
+  cloudinaryAvailable: boolean;
 }
 
 const EditProductsTab: React.FC<EditProductsTabProps> = ({ 
@@ -112,7 +121,10 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({
               variant="outline" 
               size="sm" 
               className="mt-2 flex items-center gap-1" 
-              onClick={handleCheckCloudinary}
+              onClick={() => {
+                setIsCheckingService(true);
+                onCheckCloudinary().finally(() => setIsCheckingService(false));
+              }}
               disabled={isCheckingService}
             >
               <RefreshCw className={`h-3 w-3 ${isCheckingService ? 'animate-spin' : ''}`} />
