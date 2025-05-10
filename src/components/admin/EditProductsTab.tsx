@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,16 +17,6 @@ interface EditProductsTabProps {
     message?: string;
   } | null;
   onCheckCloudinary: () => void;
-}
-
-// Define the type for AdminCategoryEditorProps to match the component that's imported
-// We need to add the cloudinaryAvailable prop to make it match
-interface AdminCategoryEditorProps {
-  database: Database;
-  category: any;
-  subcategory: any;
-  onDatabaseUpdate: (db: Database) => void;
-  cloudinaryAvailable: boolean;
 }
 
 const EditProductsTab: React.FC<EditProductsTabProps> = ({ 
@@ -121,10 +112,7 @@ const EditProductsTab: React.FC<EditProductsTabProps> = ({
               variant="outline" 
               size="sm" 
               className="mt-2 flex items-center gap-1" 
-              onClick={() => {
-                setIsCheckingService(true);
-                onCheckCloudinary().finally(() => setIsCheckingService(false));
-              }}
+              onClick={handleCheckCloudinary}
               disabled={isCheckingService}
             >
               <RefreshCw className={`h-3 w-3 ${isCheckingService ? 'animate-spin' : ''}`} />

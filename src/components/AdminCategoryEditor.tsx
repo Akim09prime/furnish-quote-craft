@@ -24,13 +24,15 @@ interface AdminCategoryEditorProps {
   category: Category;
   subcategory: Subcategory;
   onDatabaseUpdate: (db: Database) => void;
+  cloudinaryAvailable: boolean;
 }
 
 const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({ 
   database, 
   category, 
   subcategory,
-  onDatabaseUpdate
+  onDatabaseUpdate,
+  cloudinaryAvailable
 }) => {
   const [products, setProducts] = useState<Product[]>([...subcategory.products]);
   const [newProduct, setNewProduct] = useState<Record<string, any>>({
@@ -44,7 +46,6 @@ const AdminCategoryEditor: React.FC<AdminCategoryEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const newImageInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [cloudinaryAvailable, setCloudinaryAvailable] = useState(true);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadTimeout, setUploadTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
