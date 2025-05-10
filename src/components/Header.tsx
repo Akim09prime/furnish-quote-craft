@@ -4,7 +4,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LogIn, LogOut } from 'lucide-react';
+import { LogIn, LogOut, Couch } from 'lucide-react';
 import { subscribeToAuthState, logout } from '@/services/AuthService';
 
 const Header: React.FC = () => {
@@ -77,6 +77,17 @@ const Header: React.FC = () => {
               className="transition-all duration-200"
             >
               <Link to="/">Generator Ofertă</Link>
+            </Button>
+            
+            <Button 
+              asChild
+              variant={location.pathname === "/designer" ? "default" : "ghost"}
+              className="transition-all duration-200"
+            >
+              <Link to="/designer">
+                <Couch className="mr-2 h-4 w-4" />
+                Proiectare Mobilier
+              </Link>
             </Button>
             
             <Button 
