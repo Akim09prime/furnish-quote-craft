@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Armchair, BookOpen, Table, Bed } from 'lucide-react';
+import { Armchair, BookOpen, Table, Bed, Sofa, Cabinet, ChefHat } from 'lucide-react';
 
 interface FurnitureThumbnailProps {
   type: string;
@@ -14,21 +14,23 @@ const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({
   size = 24 
 }) => {
   const getIcon = () => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'canapea':
-        return <Armchair size={size} />;
+        return <Sofa size={size} />;
       case 'scaun':
-        return <Armchair size={size} style={{ transform: 'rotate(45deg)' }} />;
+        return <Armchair size={size} />;
       case 'biblioteca':
         return <BookOpen size={size} />;
       case 'dulap':
-        return <BookOpen size={size} style={{ transform: 'rotate(90deg)' }} />;
+        return <Cabinet size={size} />;
       case 'masa':
         return <Table size={size} />;
       case 'pat':
         return <Bed size={size} />;
+      case 'bucatarie':
+        return <ChefHat size={size} />;
       default:
-        return <Armchair size={size} />;
+        return <Cabinet size={size} />;
     }
   };
 

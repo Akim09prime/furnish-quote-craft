@@ -25,8 +25,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Card, CardContent } from "@/components/ui/card";
-import { Armchair, Ruler, Table, BookOpen, Save, Bed, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Armchair, Ruler, Table, BookOpen, Save, Bed, ArrowRight, Cabinet, Sofa } from 'lucide-react';
 import { 
   Carousel,
   CarouselContent,
@@ -35,8 +35,12 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { toast } from "sonner";
+import { roomPresets, FurniturePreset, getPresetsByRoom } from '../data/furniturePresets';
+import FurnitureThumbnail from '@/components/FurnitureThumbnail';
 
 interface FurnitureDesign {
+  id?: string;
+  presetId?: string;
   type: string;
   color: string;
   material: string;
@@ -49,6 +53,7 @@ interface FurnitureDesign {
 
 const Designer: React.FC = () => {
   const [selectedFurniture, setSelectedFurniture] = useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string>("stejar");
   const [selectedMaterial, setSelectedMaterial] = useState<string>("pal");
   const [room, setRoom] = useState<string>("living");
@@ -60,6 +65,7 @@ const Designer: React.FC = () => {
   const [designName, setDesignName] = useState<string>("");
   const [savedDesigns, setSavedDesigns] = useState<FurnitureDesign[]>([]);
   const [gridVisible, setGridVisible] = useState<boolean>(true);
+  const [availablePresets, setAvailablePresets] = useState<FurniturePreset[]>([]);
   
   // Load saved designs from localStorage on component mount
   useEffect(() => {
@@ -72,6 +78,15 @@ const Designer: React.FC = () => {
       }
     }
   }, []);
+
+  // Actualizează preseturile disponibile în funcție de camera selectată
+  useEffect(() => {
+    const presets = getPresetsByRoom(room);
+    setAvailablePresets(presets);
+    
+    // Resetați presetul selectat când se schimbă camera
+    setSelectedPreset(null);
+  }, [room]);
 
   const colors = [
     { id: "stejar", name: "Stejar", hex: "#D4B48C" },
@@ -93,16 +108,37 @@ const Designer: React.FC = () => {
   ];
 
   const furnitureTypes = [
-    { id: "canapea", name: "Canapea", icon: <Armchair className="h-5 w-5" /> },
-    { id: "scaun", name: "Scaun", icon: <Armchair className="h-5 w-5" rotate={45} /> },
+    { id: "canapea", name: "Canapea", icon: <Sofa className="h-5 w-5" /> },
+    { id: "scaun", name: "Scaun", icon: <Armchair className="h-5 w-5" /> },
     { id: "biblioteca", name: "Bibliotecă", icon: <BookOpen className="h-5 w-5" /> },
-    { id: "dulap", name: "Dulap", icon: <BookOpen className="h-5 w-5" rotate={90} /> },
+    { id: "dulap", name: "Dulap", icon: <Cabinet className="h-5 w-5" /> },
     { id: "masa", name: "Masă", icon: <Table className="h-5 w-5" /> },
     { id: "pat", name: "Pat", icon: <Bed className="h-5 w-5" /> },
   ];
 
+  const handlePresetSelect = (presetId: string) => {
+    const preset = availablePresets.find(p => p.id === presetId);
+    if (!preset) return;
+
+    setSelectedPreset(presetId);
+    setSelectedFurniture(preset.type);
+    
+    setDimensions({
+      width: preset.dimensions.width,
+      height: preset.dimensions.height,
+      depth: preset.dimensions.depth
+    });
+    
+    // Sugerează un nume pentru acest design bazat pe preset
+    if (!designName) {
+      setDesignName(preset.name);
+    }
+  };
+
   const handleFurnitureSelect = (id: string) => {
     setSelectedFurniture(id);
+    // Resetăm presetul selectat când se schimbă manual tipul mobilierului
+    setSelectedPreset(null);
     
     // Set default dimensions based on furniture type
     switch(id) {
@@ -130,10 +166,10 @@ const Designer: React.FC = () => {
   };
 
   const roomOptions = [
+    { id: "kitchen", name: "Bucătărie" },
     { id: "living", name: "Living" },
     { id: "dormitor", name: "Dormitor" },
     { id: "birou", name: "Birou" },
-    { id: "bucatarie", name: "Bucătărie" },
     { id: "baie", name: "Baie" },
     { id: "hol", name: "Hol" },
     { id: "dressing", name: "Dressing" },
@@ -141,6 +177,23 @@ const Designer: React.FC = () => {
 
   const handleDimensionChange = (dimension: keyof typeof dimensions, value: string) => {
     const numValue = parseInt(value) || 0;
+    
+    // Aplică restricții de dimensiune dacă este selectat un preset
+    if (selectedPreset) {
+      const preset = availablePresets.find(p => p.id === selectedPreset);
+      if (preset) {
+        // Verifică dimensiunile minime și maxime pentru preset
+        if (dimension === 'width' && preset.minWidth && preset.maxWidth) {
+          if (numValue < preset.minWidth) return;
+          if (numValue > preset.maxWidth) return;
+        }
+        if (dimension === 'height' && preset.minHeight && preset.maxHeight) {
+          if (numValue < preset.minHeight) return;
+          if (numValue > preset.maxHeight) return;
+        }
+      }
+    }
+    
     setDimensions(prev => ({ ...prev, [dimension]: numValue }));
   };
 
@@ -156,6 +209,8 @@ const Designer: React.FC = () => {
     }
 
     const newDesign: FurnitureDesign = {
+      id: Date.now().toString(),
+      presetId: selectedPreset || undefined,
       type: selectedFurniture,
       color: selectedColor,
       material: selectedMaterial,
@@ -186,6 +241,8 @@ const Designer: React.FC = () => {
       height: design.height,
       depth: design.depth
     });
+    setSelectedPreset(design.presetId || null);
+    setDesignName(design.name);
     toast.info(`Design "${design.name}" încărcat`);
   };
 
@@ -214,8 +271,11 @@ const Designer: React.FC = () => {
     // Calculate size factor (larger = more expensive)
     const volumeFactor = dimensions.width * dimensions.height * dimensions.depth / 100000;
     
+    // Preset multiplier (preseturile sunt puțin mai scumpe deoarece sunt optimizate)
+    const presetMultiplier = selectedPreset ? 1.1 : 1;
+    
     // Calculate price
-    const price = basePrice[selectedFurniture] * materialMultiplier[selectedMaterial] * volumeFactor;
+    const price = basePrice[selectedFurniture] * materialMultiplier[selectedMaterial] * volumeFactor * presetMultiplier;
     
     return Math.round(price);
   };
@@ -270,6 +330,38 @@ const Designer: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {/* Componente predefinite pe categorii */}
+                {availablePresets.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Componente predefinite</label>
+                    <div className="grid grid-cols-2 gap-2 max-h-[250px] overflow-y-auto p-1">
+                      {availablePresets.map((preset) => (
+                        <Card 
+                          key={preset.id}
+                          className={`cursor-pointer transition-all hover:shadow-md ${selectedPreset === preset.id ? 'ring-2 ring-primary' : ''}`}
+                          onClick={() => handlePresetSelect(preset.id)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 bg-primary/10 rounded-md flex items-center justify-center">
+                                <FurnitureThumbnail 
+                                  type={preset.type} 
+                                  color={colors.find(c => c.id === selectedColor)?.hex || '#D4B48C'}
+                                  size={18} 
+                                />
+                              </div>
+                              <div className="text-xs">
+                                <p className="font-medium">{preset.name}</p>
+                                <p className="text-muted-foreground">{preset.dimensions.width}x{preset.dimensions.height}cm</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Tip de mobilier</label>
@@ -435,9 +527,10 @@ const Designer: React.FC = () => {
           
           <div className="lg:col-span-2">
             <Tabs defaultValue="preview" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="preview">Previzualizare 3D</TabsTrigger>
                 <TabsTrigger value="dimensions">Dimensiuni și Specificații</TabsTrigger>
+                <TabsTrigger value="details">Detalii Constructive</TabsTrigger>
               </TabsList>
               
               <TabsContent value="preview" className="border rounded-lg p-4 min-h-[500px] bg-white relative">
@@ -503,6 +596,13 @@ const Designer: React.FC = () => {
                         {selectedFurniture === 'canapea' && (
                           <div className="absolute bottom-0 h-2/3 w-full bg-gray-700 opacity-10"></div>
                         )}
+                        
+                        {/* Afișăm informații despre presetul selectat */}
+                        {selectedPreset && (
+                          <div className="absolute -bottom-8 left-0 right-0 text-center text-xs text-gray-500">
+                            {availablePresets.find(p => p.id === selectedPreset)?.name || 'Preset'}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -519,7 +619,11 @@ const Designer: React.FC = () => {
               <TabsContent value="dimensions" className="border rounded-lg p-6 min-h-[500px] bg-white">
                 {selectedFurniture ? (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-medium">Specificații {furnitureTypes.find(f => f.id === selectedFurniture)?.name}</h3>
+                    <h3 className="text-lg font-medium">
+                      {selectedPreset ? 
+                        `${availablePresets.find(p => p.id === selectedPreset)?.name}` : 
+                        `Specificații ${furnitureTypes.find(f => f.id === selectedFurniture)?.name}`}
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm font-medium text-gray-500">Lățime</p>
@@ -540,6 +644,25 @@ const Designer: React.FC = () => {
                         </p>
                       </div>
                     </div>
+
+                    {selectedPreset && (
+                      <div className="pt-4 border-t">
+                        <h4 className="text-md font-medium mb-2">Descriere</h4>
+                        <p className="text-gray-600">
+                          {availablePresets.find(p => p.id === selectedPreset)?.description || 'Mobilier personalizat'}
+                        </p>
+                        
+                        {availablePresets.find(p => p.id === selectedPreset)?.hasDrawers && (
+                          <p className="mt-2 text-gray-600">• Include sertare</p>
+                        )}
+                        {availablePresets.find(p => p.id === selectedPreset)?.hasDoors && (
+                          <p className="text-gray-600">• Include uși</p>
+                        )}
+                        {availablePresets.find(p => p.id === selectedPreset)?.shelves && (
+                          <p className="text-gray-600">• Include {availablePresets.find(p => p.id === selectedPreset)?.shelves} rafturi</p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="pt-6 border-t">
                       <h4 className="text-md font-medium mb-4">Informații suplimentare</h4>
@@ -574,12 +697,11 @@ const Designer: React.FC = () => {
                                 <Card>
                                   <CardContent className="flex aspect-square items-center justify-center p-6 bg-gray-100">
                                     <span className="text-3xl font-semibold">
-                                      {selectedFurniture === 'canapea' && <Armchair className="h-12 w-12" />}
-                                      {selectedFurniture === 'scaun' && <Armchair className="h-12 w-12" rotate={45} />}
-                                      {selectedFurniture === 'biblioteca' && <BookOpen className="h-12 w-12" />}
-                                      {selectedFurniture === 'dulap' && <BookOpen className="h-12 w-12" rotate={90} />}
-                                      {selectedFurniture === 'masa' && <Table className="h-12 w-12" />}
-                                      {selectedFurniture === 'pat' && <Bed className="h-12 w-12" />}
+                                      <FurnitureThumbnail 
+                                        type={selectedFurniture} 
+                                        color={colors.find(c => c.id === selectedColor)?.hex || '#D4B48C'} 
+                                        size={48}
+                                      />
                                     </span>
                                   </CardContent>
                                 </Card>
@@ -601,6 +723,220 @@ const Designer: React.FC = () => {
                 ) : (
                   <div className="text-center text-gray-500">
                     <p>Selectați un tip de mobilier pentru a vedea specificațiile</p>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="details" className="border rounded-lg p-6 min-h-[500px] bg-white">
+                {selectedFurniture ? (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium">Detalii constructive</h3>
+                    
+                    {/* Părțile componente */}
+                    <div className="space-y-4">
+                      <h4 className="text-md font-semibold">Părți componente:</h4>
+                      <div className="divide-y">
+                        {selectedFurniture === 'dulap' && (
+                          <>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2 font-medium">Parte</div>
+                              <div className="font-medium">Dimensiuni</div>
+                              <div className="font-medium">Material</div>
+                              <div className="font-medium">Cant</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">2 x Laterale</div>
+                              <div>{dimensions.depth}x{dimensions.height}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Față</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Blat superior</div>
+                              <div>{dimensions.width}x{dimensions.depth}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Față</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Blat inferior</div>
+                              <div>{dimensions.width}x{dimensions.depth}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>-</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Panou spate</div>
+                              <div>{dimensions.width}x{dimensions.height}cm</div>
+                              <div>HDF 3mm</div>
+                              <div>-</div>
+                            </div>
+                            {(selectedPreset && availablePresets.find(p => p.id === selectedPreset)?.shelves) && (
+                              <div className="py-2 grid grid-cols-5 text-sm">
+                                <div className="col-span-2">{availablePresets.find(p => p.id === selectedPreset)?.shelves} x Polițe</div>
+                                <div>{dimensions.width - 4}x{dimensions.depth - 2}cm</div>
+                                <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                                <div>Față</div>
+                              </div>
+                            )}
+                            {(selectedPreset && availablePresets.find(p => p.id === selectedPreset)?.hasDoors) && (
+                              <div className="py-2 grid grid-cols-5 text-sm">
+                                <div className="col-span-2">2 x Uși</div>
+                                <div>{dimensions.width/2}x{dimensions.height - 4}cm</div>
+                                <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                                <div>Toate laturile</div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        
+                        {selectedFurniture === 'biblioteca' && (
+                          <>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2 font-medium">Parte</div>
+                              <div className="font-medium">Dimensiuni</div>
+                              <div className="font-medium">Material</div>
+                              <div className="font-medium">Cant</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">2 x Laterale</div>
+                              <div>{dimensions.depth}x{dimensions.height}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Față</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Blat superior</div>
+                              <div>{dimensions.width}x{dimensions.depth}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Față</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Blat inferior</div>
+                              <div>{dimensions.width}x{dimensions.depth}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Față</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Panou spate</div>
+                              <div>{dimensions.width}x{dimensions.height}cm</div>
+                              <div>HDF 3mm</div>
+                              <div>-</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">3 x Polițe</div>
+                              <div>{dimensions.width - 4}x{dimensions.depth - 2}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Față</div>
+                            </div>
+                          </>
+                        )}
+                        
+                        {selectedFurniture === 'masa' && (
+                          <>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2 font-medium">Parte</div>
+                              <div className="font-medium">Dimensiuni</div>
+                              <div className="font-medium">Material</div>
+                              <div className="font-medium">Cant</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Blat</div>
+                              <div>{dimensions.width}x{dimensions.depth}cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Toate laturile</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">4 x Picioare</div>
+                              <div>8x8x{dimensions.height - 4}cm</div>
+                              <div>{selectedMaterial === 'lemn_masiv' ? 'Lemn masiv' : 'PAL'}</div>
+                              <div>-</div>
+                            </div>
+                          </>
+                        )}
+                        
+                        {selectedFurniture === 'pat' && (
+                          <>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2 font-medium">Parte</div>
+                              <div className="font-medium">Dimensiuni</div>
+                              <div className="font-medium">Material</div>
+                              <div className="font-medium">Cant</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">2 x Laterale</div>
+                              <div>{dimensions.depth}x30cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Sus</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Tăblie cap</div>
+                              <div>{dimensions.width}x90cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Sus, laterale</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">1 x Tăblie picioare</div>
+                              <div>{dimensions.width}x45cm</div>
+                              <div>{materials.find(m => m.id === selectedMaterial)?.name}</div>
+                              <div>Sus, laterale</div>
+                            </div>
+                            <div className="py-2 grid grid-cols-5 text-sm">
+                              <div className="col-span-2">Suport saltea</div>
+                              <div>{dimensions.width-4}x{dimensions.depth-4}cm</div>
+                              <div>Placaj 10mm + șipci</div>
+                              <div>-</div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Feronerie */}
+                    <div className="pt-6 border-t space-y-4">
+                      <h4 className="text-md font-semibold">Feronerie necesară:</h4>
+                      <div className="space-y-2">
+                        {selectedFurniture === 'dulap' && (
+                          <>
+                            <p>• 4x Balamale aplicare ușă</p>
+                            <p>• 8x Dibluri polițe</p>
+                            <p>• 2x Mânere ușă</p>
+                            <p>• 8x Picioare reglabile</p>
+                          </>
+                        )}
+                        
+                        {selectedFurniture === 'biblioteca' && (
+                          <>
+                            <p>• 12x Dibluri polițe</p>
+                            <p>• 4x Picioare reglabile</p>
+                          </>
+                        )}
+                        
+                        {selectedFurniture === 'masa' && (
+                          <>
+                            <p>• 8x Holșuruburi pentru picioare</p>
+                            <p>• 4x Inele protecție podea</p>
+                          </>
+                        )}
+                        
+                        {selectedFurniture === 'pat' && (
+                          <>
+                            <p>• 8x Șuruburi mobilă 8x80mm</p>
+                            <p>• 12x Dibluri pentru suport saltea</p>
+                          </>
+                        )}
+                        
+                        {selectedPreset && availablePresets.find(p => p.id === selectedPreset)?.hasDrawers && (
+                          <p>• {selectedFurniture === 'dulap' ? '2' : '1'}x Set glisiere sertar</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="pt-6 mt-6 flex justify-end">
+                      <Button>
+                        Descarcă plan tehnic
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500">
+                    <p>Selectați un tip de mobilier pentru a vedea detaliile constructive</p>
                   </div>
                 )}
               </TabsContent>
