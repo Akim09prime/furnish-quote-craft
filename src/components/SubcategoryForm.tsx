@@ -14,7 +14,7 @@ import {
 interface SubcategoryFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (subcategory: { name: string; adaos: number }) => void;
+  onSave: (subcategory: { name: string; adaos: number; fields: { name: string; type: string; options?: string[] }[] }) => void;
   categoryName: string | null;
 }
 
@@ -26,7 +26,8 @@ const SubcategoryForm: React.FC<SubcategoryFormProps> = ({ isOpen, onClose, onSa
     if (subcategoryName.trim()) {
       onSave({
         name: subcategoryName,
-        adaos: adaos
+        adaos: adaos,
+        fields: [] // Adding required fields property
       });
       setSubcategoryName('');
       setAdaos(0);

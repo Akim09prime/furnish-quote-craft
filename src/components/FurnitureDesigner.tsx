@@ -40,15 +40,11 @@ const DEFAULT_DESIGN: FurnitureDesign = {
   height: 70,
   depth: 50,
   material: 'PAL',
-  thickness: 18,
-  color: '#D4B48C',
   hasDoors: false,
   hasDrawers: false,
   doorMaterial: '',
   doorColor: '',
   accessories: [],
-  createdAt: 0,
-  updatedAt: 0
 };
 
 const FURNITURE_TYPES = [
@@ -82,25 +78,20 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
 }) => {
   const [currentDesign, setCurrentDesign] = useState<FurnitureDesign>({
     ...DEFAULT_DESIGN,
-    id: Date.now().toString(),
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    id: Date.now().toString()
   });
   
   // Initialize design state when props change
   useEffect(() => {
     if (design) {
       setCurrentDesign({
-        ...design,
-        updatedAt: Date.now()
+        ...design
       });
     } else {
       // Create a new design with default values
       setCurrentDesign({
         ...DEFAULT_DESIGN,
-        id: Date.now().toString(),
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+        id: Date.now().toString()
       });
     }
   }, [design]);
@@ -111,9 +102,8 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
     setCurrentDesign(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : 
-              ['width', 'height', 'depth', 'thickness'].includes(name) ? Number(value) : 
-              value,
-      updatedAt: Date.now()
+              ['width', 'height', 'depth'].includes(name) ? Number(value) : 
+              value
     }));
   };
 
@@ -121,8 +111,7 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
   const handleSelectChange = (name: string, value: string) => {
     setCurrentDesign(prev => ({
       ...prev,
-      [name]: value,
-      updatedAt: Date.now()
+      [name]: value
     }));
   };
   
@@ -130,8 +119,7 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
   const handleAccessoriesChange = (accessories: Accessory[]) => {
     setCurrentDesign(prev => ({
       ...prev,
-      accessories,
-      updatedAt: Date.now()
+      accessories
     }));
   };
 
@@ -291,21 +279,6 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="design-thickness" className="text-right">
-                Grosime (mm)
-              </Label>
-              <Input
-                id="design-thickness"
-                name="thickness"
-                type="number"
-                min="0"
-                value={currentDesign.thickness}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="design-color" className="text-right">
                 Culoare
               </Label>
@@ -314,13 +287,13 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
                   id="design-color"
                   name="color"
                   type="color"
-                  value={currentDesign.color}
+                  value={currentDesign.color || '#D4B48C'}
                   onChange={handleChange}
                   className="w-12 h-10 p-1"
                 />
                 <Input
                   name="color"
-                  value={currentDesign.color}
+                  value={currentDesign.color || ''}
                   onChange={handleChange}
                   className="flex-1"
                 />
@@ -342,8 +315,7 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
                 onCheckedChange={(checked) => {
                   setCurrentDesign(prev => ({
                     ...prev,
-                    hasDoors: checked === true,
-                    updatedAt: Date.now()
+                    hasDoors: checked === true
                   }));
                 }}
               />
@@ -399,8 +371,7 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
                 onCheckedChange={(checked) => {
                   setCurrentDesign(prev => ({
                     ...prev,
-                    hasDrawers: checked === true,
-                    updatedAt: Date.now()
+                    hasDrawers: checked === true
                   }));
                 }}
               />
