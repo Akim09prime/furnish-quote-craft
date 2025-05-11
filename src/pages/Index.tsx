@@ -13,7 +13,12 @@ import ProductSelector from '@/components/ProductSelector';
 const Index = () => {
   const [database, setDatabase] = useState<Database | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { quote, setQuote, addItem, addManualItem } = useQuote();
+  const { 
+    quote, 
+    setQuote, 
+    handleAddItemToQuote, 
+    handleAddManualItem 
+  } = useQuote();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quoteType, setQuoteType] = useState<'client' | 'internal'>('client');
   
@@ -70,8 +75,12 @@ const Index = () => {
                 {database && (
                   <ProductSelector 
                     database={database} 
-                    onAddToQuote={addItem}
-                    onAddManualItem={addManualItem}
+                    onAddToQuote={handleAddItemToQuote}
+                    onAddManualItem={(description, quantity, price, categoryName) => {
+                      if (handleAddManualItem) {
+                        handleAddManualItem(description, quantity, price);
+                      }
+                    }}
                   />
                 )}
               </section>

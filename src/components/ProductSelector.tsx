@@ -24,7 +24,7 @@ export interface ProductSelectorProps {
     pricePerUnit: number;
     productDetails: Record<string, any>;
   }) => void;
-  onAddManualItem?: (description: string, quantity: number, price: number, categoryName: string) => void;
+  onAddManualItem?: (description: string, quantity: number, price: number, categoryName?: string) => void;
 }
 
 const ProductSelector: React.FC<ProductSelectorProps> = ({ database, onAddToQuote, onAddManualItem }) => {
@@ -139,10 +139,12 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ database, onAddToQuot
     setSelectedProduct(null);
   };
 
+  // Check if database is valid
   if (!database || !database.categories || database.categories.length === 0) {
     return <div>No categories found in database</div>;
   }
 
+  // Check if selectedCategory is valid before accessing its properties
   if (!selectedCategory) {
     return <div>Loading categories...</div>;
   }
