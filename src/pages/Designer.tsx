@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Button } from "@/components/ui/button";
@@ -111,7 +110,7 @@ const Designer: React.FC = () => {
     { id: "canapea", name: "Canapea", icon: <Sofa className="h-5 w-5" /> },
     { id: "scaun", name: "Scaun", icon: <Armchair className="h-5 w-5" /> },
     { id: "biblioteca", name: "Bibliotecă", icon: <BookOpen className="h-5 w-5" /> },
-    { id: "dulap", name: "Dulap", icon: <Cabinet className="h-5 w-5" /> },
+    { id: "dulap", name: "Dulap", icon: <BookOpen className="h-5 w-5" /> },
     { id: "masa", name: "Masă", icon: <Table className="h-5 w-5" /> },
     { id: "pat", name: "Pat", icon: <Bed className="h-5 w-5" /> },
   ];
