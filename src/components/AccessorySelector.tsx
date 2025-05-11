@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,6 +182,4 @@ const AccessorySelector: React.FC<AccessorySelectorProps> = ({
   );
 };
 
-// Export both types and component
-export { AccessorySelector, type Accessory };
 export default AccessorySelector;
