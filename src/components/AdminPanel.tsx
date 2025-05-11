@@ -30,6 +30,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState("edit-products");
 
+  // Default values for TypesEditorTab
+  const defaultCategoryName = database.categories[0]?.name || "Mobila";
+  const defaultSubcategoryName = database.categories[0]?.subcategories[0]?.name || "Bucatarie";
+  const defaultFieldName = "type";
+  const defaultTitle = "Editor Tipuri Produse";
+  const defaultDescription = "Adaugă, modifică sau șterge tipuri de produse";
+  const defaultAddButtonLabel = "Adaugă Tip";
+  const defaultInputLabel = "Nume Tip Nou";
+  const defaultInputPlaceholder = "Introduceți numele tipului";
+  const defaultSuccessMessage = "Tipul '{type}' a fost adăugat cu succes";
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 w-full h-auto">
@@ -86,7 +97,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </TabsContent>
         
         <TabsContent value="types-editor">
-          <TypesEditorTab />
+          <TypesEditorTab 
+            database={database} 
+            onDatabaseUpdate={onDatabaseUpdate}
+            categoryName={defaultCategoryName}
+            subcategoryName={defaultSubcategoryName}
+            fieldName={defaultFieldName}
+            title={defaultTitle}
+            description={defaultDescription}
+            addButtonLabel={defaultAddButtonLabel}
+            inputLabel={defaultInputLabel}
+            inputPlaceholder={defaultInputPlaceholder}
+            successMessage={defaultSuccessMessage}
+          />
         </TabsContent>
         
         <TabsContent value="export-import">

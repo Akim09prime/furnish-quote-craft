@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Database } from '@/lib/db';
 import { useAppContext } from '@/lib/contexts/AppContext';
@@ -160,13 +159,24 @@ const FurnitureComponentsTab: React.FC<FurnitureComponentsTabProps> = ({ databas
     if (name.includes('.')) {
       // Handle nested properties (e.g., dimensions.width)
       const [parent, child] = name.split('.');
-      setNewComponent(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: type === 'number' ? Number(value) : value
-        }
-      }));
+      if (parent === 'dimensions') {
+        setNewComponent(prev => ({
+          ...prev,
+          dimensions: {
+            ...prev.dimensions,
+            [child]: type === 'number' ? Number(value) : value
+          }
+        }));
+      } else {
+        // This else branch prevents the spread type error by handling non-dimensions properties
+        setNewComponent(prev => ({
+          ...prev,
+          [parent]: {
+            ...(prev[parent as keyof typeof prev] as object || {}),
+            [child]: type === 'number' ? Number(value) : value
+          }
+        }));
+      }
     } else {
       // Handle direct properties
       setNewComponent(prev => ({
