@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Database } from '@/lib/db';
 
@@ -121,13 +120,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({
     checkCloudinaryStatus();
   }, []);
 
-  const setEditMode = setIsEditMode; // Corectăm referința la setEditMode
-
+  // Folosim direct setIsEditMode pentru funcționalitatea de setEditMode
   const value = {
     database,
     updateDatabase,
     isEditMode,
-    setEditMode,
+    setEditMode: setIsEditMode,
     createBackup,
     cloudinaryStatus,
     checkCloudinaryStatus

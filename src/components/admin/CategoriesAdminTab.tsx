@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
+import { useAppContext } from '@/lib/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAppContext } from '@/lib/contexts/AppContext';
 import SaveButton from '@/lib/components/common/SaveButton';
 import PageHeader from '@/lib/components/common/PageHeader';
 import { useCategories } from '@/lib/hooks/useCategories';
@@ -17,131 +17,101 @@ interface CategoriesAdminTabProps {
   onDatabaseUpdate?: (db: Database) => void;
 }
 
-const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = () => {
+const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = ({ database, onDatabaseUpdate }) => {
   const { createBackup } = useAppContext();
   const { categories, selectedCategory, setSelectedCategory, addCategory, deleteCategory } = useCategories();
   
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) {
-      toast.error("Numele categoriei nu poate fi gol");
+      toast.error('Numele categoriei nu poate fi gol');
       return;
     }
-
+    
     addCategory(newCategoryName);
-    setNewCategoryName("");
-    setShowAddCategory(false);
+    setNewCategoryName('');
+    setIsAdding(false);
     createBackup();
   };
 
-  const handleDeleteCategory = () => {
-    if (!selectedCategory) {
-      toast.error("Selectați o categorie pentru ștergere");
-      return;
+  const handleDeleteCategory = (categoryName: string) => {
+    if (window.confirm(`Sigur doriți să ștergeți categoria "${categoryName}" și toate subcategoriile sale?`)) {
+      deleteCategory(categoryName);
+      createBackup();
     }
-
-    deleteCategory(selectedCategory);
-    createBackup();
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Administrare Categorii</CardTitle>
-        <CardDescription>
-          Adaugă sau șterge categorii în baza de date
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={() => setShowAddCategory(!showAddCategory)} variant="outline" className="gap-2">
-              <PlusCircle size={16} />
-              <span>Categorie Nouă</span>
-            </Button>
+    <div className="space-y-4">
+      <PageHeader 
+        title="Gestionare Categorii" 
+        description="Adaugă, modifică sau șterge categorii de produse" 
+      />
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Categorii</h3>
+            <SaveButton onClick={() => createBackup()} tooltip="Salvează modificările" />
           </div>
-
-          {showAddCategory && (
-            <div className="border p-4 rounded-md space-y-4">
-              <h3 className="font-medium">Adaugă Categorie Nouă</h3>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Nume Categorie</label>
-                <Input 
-                  value={newCategoryName} 
-                  onChange={(e) => setNewCategoryName(e.target.value)} 
-                  placeholder="ex. Glisiere, Balamale, etc."
-                />
-              </div>
-              <div className="flex justify-end">
-                <SaveButton 
-                  onClick={handleAddCategory}
-                  label="Salvează Categoria"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="border rounded-md">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left py-3 px-4">Nume Categorie</th>
-                  <th className="py-3 px-4 w-20">Acțiuni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.length === 0 ? (
-                  <tr>
-                    <td colSpan={2} className="text-center py-4">
-                      Nu există categorii
-                    </td>
-                  </tr>
-                ) : (
-                  categories.map((cat) => (
-                    <tr key={cat.name} className="border-b">
-                      <td className="py-3 px-4">{cat.name}</td>
-                      <td className="py-3 px-4">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => {
-                            if (selectedCategory === cat.name) {
-                              handleDeleteCategory();
-                            } else {
-                              setSelectedCategory(cat.name);
-                              toast.info(`Selectați "Șterge" din nou pentru a confirma ștergerea categoriei "${cat.name}"`);
-                            }
-                          }}
-                          className="h-8 w-8"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {selectedCategory && (
-            <div className="flex justify-end">
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={handleDeleteCategory}
-                className="gap-2"
+          
+          {/* Lista de categorii */}
+          <div className="space-y-2">
+            {categories.map((category) => (
+              <div 
+                key={category.name}
+                className="flex justify-between items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100"
               >
-                <Trash2 size={16} />
-                <span>Șterge "{selectedCategory}"</span>
-              </Button>
+                <span className="font-medium">{category.name}</span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedCategory(category.name)}
+                  >
+                    Editează
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handleDeleteCategory(category.name)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Adăugare categorie nouă */}
+          {isAdding ? (
+            <div className="mt-4 flex gap-2">
+              <Input
+                placeholder="Nume categorie"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                autoFocus
+              />
+              <Button onClick={handleAddCategory}>Adaugă</Button>
+              <Button variant="outline" onClick={() => setIsAdding(false)}>Anulează</Button>
             </div>
+          ) : (
+            <Button 
+              className="mt-4 w-full" 
+              variant="outline"
+              onClick={() => setIsAdding(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Adaugă categorie
+            </Button>
           )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

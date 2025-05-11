@@ -15,7 +15,7 @@ import Designer from "./pages/Designer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Save, Palette, Brush, PaintBucket, Layers } from "lucide-react";
-import { AppProvider } from "./lib/contexts/AppContext";
+import { AppProvider, useAppContext } from "./lib/contexts/AppContext";
 
 // Create a new QueryClient
 const queryClient = new QueryClient({
@@ -69,7 +69,7 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => {
 const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const { isEditMode, setEditMode } = useAppContext(); // Utilizăm contextul pentru editMode
   
   useEffect(() => {
     const adminPaths = ['/admin', '/database', '/designer'];
@@ -79,13 +79,13 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
     if (!adminPaths.includes(location.pathname)) {
       setEditMode(false);
     }
-  }, [location]);
+  }, [location, setEditMode]);
   
   if (!isAdmin) return <>{children}</>;
   
   return (
     <>
-      {editMode && (
+      {isEditMode && (
         <div className="edit-mode-overlay animate-fade-in">
           <div>
             <span className="font-bold">Mod editare activat</span>
@@ -102,11 +102,11 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
         </div>
       )}
       
-      <div className={editMode ? 'edit-mode-container' : ''}>
+      <div className={isEditMode ? 'edit-mode-container' : ''}>
         {children}
       </div>
       
-      {isAdmin && !editMode && (
+      {isAdmin && !isEditMode && (
         <div className="edit-controls animate-fade-in">
           <Button size="sm" onClick={() => setEditMode(true)} variant="purple">
             <Eye className="h-4 w-4 mr-2" />
@@ -123,7 +123,7 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
         </div>
       )}
       
-      {isAdmin && editMode && (
+      {isAdmin && isEditMode && (
         <div className="edit-controls animate-fade-in">
           <Button size="sm" variant="destructive" onClick={() => setEditMode(false)}>
             <EyeOff className="h-4 w-4 mr-2" />
