@@ -143,11 +143,11 @@ const ManualFurnitureForm: React.FC<ManualFurnitureFormProps> = ({ db, onSave })
   useEffect(() => {
     // In a real scenario, load from DB
     const dummyAccessories: AccessoryWithId[] = [
-      { id: '1', name: 'Balama Clip-Top', description: 'Balama hidraulică cu amortizor', price: 15, imageUrl: '' },
-      { id: '2', name: 'Mâner Profil', description: 'Mâner aluminiu 128mm', price: 8, imageUrl: '' },
-      { id: '3', name: 'Sertar Tandem Box', description: 'Sistem complet de sertar', price: 120, imageUrl: '' },
-      { id: '4', name: 'Picioare Plastic', description: 'Set 4 picioare ajustabile', price: 20, imageUrl: '' },
-      { id: '5', name: 'Lift Pneumatic', description: 'Mecanism pentru uși suspendate', price: 60, imageUrl: '' },
+      { id: '1', name: 'Balama Clip-Top', description: 'Balama hidraulică cu amortizor', price: 15, imageUrl: '', quantity: 0 },
+      { id: '2', name: 'Mâner Profil', description: 'Mâner aluminiu 128mm', price: 8, imageUrl: '', quantity: 0 },
+      { id: '3', name: 'Sertar Tandem Box', description: 'Sistem complet de sertar', price: 120, imageUrl: '', quantity: 0 },
+      { id: '4', name: 'Picioare Plastic', description: 'Set 4 picioare ajustabile', price: 20, imageUrl: '', quantity: 0 },
+      { id: '5', name: 'Lift Pneumatic', description: 'Mecanism pentru uși suspendate', price: 60, imageUrl: '', quantity: 0 },
     ];
     
     setAccessories(dummyAccessories);
