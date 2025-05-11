@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 interface SaveButtonProps {
   onClick: () => void;
   label?: string;
+  tooltip?: string; // Added tooltip prop
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "amber" | "purple" | null | undefined;
   size?: "default" | "sm" | "lg" | "icon" | null | undefined;
   className?: string;
@@ -16,6 +17,7 @@ interface SaveButtonProps {
 const SaveButton: React.FC<SaveButtonProps> = ({ 
   onClick, 
   label = "Salvează", 
+  tooltip,
   variant = "default", 
   size = "default",
   className = "",
@@ -24,7 +26,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({
   const handleSave = () => {
     onClick();
     toast.success(`Datele au fost salvate cu succes`, {
-      description: "Modificările au fost aplicate cu succes."
+      description: tooltip || "Modificările au fost aplicate cu succes."
     });
   };
   
@@ -35,6 +37,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({
       size={size} 
       className={`transition-all duration-200 hover-scale ${className}`}
       disabled={disabled}
+      title={tooltip}
     >
       <Save className="h-4 w-4 mr-2" />
       {label}
