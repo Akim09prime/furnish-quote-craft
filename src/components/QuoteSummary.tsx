@@ -234,9 +234,13 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
   };
   
   const handleImportDesign = (design: FurnitureDesign, cost: number) => {
+    console.log('Importing design to quote:', design, 'with cost:', cost);
     if (onImportFurnitureDesign) {
       onImportFurnitureDesign(design, cost);
       toast.success(`Design "${design.name}" adăugat în ofertă`);
+    } else {
+      console.error('onImportFurnitureDesign callback is not provided to QuoteSummary');
+      toast.error('Eroare la adăugarea designului în ofertă');
     }
   };
   

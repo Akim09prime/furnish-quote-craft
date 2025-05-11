@@ -1,1055 +1,698 @@
-
-import React, { useState, useEffect } from 'react';
-import Header from '@/components/Header';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Armchair, Ruler, Table, BookOpen, Save, Bed, ArrowRight, Sofa, Plus, ChefHat } from 'lucide-react';
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Save, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
-import { roomPresets, FurniturePreset, getPresetsByRoom } from '../data/furniturePresets';
-import FurnitureThumbnail from '@/components/FurnitureThumbnail';
-import FurnitureSetManager, { FurnitureDesign } from '@/components/FurnitureSetManager';
-import AccessorySelector from '@/components/AccessorySelector';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose
-} from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
+import { initialDB, loadDatabase, saveDatabase, addCategory, deleteCategory, addSubcategory, updateSubcategory, deleteSubcategory, addProduct, updateProduct, deleteProduct, exportDatabaseJSON, importDatabaseJSON, Quote, loadQuote, saveQuote, updateQuoteItem, removeQuoteItem, setLaborPercentage, updateQuoteMetadata, addManualPalItem, createNewQuote, addFurnitureDesignToQuote, addFurnitureSetToQuote, Material, addMaterial, deleteMaterial, Database } from "@/lib/db";
+import CategoryForm from "@/components/CategoryForm";
+import SubcategoryForm from "@/components/SubcategoryForm";
+import ProductForm from "@/components/ProductForm";
+import MaterialForm from "@/components/MaterialForm";
+import QuoteSummary from "@/components/QuoteSummary";
+import QuoteItemEditor from "@/components/QuoteItemEditor";
+import FurnitureSetManager, { FurnitureDesign } from "@/components/FurnitureSetManager";
+import FurnitureDesigner from "@/components/FurnitureDesigner";
 
-const Designer: React.FC = () => {
-  const [selectedFurniture, setSelectedFurniture] = useState<string | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string>("stejar");
-  const [selectedMaterial, setSelectedMaterial] = useState<string>("pal");
-  const [room, setRoom] = useState<string>("living");
-  const [dimensions, setDimensions] = useState({
-    width: 120,
-    height: 80,
-    depth: 60
+// Make sure the page has the necessary callbacks for furniture design integration
+const Designer = () => {
+  const [db, setDb] = useState<Database>(initialDB);
+  const [quote, setQuote] = useState<Quote>(createNewQuote());
+  const [quoteType, setQuoteType] = useState<'client' | 'internal'>('client');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
+  const [isSubcategoryFormOpen, setIsSubcategoryFormOpen] = useState(false);
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [isMaterialFormOpen, setIsMaterialFormOpen] = useState(false);
+  const [isQuoteItemEditorOpen, setIsQuoteItemEditorOpen] = useState(false);
+  const [selectedQuoteItem, setSelectedQuoteItem] = useState<string | null>(null);
+  const [isImportExportDialogOpen, setIsImportExportDialogOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [isFurnitureDesignerOpen, setIsFurnitureDesignerOpen] = useState(false);
+  const [savedDesigns, setSavedDesigns] = useState<FurnitureDesign[]>(() => {
+    const saved = localStorage.getItem('furnitureDesigns');
+    return saved ? JSON.parse(saved) : [];
   });
-  const [designName, setDesignName] = useState<string>("");
-  const [savedDesigns, setSavedDesigns] = useState<FurnitureDesign[]>([]);
-  const [gridVisible, setGridVisible] = useState<boolean>(true);
-  const [availablePresets, setAvailablePresets] = useState<FurniturePreset[]>([]);
-  const [hasDrawers, setHasDrawers] = useState<boolean>(false);
-  const [hasDoors, setHasDoors] = useState<boolean>(false);
-  const [doorMaterial, setDoorMaterial] = useState<string>("pal");
-  const [doorColor, setDoorColor] = useState<string>("stejar");
-  const [accessories, setAccessories] = useState<{name: string; price: number; quantity: number}[]>([]);
-  const [isImportToQuoteDialogOpen, setIsImportToQuoteDialogOpen] = useState<boolean>(false);
+  const [selectedDesign, setSelectedDesign] = useState<FurnitureDesign | null>(null);
   
-  // Load saved designs from localStorage on component mount
+  // Load database and quote on component mount
   useEffect(() => {
-    const savedItems = localStorage.getItem('furnitureDesigns');
-    if (savedItems) {
-      try {
-        setSavedDesigns(JSON.parse(savedItems));
-      } catch (e) {
-        console.error('Failed to parse saved designs:', e);
-      }
-    }
+    const loadedDb = loadDatabase();
+    setDb(loadedDb);
+    setMaterials(loadedDb.materials || []);
+
+    const loadedQuote = loadQuote();
+    setQuote(loadedQuote);
   }, []);
 
-  // Actualizează preseturile disponibile în funcție de camera selectată
+  // Save database when it changes
   useEffect(() => {
-    const presets = getPresetsByRoom(room);
-    setAvailablePresets(presets);
-    
-    // Resetați presetul selectat când se schimbă camera
-    setSelectedPreset(null);
-  }, [room]);
+    saveDatabase(db);
+  }, [db]);
 
-  const colors = [
-    { id: "stejar", name: "Stejar", hex: "#D4B48C" },
-    { id: "nuc", name: "Nuc", hex: "#5C4033" },
-    { id: "alb", name: "Alb", hex: "#FFFFFF" },
-    { id: "negru", name: "Negru", hex: "#000000" },
-    { id: "gri", name: "Gri", hex: "#808080" },
-    { id: "cires", name: "Cireș", hex: "#C4572E" },
-    { id: "wenge", name: "Wenge", hex: "#4C3327" },
-    { id: "sonoma", name: "Sonoma", hex: "#E4D4C2" },
-  ];
-
-  const materials = [
-    { id: "pal", name: "PAL", thickness: "18mm" },
-    { id: "pal_hdf", name: "PAL HDF", thickness: "22mm" },
-    { id: "mdf", name: "MDF", thickness: "16mm" },
-    { id: "mdf_lucios", name: "MDF Lucios", thickness: "18mm" },
-    { id: "lemn_masiv", name: "Lemn Masiv", thickness: "25mm" },
-  ];
-
-  const furnitureTypes = [
-    { id: "canapea", name: "Canapea", icon: <Sofa className="h-5 w-5" /> },
-    { id: "scaun", name: "Scaun", icon: <Armchair className="h-5 w-5" /> },
-    { id: "biblioteca", name: "Bibliotecă", icon: <BookOpen className="h-5 w-5" /> },
-    { id: "dulap", name: "Dulap", icon: <BookOpen className="h-5 w-5" /> },
-    { id: "masa", name: "Masă", icon: <Table className="h-5 w-5" /> },
-    { id: "pat", name: "Pat", icon: <Bed className="h-5 w-5" /> },
-    { id: "bucatarie", name: "Bucătărie", icon: <ChefHat className="h-5 w-5" /> },
-    { id: "corp", name: "Corp", icon: <Plus className="h-5 w-5" /> },
-  ];
-
-  const handlePresetSelect = (presetId: string) => {
-    const preset = availablePresets.find(p => p.id === presetId);
-    if (!preset) return;
-
-    setSelectedPreset(presetId);
-    setSelectedFurniture(preset.type);
-    
-    setDimensions({
-      width: preset.dimensions.width,
-      height: preset.dimensions.height,
-      depth: preset.dimensions.depth
-    });
-    
-    // Sugerează un nume pentru acest design bazat pe preset
-    if (!designName) {
-      setDesignName(preset.name);
-    }
-    
-    // Set doors and drawers properties based on preset
-    setHasDrawers(preset.hasDrawers || false);
-    setHasDoors(preset.hasDoors || false);
-  };
-
-  const handleFurnitureSelect = (id: string) => {
-    setSelectedFurniture(id);
-    // Resetăm presetul selectat când se schimbă manual tipul mobilierului
-    setSelectedPreset(null);
-    
-    // Set default dimensions based on furniture type
-    switch(id) {
-      case "canapea":
-        setDimensions({ width: 200, height: 85, depth: 90 });
-        break;
-      case "scaun":
-        setDimensions({ width: 45, height: 90, depth: 45 });
-        break;
-      case "biblioteca":
-        setDimensions({ width: 100, height: 200, depth: 35 });
-        break;
-      case "dulap":
-        setDimensions({ width: 150, height: 220, depth: 60 });
-        break;
-      case "masa":
-        setDimensions({ width: 120, height: 75, depth: 80 });
-        break;
-      case "pat":
-        setDimensions({ width: 160, height: 45, depth: 200 });
-        break;
-      case "bucatarie":
-        setDimensions({ width: 240, height: 85, depth: 60 });
-        break;
-      case "corp":
-        setDimensions({ width: 60, height: 85, depth: 60 });
-        break;
-      default:
-        setDimensions({ width: 120, height: 80, depth: 60 });
-    }
-  };
-
-  const roomOptions = [
-    { id: "kitchen", name: "Bucătărie" },
-    { id: "living", name: "Living" },
-    { id: "dormitor", name: "Dormitor" },
-    { id: "birou", name: "Birou" },
-    { id: "baie", name: "Baie" },
-    { id: "hol", name: "Hol" },
-    { id: "dressing", name: "Dressing" },
-  ];
-
-  const handleDimensionChange = (dimension: keyof typeof dimensions, value: string) => {
-    const numValue = parseInt(value) || 0;
-    
-    // Aplică restricții de dimensiune dacă este selectat un preset
-    if (selectedPreset) {
-      const preset = availablePresets.find(p => p.id === selectedPreset);
-      if (preset) {
-        // Verifică dimensiunile minime și maxime pentru preset
-        if (dimension === 'width' && preset.minWidth && preset.maxWidth) {
-          if (numValue < preset.minWidth) return;
-          if (numValue > preset.maxWidth) return;
-        }
-        if (dimension === 'height' && preset.minHeight && preset.maxHeight) {
-          if (numValue < preset.minHeight) return;
-          if (numValue > preset.maxHeight) return;
-        }
-      }
-    }
-    
-    setDimensions(prev => ({ ...prev, [dimension]: numValue }));
-  };
-
-  const saveDesign = () => {
-    if (!selectedFurniture) {
-      toast.error("Selectați un tip de mobilier pentru a salva designul");
-      return;
-    }
-
-    if (!designName.trim()) {
-      toast.error("Introduceți un nume pentru design");
-      return;
-    }
-
-    const newDesign: FurnitureDesign = {
-      id: Date.now().toString(),
-      presetId: selectedPreset || undefined,
-      type: selectedFurniture,
-      color: selectedColor,
-      material: selectedMaterial,
-      room,
-      width: dimensions.width,
-      height: dimensions.height,
-      depth: dimensions.depth,
-      name: designName,
-      hasDrawers,
-      hasDoors,
-      doorMaterial: hasDoors ? doorMaterial : undefined,
-      doorColor: hasDoors ? doorColor : undefined,
-      accessories: accessories.length > 0 ? [...accessories] : undefined
-    };
-
-    const updatedDesigns = [...savedDesigns, newDesign];
-    setSavedDesigns(updatedDesigns);
-    
-    // Save to localStorage
-    localStorage.setItem('furnitureDesigns', JSON.stringify(updatedDesigns));
-    
-    toast.success("Design salvat cu succes!");
-    setDesignName("");
-  };
-
-  const loadDesign = (design: FurnitureDesign) => {
-    setSelectedFurniture(design.type);
-    setSelectedColor(design.color);
-    setSelectedMaterial(design.material);
-    setRoom(design.room);
-    setDimensions({
-      width: design.width,
-      height: design.height,
-      depth: design.depth
-    });
-    setSelectedPreset(design.presetId || null);
-    setDesignName(design.name);
-    setHasDrawers(design.hasDrawers || false);
-    setHasDoors(design.hasDoors || false);
-    setDoorMaterial(design.doorMaterial || "pal");
-    setDoorColor(design.doorColor || "stejar");
-    setAccessories(design.accessories || []);
-    toast.info(`Design "${design.name}" încărcat`);
-  };
-
-  const generatePrice = () => {
-    if (!selectedFurniture || !selectedMaterial) return 0;
-    
-    // Base price by furniture type
-    const basePrice: Record<string, number> = {
-      canapea: 1200,
-      scaun: 250,
-      biblioteca: 800,
-      dulap: 1500,
-      masa: 700,
-      pat: 1000,
-      bucatarie: 2000,
-      corp: 500
-    };
-    
-    // Material multiplier
-    const materialMultiplier: Record<string, number> = {
-      pal: 1,
-      pal_hdf: 1.2,
-      mdf: 1.5,
-      mdf_lucios: 1.8,
-      lemn_masiv: 2.5
-    };
-    
-    // Calculate size factor (larger = more expensive)
-    const volumeFactor = dimensions.width * dimensions.height * dimensions.depth / 100000;
-    
-    // Preset multiplier (preseturile sunt puțin mai scumpe deoarece sunt optimizate)
-    const presetMultiplier = selectedPreset ? 1.1 : 1;
-    
-    // Door multiplier
-    const doorMultiplier = hasDoors ? 
-      (doorMaterial === 'mdf_lucios' ? 1.3 : doorMaterial === 'lemn_masiv' ? 1.5 : 1.1) : 1;
-    
-    // Drawer multiplier
-    const drawerMultiplier = hasDrawers ? 1.2 : 1;
-    
-    // Calculate price
-    let price = basePrice[selectedFurniture] * 
-              materialMultiplier[selectedMaterial] * 
-              volumeFactor * 
-              presetMultiplier * 
-              doorMultiplier *
-              drawerMultiplier;
-    
-    // Add accessories price
-    const accessoriesPrice = accessories.reduce((sum, acc) => sum + acc.price * acc.quantity, 0);
-    price += accessoriesPrice;
-    
-    return Math.round(price);
-  };
-
-  const getTotalWeight = () => {
-    if (!selectedFurniture || !selectedMaterial) return 0;
-    
-    // Density in kg/m³
-    const density: Record<string, number> = {
-      pal: 650,
-      pal_hdf: 720,
-      mdf: 700,
-      mdf_lucios: 720,
-      lemn_masiv: 800
-    };
-    
-    // Calculate volume in cubic meters
-    const volume = (dimensions.width * dimensions.height * dimensions.depth) / 1000000;
-    
-    // Calculate weight in kg
-    return Math.round(density[selectedMaterial] * volume);
-  };
-
-  const handleUpdateDesigns = (updatedDesigns: FurnitureDesign[]) => {
-    setSavedDesigns(updatedDesigns);
-    localStorage.setItem('furnitureDesigns', JSON.stringify(updatedDesigns));
-  };
+  // Save quote when it changes
+  useEffect(() => {
+    saveQuote(quote);
+  }, [quote]);
   
-  const getSetsList = () => {
-    const setsString = localStorage.getItem('furnitureSets');
-    if (!setsString) return [];
-    
+  // Save designs to localStorage
+  useEffect(() => {
+    localStorage.setItem('furnitureDesigns', JSON.stringify(savedDesigns));
+  }, [savedDesigns]);
+
+  // Handler functions for database operations
+  const handleAddCategory = (categoryName: string) => {
     try {
-      return JSON.parse(setsString);
-    } catch (e) {
-      console.error('Failed to parse furniture sets:', e);
-      return [];
+      const updatedDb = addCategory(db, categoryName);
+      setDb(updatedDb);
+      toast.success(`Categoria "${categoryName}" a fost adăugată`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsCategoryFormOpen(false);
     }
   };
-  
-  const getDesignsInSet = (setId: string) => {
-    return savedDesigns.filter(d => d.setId === setId);
+
+  const handleAddSubcategory = (categoryName: string, subcategory: Omit<typeof initialDB.categories[0]['subcategories'][0], 'products'>) => {
+    try {
+      const updatedDb = addSubcategory(db, categoryName, { ...subcategory, products: [] });
+      setDb(updatedDb);
+      toast.success(`Subcategoria "${subcategory.name}" a fost adăugată în categoria "${categoryName}"`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsSubcategoryFormOpen(false);
+    }
+  };
+
+  const handleUpdateSubcategory = (categoryName: string, oldSubcategoryName: string, updatedSubcategory: typeof initialDB.categories[0]['subcategories'][0]) => {
+    try {
+      const updatedDb = updateSubcategory(db, categoryName, oldSubcategoryName, updatedSubcategory);
+      setDb(updatedDb);
+      toast.success(`Subcategoria "${updatedSubcategory.name}" a fost actualizată în categoria "${categoryName}"`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleAddProduct = (categoryName: string, subcategoryName: string, product: Omit<typeof initialDB.categories[0]['subcategories'][0]['products'][0], 'id'>) => {
+    const updatedDb = addProduct(db, categoryName, subcategoryName, product);
+    setDb(updatedDb);
+    toast.success(`Produsul "${product.cod}" a fost adăugat în subcategoria "${subcategoryName}"`);
+    setIsProductFormOpen(false);
+  };
+
+  const handleUpdateProduct = (categoryName: string, subcategoryName: string, product: typeof initialDB.categories[0]['subcategories'][0]['products'][0]) => {
+    const updatedDb = updateProduct(db, categoryName, subcategoryName, product);
+    setDb(updatedDb);
+    toast.success(`Produsul "${product.cod}" a fost actualizat în subcategoria "${subcategoryName}"`);
+  };
+
+  const handleDeleteCategory = (categoryName: string) => {
+    try {
+      const updatedDb = deleteCategory(db, categoryName);
+      setDb(updatedDb);
+      setSelectedCategory(null);
+      setSelectedSubcategory(null);
+      setSelectedProduct(null);
+      toast.success(`Categoria "${categoryName}" a fost ștearsă`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleDeleteSubcategory = (categoryName: string, subcategoryName: string) => {
+    try {
+      const updatedDb = deleteSubcategory(db, categoryName, subcategoryName);
+      setDb(updatedDb);
+      setSelectedSubcategory(null);
+      setSelectedProduct(null);
+      toast.success(`Subcategoria "${subcategoryName}" a fost ștearsă din categoria "${categoryName}"`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleDeleteProduct = (categoryName: string, subcategoryName: string, productId: string) => {
+    const updatedDb = deleteProduct(db, categoryName, subcategoryName, productId);
+    setDb(updatedDb);
+    setSelectedProduct(null);
+    toast.success(`Produsul a fost șters din subcategoria "${subcategoryName}"`);
+  };
+
+  // Handler functions for quote operations
+  const handleAddItemToQuote = (categoryName: string, subcategoryName: string, productId: string, quantity: number) => {
+    const category = db.categories.find(c => c.name === categoryName);
+    if (!category) return;
+
+    const subcategory = category.subcategories.find(s => s.name === subcategoryName);
+    if (!subcategory) return;
+
+    const product = subcategory.products.find(p => p.id === productId);
+    if (!product) return;
+
+    const newItem = {
+      categoryName,
+      subcategoryName,
+      productId,
+      quantity,
+      pricePerUnit: product.pret,
+      productDetails: product,
+    };
+
+    setQuote(prevQuote => {
+      const updatedQuote = {
+        ...prevQuote,
+        items: [...prevQuote.items, {
+          ...newItem,
+          id: Date.now().toString(),
+          total: newItem.pricePerUnit * newItem.quantity,
+        }],
+      };
+      saveQuote(updatedQuote);
+      return updatedQuote;
+    });
+  };
+
+  const handleUpdateQuoteItem = (itemId: string, updates: Partial<typeof initialDB.categories[0]['subcategories'][0]['products'][0]>) => {
+    setQuote(prevQuote => {
+      const updatedQuote = updateQuoteItem(prevQuote, itemId, updates);
+      saveQuote(updatedQuote);
+      return updatedQuote;
+    });
+    setIsQuoteItemEditorOpen(false);
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    setQuote(prevQuote => {
+      const updatedQuote = removeQuoteItem(prevQuote, itemId);
+      saveQuote(updatedQuote);
+      return updatedQuote;
+    });
+  };
+
+  const handleUpdateLabor = (percentage: number) => {
+    setQuote(prevQuote => {
+      const updatedQuote = setLaborPercentage(prevQuote, percentage);
+      saveQuote(updatedQuote);
+      return updatedQuote;
+    });
+  };
+
+  const handleUpdateQuantity = (itemId: string, quantity: number) => {
+    setQuote(prevQuote => {
+      const item = prevQuote.items.find(i => i.id === itemId);
+      if (!item) return prevQuote;
+
+      const updatedQuote = updateQuoteItem(prevQuote, itemId, { quantity, total: item.pricePerUnit * quantity });
+      saveQuote(updatedQuote);
+      return updatedQuote;
+    });
+  };
+
+  const handleUpdateQuoteMetadata = (metadata: { beneficiary: string; title: string }) => {
+    setQuote(prevQuote => {
+      const updatedQuote = updateQuoteMetadata(prevQuote, metadata);
+      saveQuote(updatedQuote);
+      return updatedQuote;
+    });
+  };
+
+  const handleAddManualItem = (description: string, quantity: number, pricePerUnit: number) => {
+    setQuote(prevQuote => {
+      const updatedQuote = addManualPalItem(prevQuote, description, quantity, pricePerUnit);
+      saveQuote(updatedQuote);
+      return updatedQuote;
+    });
+  };
+
+  // Handler functions for import/export
+  const handleExportDatabase = () => {
+    const json = exportDatabaseJSON();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "furniture-quote-db.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportDatabase = () => {
+    try {
+      const success = importDatabaseJSON(importText);
+      if (success) {
+        const loadedDb = loadDatabase();
+        setDb(loadedDb);
+        setMaterials(loadedDb.materials || []);
+        toast.success("Baza de date a fost importată cu succes");
+      } else {
+        toast.error("Eroare la importarea bazei de date");
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsImportExportDialogOpen(false);
+    }
+  };
+
+  // Handler functions for materials
+  const handleAddMaterial = (material: Material) => {
+    setDb(prevDb => {
+      const updatedDb = addMaterial(prevDb, material);
+      return updatedDb;
+    });
+    setMaterials(prevMaterials => [...prevMaterials, material]);
+    setIsMaterialFormOpen(false);
+  };
+
+  const handleDeleteMaterial = (materialId: string) => {
+    setDb(prevDb => {
+      const updatedDb = deleteMaterial(prevDb, materialId);
+      return updatedDb;
+    });
+    setMaterials(prevMaterials => prevMaterials.filter(m => m.id !== materialId));
   };
   
-  const redirectToQuoteGenerator = () => {
-    window.location.href = '/';
+  // Add a handler for importing furniture designs to the quote
+  const handleImportFurnitureDesign = (design: FurnitureDesign, cost: number) => {
+    console.log('Designer: Adding furniture design to quote:', design);
+    const updatedQuote = addFurnitureDesignToQuote(quote, design, cost);
+    setQuote(updatedQuote);
+    saveQuote(updatedQuote);
+  };
+  
+  // Add a handler for importing furniture sets to the quote
+  const handleImportFurnitureSet = (setName: string, designs: FurnitureDesign[], costs: Map<string, number>) => {
+    console.log('Designer: Adding furniture set to quote:', setName, designs);
+    const updatedQuote = addFurnitureSetToQuote(quote, setName, designs, costs);
+    setQuote(updatedQuote);
+    saveQuote(updatedQuote);
+  };
+  
+  const handleLoadDesign = (design: FurnitureDesign) => {
+    setSelectedDesign(design);
+    setIsFurnitureDesignerOpen(true);
+  };
+  
+  const handleDesignsUpdated = (designs: FurnitureDesign[]) => {
+    setSavedDesigns(designs);
+  };
+  
+  const handleSaveDesign = (design: FurnitureDesign) => {
+    const existingIndex = savedDesigns.findIndex(d => d.id === design.id);
+    
+    if (existingIndex !== -1) {
+      // Update existing design
+      const updatedDesigns = [...savedDesigns];
+      updatedDesigns[existingIndex] = design;
+      setSavedDesigns(updatedDesigns);
+    } else {
+      // Add new design
+      setSavedDesigns([...savedDesigns, design]);
+    }
+    
+    toast.success("Design salvat cu succes");
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Proiectare Mobilier</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <Tabs defaultValue="design">
-                  <TabsList className="w-full">
-                    <TabsTrigger value="design">Design</TabsTrigger>
-                    <TabsTrigger value="sets">Seturi</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="design" className="space-y-6">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Cameră</label>
-                      <Select 
-                        value={room} 
-                        onValueChange={setRoom}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selectați camera" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {roomOptions.map((roomOption) => (
-                            <SelectItem key={roomOption.id} value={roomOption.id}>
-                              {roomOption.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Componente predefinite pe categorii */}
-                    {availablePresets.length > 0 && (
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Componente predefinite</label>
-                        <div className="grid grid-cols-2 gap-2 max-h-[250px] overflow-y-auto p-1">
-                          {availablePresets.map((preset) => (
-                            <Card 
-                              key={preset.id}
-                              className={`cursor-pointer transition-all hover:shadow-md ${selectedPreset === preset.id ? 'ring-2 ring-primary' : ''}`}
-                              onClick={() => handlePresetSelect(preset.id)}
-                            >
-                              <CardContent className="p-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-8 w-8 bg-primary/10 rounded-md flex items-center justify-center">
-                                    <FurnitureThumbnail 
-                                      type={preset.type} 
-                                      color={colors.find(c => c.id === selectedColor)?.hex || '#D4B48C'}
-                                      size={18} 
-                                    />
-                                  </div>
-                                  <div className="text-xs">
-                                    <p className="font-medium">{preset.name}</p>
-                                    <p className="text-muted-foreground">{preset.dimensions.width}x{preset.dimensions.height}cm</p>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Tip de mobilier</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {furnitureTypes.map((furniture) => (
-                          <Button 
-                            key={furniture.id}
-                            variant={selectedFurniture === furniture.id ? "default" : "outline"}
-                            className="flex flex-col items-center py-3 h-auto"
-                            onClick={() => handleFurnitureSelect(furniture.id)}
-                          >
-                            {furniture.icon}
-                            <span className="text-xs mt-1">{furniture.name}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Material</label>
-                      <Select 
-                        value={selectedMaterial} 
-                        onValueChange={setSelectedMaterial}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selectați materialul" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {materials.map((material) => (
-                            <SelectItem key={material.id} value={material.id}>
-                              {material.name} ({material.thickness})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Culoare</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {colors.map((color) => (
-                          <Button 
-                            key={color.id}
-                            variant="outline"
-                            className={`w-full p-0 h-10 border-2 ${selectedColor === color.id ? 'ring-2 ring-primary' : ''}`}
-                            style={{ backgroundColor: color.hex, borderColor: color.hex === '#FFFFFF' ? '#e2e8f0' : color.hex }}
-                            onClick={() => setSelectedColor(color.id)}
-                            title={color.name}
-                          >
-                            <span className="sr-only">{color.name}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Dimensiuni (cm)</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <Label htmlFor="width">Lățime</Label>
-                          <div className="flex items-center">
-                            <Input 
-                              id="width" 
-                              type="number" 
-                              value={dimensions.width} 
-                              onChange={(e) => handleDimensionChange('width', e.target.value)}
-                              min="10"
-                              max="300"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="height">Înălțime</Label>
-                          <div className="flex items-center">
-                            <Input 
-                              id="height" 
-                              type="number" 
-                              value={dimensions.height} 
-                              onChange={(e) => handleDimensionChange('height', e.target.value)}
-                              min="10"
-                              max="300"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="depth">Adâncime</Label>
-                          <div className="flex items-center">
-                            <Input 
-                              id="depth" 
-                              type="number" 
-                              value={dimensions.depth} 
-                              onChange={(e) => handleDimensionChange('depth', e.target.value)}
-                              min="10"
-                              max="300"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Opțiuni suplimentare pentru uși și sertare */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="has-doors">Uși</Label>
-                        <Switch 
-                          id="has-doors" 
-                          checked={hasDoors}
-                          onCheckedChange={setHasDoors}
-                        />
-                      </div>
-                      
-                      {hasDoors && (
-                        <div className="space-y-3 pl-4 border-l-2 border-gray-200">
-                          <div>
-                            <Label>Material uși</Label>
-                            <Select
-                              value={doorMaterial}
-                              onValueChange={setDoorMaterial}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Material uși" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {materials.map((material) => (
-                                  <SelectItem key={material.id} value={material.id}>
-                                    {material.name} ({material.thickness})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div>
-                            <Label>Culoare uși</Label>
-                            <div className="grid grid-cols-4 gap-2">
-                              {colors.map((color) => (
-                                <Button 
-                                  key={color.id}
-                                  variant="outline"
-                                  className={`w-full p-0 h-8 border ${doorColor === color.id ? 'ring-2 ring-primary' : ''}`}
-                                  style={{ backgroundColor: color.hex, borderColor: color.hex === '#FFFFFF' ? '#e2e8f0' : color.hex }}
-                                  onClick={() => setDoorColor(color.id)}
-                                  title={color.name}
-                                >
-                                  <span className="sr-only">{color.name}</span>
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="has-drawers">Sertare</Label>
-                        <Switch 
-                          id="has-drawers" 
-                          checked={hasDrawers}
-                          onCheckedChange={setHasDrawers}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Accesorii */}
-                    <AccessorySelector 
-                      accessories={accessories}
-                      onAccessoriesChange={setAccessories}
-                    />
+    <div className="container mx-auto p-4 flex flex-col md:flex-row gap-4">
+      {/* Left Panel - Database Management */}
+      <div className="w-full md:w-1/3 space-y-4">
+        <h2 className="text-xl font-semibold">Bază de date</h2>
 
-                    <div className="pt-4 flex items-center gap-2">
-                      <Input 
-                        placeholder="Nume design" 
-                        value={designName} 
-                        onChange={(e) => setDesignName(e.target.value)}
-                      />
-                      <Button 
-                        onClick={saveDesign} 
-                        className="whitespace-nowrap"
-                        title="Salvează design"
-                      >
-                        <Save className="h-4 w-4 mr-1" />
-                        Salvează
-                      </Button>
-                    </div>
+        {/* Category Management */}
+        <Card>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Categorii</Label>
+              <Button size="sm" onClick={() => setIsCategoryFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Adaugă
+              </Button>
+            </div>
+            {db.categories.length === 0 ? (
+              <p className="text-sm text-gray-500">Nu există categorii</p>
+            ) : (
+              <div className="space-y-1">
+                {db.categories.map(category => (
+                  <div key={category.name} className="flex justify-between items-center">
+                    <Button
+                      variant="secondary"
+                      className={`w-full justify-start ${selectedCategory === category.name ? 'bg-gray-100' : ''}`}
+                      onClick={() => {
+                        setSelectedCategory(category.name);
+                        setSelectedSubcategory(null);
+                        setSelectedProduct(null);
+                      }}
+                    >
+                      {category.name}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteCategory(category.name)}
+                    >
+                      Șterge
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                    <Sheet>
-                      <SheetTrigger asChild>
-                        <Button variant="outline" className="w-full">
-                          Designuri salvate
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent>
-                        <SheetHeader>
-                          <SheetTitle>Designuri salvate</SheetTitle>
-                          <SheetDescription>
-                            Încarcă un design salvat anterior
-                          </SheetDescription>
-                        </SheetHeader>
-                        <div className="mt-6 space-y-4">
-                          {savedDesigns.length > 0 ? (
-                            savedDesigns.map((design) => (
-                              <Card key={design.id} className="overflow-hidden">
-                                <CardContent className="p-4">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <h3 className="font-medium">{design.name}</h3>
-                                      <p className="text-sm text-gray-500">
-                                        {furnitureTypes.find(f => f.id === design.type)?.name || design.type}, 
-                                        {materials.find(m => m.id === design.material)?.name || design.material}
-                                      </p>
-                                    </div>
-                                    <Button 
-                                      size="sm" 
-                                      onClick={() => loadDesign(design)}
-                                      variant="outline"
-                                    >
-                                      <ArrowRight className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))
-                          ) : (
-                            <p className="text-center text-gray-500 py-4">Nu există designuri salvate</p>
-                          )}
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                    
-                    <Dialog open={isImportToQuoteDialogOpen} onOpenChange={setIsImportToQuoteDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="w-full mt-2" variant="default">
-                          Generează ofertă
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Generează ofertă</DialogTitle>
-                          <DialogDescription>
-                            Cum doriți să includeți articolele în ofertă?
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="space-y-4 py-4">
-                          <Button className="w-full" onClick={redirectToQuoteGenerator}>
-                            Vezi calculul de preț în generator ofertă
-                          </Button>
-                          
-                          <p className="text-center text-sm text-gray-500">
-                            Toate designurile salvate vor fi disponibile pentru a fi adăugate în ofertă.
-                          </p>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </TabsContent>
-                  
-                  <TabsContent value="sets">
-                    <FurnitureSetManager 
-                      savedDesigns={savedDesigns}
-                      onLoadDesign={loadDesign}
-                      onDesignsUpdated={handleUpdateDesigns}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="preview" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="preview">Previzualizare 3D</TabsTrigger>
-                <TabsTrigger value="dimensions">Dimensiuni și Specificații</TabsTrigger>
-                <TabsTrigger value="details">Detalii Constructive</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="preview" className="border rounded-lg p-4 min-h-[500px] bg-white relative">
-                {selectedFurniture ? (
-                  <div className="h-full">
-                    {/* Grid visualization */}
-                    <div className="absolute top-3 right-3 flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setGridVisible(!gridVisible)}
-                        className="flex gap-1"
-                      >
-                        <Ruler className="h-4 w-4" />
-                        {gridVisible ? 'Ascunde grila' : 'Arată grila'}
-                      </Button>
-                    </div>
-                    
-                    <div className="h-full flex items-center justify-center relative">
-                      {/* Room background */}
-                      <div className="absolute inset-0 bg-gray-100 opacity-20"></div>
-                      
-                      {/* Grid lines */}
-                      {gridVisible && (
-                        <div className="absolute inset-0 overflow-hidden">
-                          <div className="grid grid-cols-10 h-full w-full">
-                            {Array.from({ length: 10 }).map((_, i) => (
-                              <div key={`col-${i}`} className="border-r border-gray-200"></div>
-                            ))}
-                          </div>
-                          <div className="grid grid-rows-10 h-full w-full">
-                            {Array.from({ length: 10 }).map((_, i) => (
-                              <div key={`row-${i}`} className="border-b border-gray-200"></div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Furniture visualization */}
-                      <div 
-                        className="relative border-2 shadow-lg transition-all duration-300"
-                        style={{ 
-                          backgroundColor: colors.find(c => c.id === selectedColor)?.hex || '#D4B48C',
-                          width: `${Math.min(dimensions.width / 2, 300)}px`, 
-                          height: `${Math.min(dimensions.height / 2, 150)}px`,
-                          transform: selectedFurniture === 'pat' ? 'rotateX(45deg)' : selectedFurniture === 'masa' ? 'rotateX(30deg)' : 'rotateX(10deg) rotateY(10deg)'
+        {/* Subcategory Management */}
+        {selectedCategory && (
+          <Card>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Subcategorii ({selectedCategory})</Label>
+                <Button size="sm" onClick={() => setIsSubcategoryFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adaugă
+                </Button>
+              </div>
+              {db.categories.find(c => c.name === selectedCategory)?.subcategories.length === 0 ? (
+                <p className="text-sm text-gray-500">Nu există subcategorii</p>
+              ) : (
+                <div className="space-y-1">
+                  {db.categories.find(c => c.name === selectedCategory)?.subcategories.map(subcategory => (
+                    <div key={subcategory.name} className="flex justify-between items-center">
+                      <Button
+                        variant="secondary"
+                        className={`w-full justify-start ${selectedSubcategory === subcategory.name ? 'bg-gray-100' : ''}`}
+                        onClick={() => {
+                          setSelectedSubcategory(subcategory.name);
+                          setSelectedProduct(null);
                         }}
                       >
-                        {/* Furniture details/texture */}
-                        {selectedFurniture === 'biblioteca' && (
-                          <div className="absolute inset-0 flex">
-                            {[...Array(4)].map((_, i) => (
-                              <div key={i} className="flex-1 border-r border-gray-700 opacity-20"></div>
-                            ))}
-                          </div>
-                        )}
-                        {selectedFurniture === 'dulap' && (
-                          <div className="absolute inset-0 flex gap-1 p-1">
-                            <div className="flex-1 bg-gray-700 opacity-5"></div>
-                            <div className="flex-1 bg-gray-700 opacity-5"></div>
-                          </div>
-                        )}
-                        {selectedFurniture === 'canapea' && (
-                          <div className="absolute bottom-0 h-2/3 w-full bg-gray-700 opacity-10"></div>
-                        )}
-                        
-                        {/* Doors visualization */}
-                        {hasDoors && (
-                          <div 
-                            className="absolute inset-0 flex gap-1 p-1"
-                            style={{ backgroundColor: colors.find(c => c.id === doorColor)?.hex || '#D4B48C' }}
-                          >
-                            <div className="flex-1 border border-gray-700 opacity-10"></div>
-                            <div className="flex-1 border border-gray-700 opacity-10"></div>
-                          </div>
-                        )}
-                        
-                        {/* Drawers visualization */}
-                        {hasDrawers && (
-                          <div className="absolute bottom-0 left-0 right-0 h-1/3 flex flex-col gap-1 p-1">
-                            <div className="flex-1 border border-gray-700 opacity-10"></div>
-                            <div className="flex-1 border border-gray-700 opacity-10"></div>
-                          </div>
-                        )}
-                        
-                        {/* Afișăm informații despre presetul selectat */}
-                        {selectedPreset && (
-                          <div className="absolute -bottom-8 left-0 right-0 text-center text-xs text-gray-500">
-                            {availablePresets.find(p => p.id === selectedPreset)?.name || 'Preset'}
-                          </div>
-                        )}
-                      </div>
+                        {subcategory.name}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteSubcategory(selectedCategory, subcategory.name)}
+                      >
+                        Șterge
+                      </Button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center h-full flex flex-col items-center justify-center">
-                    <Armchair className="h-32 w-32 mx-auto text-gray-400" strokeWidth={1} />
-                    <p className="mt-4 text-gray-500">
-                      Selectați un tip de mobilier pentru previzualizare
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="dimensions" className="border rounded-lg p-6 min-h-[500px] bg-white">
-                {selectedFurniture ? (
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-medium">
-                      {selectedPreset ? 
-                        `${availablePresets.find(p => p.id === selectedPreset)?.name}` : 
-                        `Specificații ${furnitureTypes.find(f => f.id === selectedFurniture)?.name}`}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Lățime</p>
-                        <p className="text-lg">{dimensions.width} cm</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Înălțime</p>
-                        <p className="text-lg">{dimensions.height} cm</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Adâncime</p>
-                        <p className="text-lg">{dimensions.depth} cm</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Material</p>
-                        <p className="text-lg">{materials.find(m => m.id === selectedMaterial)?.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Culoare</p>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-6 h-6 rounded-full border" 
-                            style={{ backgroundColor: colors.find(c => c.id === selectedColor)?.hex }}
-                          ></div>
-                          <span>{colors.find(c => c.id === selectedColor)?.name}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Greutate estimată</p>
-                        <p className="text-lg">{getTotalWeight()} kg</p>
-                      </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Product Management */}
+        {selectedCategory && selectedSubcategory && (
+          <Card>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Produse ({selectedSubcategory})</Label>
+                <Button size="sm" onClick={() => setIsProductFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adaugă
+                </Button>
+              </div>
+              {db.categories.find(c => c.name === selectedCategory)?.subcategories.find(s => s.name === selectedSubcategory)?.products.length === 0 ? (
+                <p className="text-sm text-gray-500">Nu există produse</p>
+              ) : (
+                <div className="space-y-1">
+                  {db.categories.find(c => c.name === selectedCategory)?.subcategories.find(s => s.name === selectedSubcategory)?.products.map(product => (
+                    <div key={product.id} className="flex justify-between items-center">
+                      <Button
+                        variant="secondary"
+                        className={`w-full justify-start ${selectedProduct === product.id ? 'bg-gray-100' : ''}`}
+                        onClick={() => setSelectedProduct(product.id)}
+                      >
+                        {product.cod} - {product.pret} RON
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteProduct(selectedCategory, selectedSubcategory, product.id)}
+                      >
+                        Șterge
+                      </Button>
                     </div>
-                    
-                    {hasDoors && (
-                      <div className="border-t pt-4">
-                        <h4 className="font-medium mb-3">Specificații uși</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">Material uși</p>
-                            <p className="text-lg">{materials.find(m => m.id === doorMaterial)?.name}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">Culoare uși</p>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-6 h-6 rounded-full border" 
-                                style={{ backgroundColor: colors.find(c => c.id === doorColor)?.hex }}
-                              ></div>
-                              <span>{colors.find(c => c.id === doorColor)?.name}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {accessories.length > 0 && (
-                      <div className="border-t pt-4">
-                        <h4 className="font-medium mb-3">Accesorii ({accessories.length})</h4>
-                        <div className="space-y-2">
-                          {accessories.map((acc, index) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <div>
-                                <p>{acc.name}</p>
-                                <p className="text-xs text-gray-500">{acc.price} RON/buc</p>
-                              </div>
-                              <p className="font-medium">{acc.quantity} buc</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg mt-6">
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-medium">Preț estimat</h4>
-                        <p className="text-2xl font-bold">{generatePrice()} RON</p>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        *Prețurile sunt estimative și pot varia în funcție de disponibilitatea materialelor și opțiunile suplimentare.
-                      </p>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Material Management */}
+        <Card>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Materiale</Label>
+              <Button size="sm" onClick={() => setIsMaterialFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Adaugă
+              </Button>
+            </div>
+            {materials.length === 0 ? (
+              <p className="text-sm text-gray-500">Nu există materiale</p>
+            ) : (
+              <div className="space-y-1">
+                {materials.map(material => (
+                  <div key={material.id} className="flex justify-between items-center">
+                    <div>
+                      {material.name} ({material.thickness}mm)
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteMaterial(material.id)}
+                    >
+                      Șterge
+                    </Button>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500">Selectați un tip de mobilier pentru a vedea specificațiile</p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Import/Export Database */}
+        <Card>
+          <CardContent className="space-y-2">
+            <Label>Import / Export</Label>
+            <div className="flex gap-2">
+              <Button className="w-1/2" onClick={handleExportDatabase}>
+                <Download className="h-4 w-4 mr-1" />
+                Exportă
+              </Button>
+              <Button className="w-1/2" onClick={() => setIsImportExportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-1" />
+                Importă
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Center Panel - Product Details & Quote Item Addition */}
+      <div className="w-full md:w-1/3 space-y-4">
+        <h2 className="text-xl font-semibold">Detalii Produs</h2>
+
+        {/* Product Details */}
+        {selectedCategory && selectedSubcategory && selectedProduct && (
+          <Card>
+            <CardContent className="space-y-2">
+              <Label>Detalii Produs</Label>
+              {Object.entries(db.categories
+                .find(c => c.name === selectedCategory)
+                ?.subcategories.find(s => s.name === selectedSubcategory)
+                ?.products.find(p => p.id === selectedProduct) || {})
+                .filter(([key]) => !['id'].includes(key))
+                .map(([key, value]) => (
+                  <div key={key} className="flex justify-between">
+                    <span>{key}</span>
+                    <span>{String(value)}</span>
                   </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="details" className="border rounded-lg p-6 min-h-[500px] bg-white">
-                {selectedFurniture ? (
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-medium">Detalii constructive</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base">Materiale necesare</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm">
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>
-                              <span className="font-medium">Plăci principale:</span> {materials.find(m => m.id === selectedMaterial)?.name}, 
-                              grosime {materials.find(m => m.id === selectedMaterial)?.thickness}
-                            </li>
-                            {hasDoors && (
-                              <li>
-                                <span className="font-medium">Uși:</span> {materials.find(m => m.id === doorMaterial)?.name}, 
-                                grosime {materials.find(m => m.id === doorMaterial)?.thickness}
-                              </li>
-                            )}
-                            {hasDrawers && (
-                              <li>
-                                <span className="font-medium">Sertare:</span> PAL, grosime 16mm, cantitate: 2-3 buc
-                              </li>
-                            )}
-                            <li>
-                              <span className="font-medium">Cant ABS:</span> pentru toate marginile vizibile
-                            </li>
-                            <li>
-                              <span className="font-medium">Șuruburi:</span> pentru asamblare și fixare
-                            </li>
-                          </ul>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base">Accesorii recomandate</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm">
-                          {accessories.length > 0 ? (
-                            <ul className="list-disc pl-5 space-y-2">
-                              {accessories.map((acc, index) => (
-                                <li key={index}>
-                                  <span className="font-medium">{acc.name}:</span> {acc.quantity} buc
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <div>
-                              {hasDoors && (
-                                <ul className="list-disc pl-5 space-y-2">
-                                  <li>Balamale aplicare simplă: 2-4 buc</li>
-                                  <li>Mânere de ușă: 2-4 buc</li>
-                                </ul>
-                              )}
-                              {hasDrawers && (
-                                <ul className="list-disc pl-5 space-y-2">
-                                  <li>Glisiere sertar cu amortizare: 2 perechi</li>
-                                  <li>Mânere sertar: 2 buc</li>
-                                </ul>
-                              )}
-                              {!hasDoors && !hasDrawers && (
-                                <p className="text-gray-500">Adăugați uși sau sertare pentru a vedea accesoriile recomandate</p>
-                              )}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base">Dimensiuni plăci de debitat</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm">
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>
-                              <span className="font-medium">Laterale:</span> {dimensions.depth}x{dimensions.height} cm, 2 buc
-                            </li>
-                            <li>
-                              <span className="font-medium">Bază și top:</span> {dimensions.width}x{dimensions.depth} cm, 2 buc
-                            </li>
-                            {dimensions.height > 100 && (
-                              <li>
-                                <span className="font-medium">Poliță intermediară:</span> {dimensions.width - 3}x{dimensions.depth - 1} cm, 1-2 buc
-                              </li>
-                            )}
-                            {hasDoors && (
-                              <li>
-                                <span className="font-medium">Ușă{dimensions.width > 60 ? " (2 buc)" : ""}:</span> {dimensions.width > 60 ? 
-                                  Math.floor(dimensions.width / 2) : dimensions.width}x{dimensions.height - 6} cm
-                              </li>
-                            )}
-                            {hasDrawers && (
-                              <li>
-                                <span className="font-medium">Front sertar:</span> {dimensions.width - 1}x{Math.min(30, dimensions.height / 3)} cm, 1-3 buc
-                              </li>
-                            )}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base">Instrucțiuni de montaj</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm">
-                          <ol className="list-decimal pl-5 space-y-2">
-                            <li>Asamblați lateralele cu baza și topul folosind șuruburi și dibluri.</li>
-                            <li>Fixați spatele (dacă există) pentru a asigura rigiditatea corpului.</li>
-                            {dimensions.height > 100 && (
-                              <li>Montați polițele folosind suporți pentru poliță sau excentric+știft.</li>
-                            )}
-                            {hasDoors && (
-                              <li>Aplicați balamalele pe uși și apoi montați-le pe corpul de mobilier.</li>
-                            )}
-                            {hasDrawers && (
-                              <li>Montați glisierele sertarelor și apoi asamblați sertarele.</li>
-                            )}
-                            <li>Verificați stabilitatea și echilibrarea mobilierului.</li>
-                            <li>Aplicați ajustările finale și verificați funcționalitatea ușilor și sertarelor.</li>
-                          </ol>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500">Selectați un tip de mobilier pentru a vedea detaliile constructive</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                ))}
+              <Separator />
+              <div className="flex justify-between">
+                <Label htmlFor="quantity">Cantitate</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  defaultValue={1}
+                  min={1}
+                  className="w-24"
+                  onBlur={(e) => {
+                    const quantity = parseInt(e.target.value);
+                    if (isNaN(quantity) || quantity < 1) return;
+                    handleAddItemToQuote(selectedCategory!, selectedSubcategory!, selectedProduct!, quantity);
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Manual Item Addition */}
+        <Card>
+          <CardContent className="space-y-2">
+            <Label>Adaugă Produs Manual</Label>
+            <Input
+              id="description"
+              type="text"
+              placeholder="Descriere"
+              className="mb-2"
+              onBlur={(e) => {
+                const description = e.target.value;
+                const quantity = parseInt((document.getElementById("manual-quantity") as HTMLInputElement).value);
+                const pricePerUnit = parseFloat((document.getElementById("manual-price") as HTMLInputElement).value);
+
+                if (!description || isNaN(quantity) || quantity < 1 || isNaN(pricePerUnit) || pricePerUnit < 0) return;
+
+                handleAddManualItem(description, quantity, pricePerUnit);
+              }}
+            />
+            <div className="flex gap-2">
+              <Input
+                id="manual-quantity"
+                type="number"
+                placeholder="Cantitate"
+                defaultValue={1}
+                min={1}
+                className="w-1/2"
+                onBlur={(e) => {
+                  const description = (document.getElementById("description") as HTMLInputElement).value;
+                  const quantity = parseInt(e.target.value);
+                  const pricePerUnit = parseFloat((document.getElementById("manual-price") as HTMLInputElement).value);
+
+                  if (!description || isNaN(quantity) || quantity < 1 || isNaN(pricePerUnit) || pricePerUnit < 0) return;
+
+                  handleAddManualItem(description, quantity, pricePerUnit);
+                }}
+              />
+              <Input
+                id="manual-price"
+                type="number"
+                placeholder="Preț/buc"
+                defaultValue={0}
+                min={0}
+                step={0.01}
+                className="w-1/2"
+                onBlur={(e) => {
+                  const description = (document.getElementById("description") as HTMLInputElement).value;
+                  const quantity = parseInt((document.getElementById("manual-quantity") as HTMLInputElement).value);
+                  const pricePerUnit = parseFloat(e.target.value);
+
+                  if (!description || isNaN(quantity) || quantity < 1 || isNaN(pricePerUnit) || pricePerUnit < 0) return;
+
+                  handleAddManualItem(description, quantity, pricePerUnit);
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Furniture Set Manager */}
+        <FurnitureSetManager 
+          savedDesigns={savedDesigns}
+          onLoadDesign={handleLoadDesign}
+          onDesignsUpdated={handleDesignsUpdated}
+        />
+      </div>
+
+      {/* Right Panel - Quote Summary */}
+      <div className="w-full md:w-1/3 space-y-4">
+        <QuoteSummary 
+          quote={quote}
+          quoteType={quoteType}
+          onUpdateLabor={handleUpdateLabor}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemoveItem={handleRemoveItem}
+          onUpdateMetadata={handleUpdateQuoteMetadata}
+          onImportFurnitureDesign={handleImportFurnitureDesign}
+          onImportFurnitureSet={handleImportFurnitureSet}
+        />
+      </div>
+
+      {/* Category Form Modal */}
+      <CategoryForm
+        isOpen={isCategoryFormOpen}
+        onClose={() => setIsCategoryFormOpen(false)}
+        onSave={handleAddCategory}
+      />
+
+      {/* Subcategory Form Modal */}
+      <SubcategoryForm
+        isOpen={isSubcategoryFormOpen}
+        onClose={() => setIsSubcategoryFormOpen(false)}
+        onSave={(subcategory) => handleAddSubcategory(selectedCategory!, subcategory)}
+        categoryName={selectedCategory}
+      />
+
+      {/* Product Form Modal */}
+      <ProductForm
+        isOpen={isProductFormOpen}
+        onClose={() => setIsProductFormOpen(false)}
+        onSave={(product) => handleAddProduct(selectedCategory!, selectedSubcategory!, product)}
+        categoryName={selectedCategory}
+        subcategoryName={selectedSubcategory}
+      />
+
+      {/* Material Form Modal */}
+      <MaterialForm
+        isOpen={isMaterialFormOpen}
+        onClose={() => setIsMaterialFormOpen(false)}
+        onSave={handleAddMaterial}
+      />
+
+      {/* Quote Item Editor Modal */}
+      {selectedQuoteItem && (
+        <QuoteItemEditor
+          isOpen={isQuoteItemEditorOpen}
+          onClose={() => setIsQuoteItemEditorOpen(false)}
+          quoteItem={quote.items.find(i => i.id === selectedQuoteItem)}
+          onSave={handleUpdateQuoteItem}
+        />
+      )}
+
+      {/* Import/Export Dialog */}
+      {isImportExportDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded-md w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-2">Importă Bază de Date</h2>
+            <textarea
+              className="w-full h-48 border rounded-md p-2 mb-2"
+              placeholder="Lipește aici JSON-ul exportat"
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setIsImportExportDialogOpen(false)}>
+                Anulează
+              </Button>
+              <Button onClick={handleImportDatabase}>Importă</Button>
+            </div>
           </div>
         </div>
-      </main>
+      )}
+      
+      {/* Furniture Designer Modal */}
+      {isFurnitureDesignerOpen && (
+        <FurnitureDesigner 
+          isOpen={isFurnitureDesignerOpen}
+          onClose={() => setIsFurnitureDesignerOpen(false)}
+          design={selectedDesign}
+          onSave={handleSaveDesign}
+        />
+      )}
     </div>
   );
 };
