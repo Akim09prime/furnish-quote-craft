@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,9 @@ import FurnitureThumbnail from './FurnitureThumbnail';
 // Extindem interfața Accessory și adăugăm proprietățile necesare
 interface AccessoryWithId extends Accessory {
   id: string;
-  description?: string; // Adăugăm description ca proprietate opțională
-  imageUrl?: string;    // Adăugăm imageUrl ca proprietate opțională
+  description?: string; 
+  imageUrl?: string;
+  quantity?: number;  // Adăugăm quantity ca proprietate opțională
 }
 
 export interface ManualFurniture {
