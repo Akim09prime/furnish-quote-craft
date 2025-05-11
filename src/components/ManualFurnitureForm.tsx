@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
@@ -16,12 +15,12 @@ import { Database, Material } from '@/lib/db';
 import { Accessory } from '@/components/AccessorySelector';
 import FurnitureThumbnail from './FurnitureThumbnail';
 
-// Extindem interfața Accessory și adăugăm proprietățile necesare
-interface AccessoryWithId extends Accessory {
+// Fixing the extension by making quantity required in AccessoryWithId to match Accessory
+interface AccessoryWithId extends Omit<Accessory, 'quantity'> {
   id: string;
   description?: string; 
   imageUrl?: string;
-  quantity?: number;  // Adăugăm quantity ca proprietate opțională
+  quantity: number;  // Changed from optional to required to match the Accessory interface
 }
 
 export interface ManualFurniture {
