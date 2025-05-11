@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Button } from "@/components/ui/button";
@@ -824,4 +825,233 @@ const Designer: React.FC = () => {
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Lăț
+                        <p className="text-sm font-medium text-gray-500">Lățime</p>
+                        <p className="text-lg">{dimensions.width} cm</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Înălțime</p>
+                        <p className="text-lg">{dimensions.height} cm</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Adâncime</p>
+                        <p className="text-lg">{dimensions.depth} cm</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Material</p>
+                        <p className="text-lg">{materials.find(m => m.id === selectedMaterial)?.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Culoare</p>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-6 h-6 rounded-full border" 
+                            style={{ backgroundColor: colors.find(c => c.id === selectedColor)?.hex }}
+                          ></div>
+                          <span>{colors.find(c => c.id === selectedColor)?.name}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Greutate estimată</p>
+                        <p className="text-lg">{getTotalWeight()} kg</p>
+                      </div>
+                    </div>
+                    
+                    {hasDoors && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3">Specificații uși</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-500">Material uși</p>
+                            <p className="text-lg">{materials.find(m => m.id === doorMaterial)?.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-500">Culoare uși</p>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-6 h-6 rounded-full border" 
+                                style={{ backgroundColor: colors.find(c => c.id === doorColor)?.hex }}
+                              ></div>
+                              <span>{colors.find(c => c.id === doorColor)?.name}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {accessories.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3">Accesorii ({accessories.length})</h4>
+                        <div className="space-y-2">
+                          {accessories.map((acc, index) => (
+                            <div key={index} className="flex justify-between items-center">
+                              <div>
+                                <p>{acc.name}</p>
+                                <p className="text-xs text-gray-500">{acc.price} RON/buc</p>
+                              </div>
+                              <p className="font-medium">{acc.quantity} buc</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="bg-gray-50 p-4 rounded-lg mt-6">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium">Preț estimat</h4>
+                        <p className="text-2xl font-bold">{generatePrice()} RON</p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        *Prețurile sunt estimative și pot varia în funcție de disponibilitatea materialelor și opțiunile suplimentare.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-gray-500">Selectați un tip de mobilier pentru a vedea specificațiile</p>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="details" className="border rounded-lg p-6 min-h-[500px] bg-white">
+                {selectedFurniture ? (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium">Detalii constructive</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Materiale necesare</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm">
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>
+                              <span className="font-medium">Plăci principale:</span> {materials.find(m => m.id === selectedMaterial)?.name}, 
+                              grosime {materials.find(m => m.id === selectedMaterial)?.thickness}
+                            </li>
+                            {hasDoors && (
+                              <li>
+                                <span className="font-medium">Uși:</span> {materials.find(m => m.id === doorMaterial)?.name}, 
+                                grosime {materials.find(m => m.id === doorMaterial)?.thickness}
+                              </li>
+                            )}
+                            {hasDrawers && (
+                              <li>
+                                <span className="font-medium">Sertare:</span> PAL, grosime 16mm, cantitate: 2-3 buc
+                              </li>
+                            )}
+                            <li>
+                              <span className="font-medium">Cant ABS:</span> pentru toate marginile vizibile
+                            </li>
+                            <li>
+                              <span className="font-medium">Șuruburi:</span> pentru asamblare și fixare
+                            </li>
+                          </ul>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Accesorii recomandate</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm">
+                          {accessories.length > 0 ? (
+                            <ul className="list-disc pl-5 space-y-2">
+                              {accessories.map((acc, index) => (
+                                <li key={index}>
+                                  <span className="font-medium">{acc.name}:</span> {acc.quantity} buc
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div>
+                              {hasDoors && (
+                                <ul className="list-disc pl-5 space-y-2">
+                                  <li>Balamale aplicare simplă: 2-4 buc</li>
+                                  <li>Mânere de ușă: 2-4 buc</li>
+                                </ul>
+                              )}
+                              {hasDrawers && (
+                                <ul className="list-disc pl-5 space-y-2">
+                                  <li>Glisiere sertar cu amortizare: 2 perechi</li>
+                                  <li>Mânere sertar: 2 buc</li>
+                                </ul>
+                              )}
+                              {!hasDoors && !hasDrawers && (
+                                <p className="text-gray-500">Adăugați uși sau sertare pentru a vedea accesoriile recomandate</p>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Dimensiuni plăci de debitat</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm">
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>
+                              <span className="font-medium">Laterale:</span> {dimensions.depth}x{dimensions.height} cm, 2 buc
+                            </li>
+                            <li>
+                              <span className="font-medium">Bază și top:</span> {dimensions.width}x{dimensions.depth} cm, 2 buc
+                            </li>
+                            {dimensions.height > 100 && (
+                              <li>
+                                <span className="font-medium">Poliță intermediară:</span> {dimensions.width - 3}x{dimensions.depth - 1} cm, 1-2 buc
+                              </li>
+                            )}
+                            {hasDoors && (
+                              <li>
+                                <span className="font-medium">Ușă{dimensions.width > 60 ? " (2 buc)" : ""}:</span> {dimensions.width > 60 ? 
+                                  Math.floor(dimensions.width / 2) : dimensions.width}x{dimensions.height - 6} cm
+                              </li>
+                            )}
+                            {hasDrawers && (
+                              <li>
+                                <span className="font-medium">Front sertar:</span> {dimensions.width - 1}x{Math.min(30, dimensions.height / 3)} cm, 1-3 buc
+                              </li>
+                            )}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Instrucțiuni de montaj</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm">
+                          <ol className="list-decimal pl-5 space-y-2">
+                            <li>Asamblați lateralele cu baza și topul folosind șuruburi și dibluri.</li>
+                            <li>Fixați spatele (dacă există) pentru a asigura rigiditatea corpului.</li>
+                            {dimensions.height > 100 && (
+                              <li>Montați polițele folosind suporți pentru poliță sau excentric+știft.</li>
+                            )}
+                            {hasDoors && (
+                              <li>Aplicați balamalele pe uși și apoi montați-le pe corpul de mobilier.</li>
+                            )}
+                            {hasDrawers && (
+                              <li>Montați glisierele sertarelor și apoi asamblați sertarele.</li>
+                            )}
+                            <li>Verificați stabilitatea și echilibrarea mobilierului.</li>
+                            <li>Aplicați ajustările finale și verificați funcționalitatea ușilor și sertarelor.</li>
+                          </ol>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-gray-500">Selectați un tip de mobilier pentru a vedea detaliile constructive</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Designer;
