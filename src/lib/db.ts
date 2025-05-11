@@ -463,6 +463,46 @@ export const addManualPalItem = (
   return recalculateQuote(newQuote);
 };
 
+// Function to add a furniture design item to the quote
+export const addFurnitureDesignToQuote = (
+  quote: Quote,
+  design: {
+    id: string;
+    name: string;
+    type: string;
+    material: string;
+    width: number;
+    height: number;
+    depth: number;
+    cost: number;
+  }
+): Quote => {
+  const newItem = {
+    id: Date.now().toString(),
+    categoryName: "Mobilier",
+    subcategoryName: design.type,
+    productId: design.id,
+    quantity: 1,
+    pricePerUnit: design.cost,
+    total: design.cost,
+    productDetails: {
+      cod: `DESIGN-${design.id.slice(-6)}`,
+      pret: design.cost,
+      description: `${design.name} - ${design.material} (${design.width}x${design.height}x${design.depth}cm)`,
+      type: design.type,
+      material: design.material,
+      dimensions: `${design.width}x${design.height}x${design.depth}cm`
+    }
+  };
+
+  const newQuote = {
+    ...quote,
+    items: [...quote.items, newItem],
+  };
+
+  return recalculateQuote(newQuote);
+};
+
 // Function to update item in quote
 export const updateQuoteItem = (quote: Quote, itemId: string, updates: Partial<QuoteItem>): Quote => {
   const index = quote.items.findIndex(i => i.id === itemId);

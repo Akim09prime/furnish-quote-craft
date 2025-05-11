@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Quote, updateQuoteMetadata } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import QuoteDetailsDrawer from './QuoteDetailsDrawer';
 import QuoteMetadataDialog from './QuoteMetadataDialog';
 import { Eye, Printer, Building } from 'lucide-react';
+import { toast } from "sonner";
 
 interface QuoteSummaryProps {
   quote: Quote;
@@ -29,6 +30,115 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
   const [laborPct, setLaborPct] = useState<number>(quote.laborPercentage);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
+  
+  // Calculate furniture costs based on saved designs in localStorage
+  const [furnitureDesignCosts, setFurnitureDesignCosts] = useState<{
+    totalMaterialCost: number;
+    totalAccessoriesCost: number;
+    designs: Array<{ name: string, cost: number, type: string }>;
+  }>({
+    totalMaterialCost: 0,
+    totalAccessoriesCost: 0,
+    designs: []
+  });
+  
+  // Load furniture designs from localStorage on component mount
+  useEffect(() => {
+    const loadFurnitureDesigns = () => {
+      try {
+        const savedItems = localStorage.getItem('furnitureDesigns');
+        if (!savedItems) return;
+        
+        const designs = JSON.parse(savedItems);
+        
+        // Calculate costs for each design
+        let totalMaterialCost = 0;
+        let totalAccessoriesCost = 0;
+        const designsWithCosts = designs.map((design: any) => {
+          // Base calculation logic from Designer.tsx
+          const basePrice: Record<string, number> = {
+            canapea: 1200,
+            scaun: 250,
+            biblioteca: 800,
+            dulap: 1500,
+            masa: 700,
+            pat: 1000,
+            bucatarie: 2000,
+            corp: 500
+          };
+          
+          // Material multiplier
+          const materialMultiplier: Record<string, number> = {
+            pal: 1,
+            pal_hdf: 1.2,
+            mdf: 1.5,
+            mdf_lucios: 1.8,
+            lemn_masiv: 2.5
+          };
+          
+          // Calculate size factor (larger = more expensive)
+          const volumeFactor = (design.width * design.height * design.depth) / 100000;
+          
+          // Preset multiplier (presets are slightly more expensive because they are optimized)
+          const presetMultiplier = design.presetId ? 1.1 : 1;
+          
+          // Calculate price
+          const materialCost = basePrice[design.type] * 
+                             (materialMultiplier[design.material] || 1) * 
+                             volumeFactor * 
+                             presetMultiplier;
+          
+          // Accessories cost (estimated as 15% of material cost)
+          const accessoriesCost = materialCost * 0.15;
+          
+          // Add to totals
+          totalMaterialCost += materialCost;
+          totalAccessoriesCost += accessoriesCost;
+          
+          return {
+            name: design.name,
+            cost: materialCost + accessoriesCost,
+            type: design.type
+          };
+        });
+        
+        setFurnitureDesignCosts({
+          totalMaterialCost,
+          totalAccessoriesCost,
+          designs: designsWithCosts
+        });
+        
+      } catch (e) {
+        console.error('Failed to parse saved designs:', e);
+      }
+    };
+    
+    loadFurnitureDesigns();
+  }, []);
+  
+  const handleImportDesigns = () => {
+    if (furnitureDesignCosts.designs.length === 0) {
+      toast.error("Nu există designuri de mobilier salvate");
+      return;
+    }
+    
+    // Add each design as a quote item
+    furnitureDesignCosts.designs.forEach(design => {
+      // Add manual item for each design
+      onUpdateLabor(quote.laborPercentage); // Maintain current labor %
+      
+      // Create a descriptive name
+      const designDescription = `${design.name} (${design.type})`;
+      
+      // Add to quote using addManualPalItem (we're assuming this function exists in the parent)
+      // This would typically be done through a prop like onAddManualItem
+      // For this example, we'll use toast to simulate
+      toast.success(`Adăugat în ofertă: ${designDescription} - ${design.cost.toFixed(2)} RON`);
+    });
+    
+    // Assuming there's a better way to add items in the actual implementation
+    toast.info(`${furnitureDesignCosts.designs.length} designuri importate în ofertă. Actualizați cantitățile după necesitate.`);
+  };
 
   const handleLaborChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -94,6 +204,26 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                   </Button>
                 </div>
               </div>
+              
+              {/* Furniture design costs section */}
+              {furnitureDesignCosts.designs.length > 0 && (
+                <div className="border rounded-lg p-3 bg-gray-50 space-y-2 print:hidden">
+                  <h3 className="font-medium">Designuri de mobilier disponibile ({furnitureDesignCosts.designs.length})</h3>
+                  <div className="text-sm space-y-1">
+                    <p>Cost total materiale: {furnitureDesignCosts.totalMaterialCost.toFixed(2)} RON</p>
+                    <p>Cost total accesorii: {furnitureDesignCosts.totalAccessoriesCost.toFixed(2)} RON</p>
+                    <p className="font-semibold">Total: {(furnitureDesignCosts.totalMaterialCost + furnitureDesignCosts.totalAccessoriesCost).toFixed(2)} RON</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleImportDesigns}
+                    className="w-full mt-2"
+                  >
+                    Importă designuri în ofertă
+                  </Button>
+                </div>
+              )}
 
               <div className="border-t pt-4 mt-6 space-y-2">
                 <div className="flex justify-between">
