@@ -1,6 +1,6 @@
 import { initialDB as dbInitialData } from "../data/initialDB";
 import { FurnitureDesign } from "@/components/FurnitureSetManager";
-import { Accessory } from "@/components/AccessorySelector";
+import type { Accessory as AccessoryComponent } from "@/components/AccessorySelector";
 
 // Re-export initialDB
 export const initialDB = dbInitialData;
@@ -47,6 +47,7 @@ export type Accessory = {
   type: string;
   price: number;
   unit: string;
+  quantity: number;
   description?: string;
 };
 

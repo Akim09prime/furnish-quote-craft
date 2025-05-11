@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Database, Accessory } from '@/lib/db';
 import { useAppContext } from '@/lib/contexts/AppContext';
@@ -43,7 +42,16 @@ const AccessoriesTab: React.FC<AccessoriesTabProps> = ({ database, onDatabaseUpd
   useEffect(() => {
     // Load accessories from database
     if (database.accessories) {
-      setAccessories(database.accessories);
+      // Convert from Accessory type to AccessoryFormValues
+      const convertedAccessories = database.accessories.map(acc => ({
+        id: acc.id,
+        name: acc.name,
+        type: acc.type,
+        price: acc.price,
+        unit: acc.unit,
+        description: acc.description || ''
+      }));
+      setAccessories(convertedAccessories);
     } else {
       setAccessories([]);
     }
@@ -105,10 +113,21 @@ const AccessoriesTab: React.FC<AccessoriesTabProps> = ({ database, onDatabaseUpd
   };
 
   const handleSave = () => {
+    // Convert AccessoryFormValues to Accessory with quantity field
+    const dbAccessories = accessories.map(acc => ({
+      id: acc.id,
+      name: acc.name,
+      type: acc.type,
+      price: acc.price,
+      unit: acc.unit,
+      description: acc.description,
+      quantity: 1 // Default quantity for database
+    }));
+    
     // Create updated database object with new accessories
-    const updatedDatabase = {
+    const updatedDatabase: Database = {
       ...database,
-      accessories: accessories
+      accessories: dbAccessories
     };
 
     // Update database

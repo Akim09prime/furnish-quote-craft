@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { Category, Subcategory, Product } from '@/lib/db';
+import { Category, Subcategory, Product, Database } from '@/lib/db';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,9 @@ import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText } from "lucide-react";
 
-interface ProductSelectorProps {
-  category: Category;
-  onAddToQuote: (item: {
+export interface ProductSelectorProps {
+  database: Database;
+  onAddToQuote?: (item: {
     categoryName: string;
     subcategoryName: string;
     productId: string;
@@ -26,25 +27,38 @@ interface ProductSelectorProps {
   onAddManualItem?: (description: string, quantity: number, price: number, categoryName: string) => void;
 }
 
-const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuote, onAddManualItem }) => {
+const ProductSelector: React.FC<ProductSelectorProps> = ({ database, onAddToQuote, onAddManualItem }) => {
+  const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number>(0);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
-  const showManualEntry = category.name === "PAL" || category.name === "MDF";
+  
+  // Initialize selected category
+  useEffect(() => {
+    if (database && database.categories && database.categories.length > 0) {
+      setSelectedCategory(database.categories[selectedCategoryIndex]);
+    }
+  }, [database, selectedCategoryIndex]);
+  
+  // Define if manual entry should be shown
+  const showManualEntry = selectedCategory ? 
+    (selectedCategory.name === "PAL" || selectedCategory.name === "MDF") : 
+    false;
 
   // Handle subcategory selection
   useEffect(() => {
-    if (selectedSubcategory) {
-      const sub = category.subcategories.find(s => s.name === selectedSubcategory);
+    if (selectedSubcategory && selectedCategory) {
+      const sub = selectedCategory.subcategories.find(s => s.name === selectedSubcategory);
       setSubcategory(sub || null);
       setFilters({});
       setSelectedProduct(null);
       setFilteredProducts(sub?.products || []);
     }
-  }, [selectedSubcategory, category]);
+  }, [selectedSubcategory, selectedCategory]);
 
   // Handle filter changes
   useEffect(() => {
@@ -77,10 +91,10 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
 
   // Handle add to quote
   const handleAddToQuote = () => {
-    if (!selectedProduct || !subcategory) return;
+    if (!selectedProduct || !subcategory || !selectedCategory || !onAddToQuote) return;
     
     onAddToQuote({
-      categoryName: category.name,
+      categoryName: selectedCategory.name,
       subcategoryName: subcategory.name,
       productId: selectedProduct.id,
       quantity,
@@ -103,29 +117,61 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
   });
 
   const submitManualForm = (data: { description: string; quantity: number; price: number }) => {
-    if (onAddManualItem) {
-      onAddManualItem(data.description, data.quantity, data.price, category.name);
+    if (onAddManualItem && selectedCategory) {
+      onAddManualItem(data.description, data.quantity, data.price, selectedCategory.name);
       manualForm.reset({
         description: "",
         quantity: 1,
         price: 0
       });
       
-      toast.success(`${category.name} adăugat manual în ofertă`, {
+      toast.success(`${selectedCategory.name} adăugat manual în ofertă`, {
         description: `${data.description}`,
       });
     }
   };
 
+  // Handle category selection
+  const handleCategoryChange = (index: number) => {
+    setSelectedCategoryIndex(index);
+    setSelectedSubcategory("");
+    setSubcategory(null);
+    setSelectedProduct(null);
+  };
+
+  if (!database || !database.categories || database.categories.length === 0) {
+    return <div>No categories found in database</div>;
+  }
+
+  if (!selectedCategory) {
+    return <div>Loading categories...</div>;
+  }
+
   return (
     <div className="space-y-6">
+      {/* Category Selector */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium">Select Category</h3>
+        <div className="flex flex-wrap gap-2">
+          {database.categories.map((category, index) => (
+            <Button
+              key={category.name}
+              variant={selectedCategoryIndex === index ? "default" : "outline"}
+              onClick={() => handleCategoryChange(index)}
+            >
+              {category.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+      
       {showManualEntry && (
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-6">
-          <h3 className="text-lg font-medium mb-4">Adaugă {category.name} manual</h3>
+          <h3 className="text-lg font-medium mb-4">Adaugă {selectedCategory.name} manual</h3>
           <Tabs defaultValue="direct">
             <TabsList className="mb-4 w-full">
-              <TabsTrigger value="direct" className="flex-1">{category.name} după model și cantitate</TabsTrigger>
-              <TabsTrigger value="price" className="flex-1">{category.name} după sumă totală</TabsTrigger>
+              <TabsTrigger value="direct" className="flex-1">{selectedCategory.name} după model și cantitate</TabsTrigger>
+              <TabsTrigger value="price" className="flex-1">{selectedCategory.name} după sumă totală</TabsTrigger>
             </TabsList>
             
             <TabsContent value="direct">
@@ -136,9 +182,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descriere / Model {category.name}</FormLabel>
+                        <FormLabel>Descriere / Model {selectedCategory.name}</FormLabel>
                         <FormControl>
-                          <Input placeholder={`ex: ${category.name} Alb`} {...field} />
+                          <Input placeholder={`ex: ${selectedCategory.name} Alb`} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -206,9 +252,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Descriere {category.name}</FormLabel>
+                        <FormLabel>Descriere {selectedCategory.name}</FormLabel>
                         <FormControl>
-                          <Input placeholder={`ex: ${category.name} furnir`} {...field} />
+                          <Input placeholder={`ex: ${selectedCategory.name} furnir`} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -253,7 +299,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ category, onAddToQuot
             <SelectValue placeholder="Alege subcategoria" />
           </SelectTrigger>
           <SelectContent>
-            {category.subcategories.map(sub => (
+            {selectedCategory.subcategories.map(sub => (
               <SelectItem key={sub.name} value={sub.name}>{sub.name}</SelectItem>
             ))}
           </SelectContent>

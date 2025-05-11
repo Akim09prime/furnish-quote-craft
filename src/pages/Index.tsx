@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Database, loadDatabase } from '@/lib/db';
+import { Database, loadDatabase, Quote, createNewQuote } from '@/lib/db';
 import { useQuote } from '@/hooks/use-quote';
 import { toast } from 'sonner';
 import AppLayout from '@/components/layouts/AppLayout';
@@ -13,8 +13,9 @@ import ProductSelector from '@/components/ProductSelector';
 const Index = () => {
   const [database, setDatabase] = useState<Database | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { quote } = useQuote();
+  const { quote, setQuote, addItem, addManualItem } = useQuote();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quoteType, setQuoteType] = useState<'client' | 'internal'>('client');
   
   // Load database
   useEffect(() => {
@@ -29,6 +30,17 @@ const Index = () => {
       setIsLoading(false);
     }
   }, []);
+
+  // Initialize quote if needed
+  useEffect(() => {
+    if (!quote) {
+      setQuote(createNewQuote());
+    }
+  }, [quote, setQuote]);
+  
+  const handleQuoteTypeChange = (type: 'client' | 'internal') => {
+    setQuoteType(type);
+  };
   
   return (
     <AppLayout>
@@ -47,23 +59,46 @@ const Index = () => {
             <div className="lg:col-span-2 space-y-8">
               <section className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold mb-4">Selectează Tipul de Ofertă</h2>
-                <QuoteTypeSelector />
+                <QuoteTypeSelector 
+                  quoteType={quoteType} 
+                  onChangeQuoteType={handleQuoteTypeChange}
+                />
               </section>
               
               <section className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold mb-4">Adaugă Produse</h2>
-                {database && <ProductSelector database={database} />}
+                {database && (
+                  <ProductSelector 
+                    database={database} 
+                    onAddToQuote={addItem}
+                    onAddManualItem={addManualItem}
+                  />
+                )}
               </section>
             </div>
             
             <div>
               <section className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-                <QuoteSummary onEditClick={() => setDrawerOpen(true)} />
+                {quote && (
+                  <QuoteSummary 
+                    quote={quote}
+                    onEditClick={() => setDrawerOpen(true)} 
+                  />
+                )}
               </section>
             </div>
           </div>
           
-          <QuoteDetailsDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+          {quote && (
+            <QuoteDetailsDrawer 
+              isOpen={drawerOpen} 
+              onClose={() => setDrawerOpen(false)}
+              quote={quote}
+              quoteType={quoteType}
+              onUpdateQuantity={(id, qty) => console.log("Update qty", id, qty)}
+              onRemoveItem={(id) => console.log("Remove item", id)}
+            />
+          )}
         </>
       )}
     </AppLayout>

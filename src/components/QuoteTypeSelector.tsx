@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { UserRound, UserCog } from 'lucide-react';
 
-interface QuoteTypeSelectorProps {
+export interface QuoteTypeSelectorProps {
   quoteType: 'client' | 'internal';
   onChangeQuoteType: (type: 'client' | 'internal') => void;
 }
