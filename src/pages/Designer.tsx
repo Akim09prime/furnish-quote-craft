@@ -70,7 +70,8 @@ const Designer = () => {
     handleUpdateQuoteMetadata,
     handleAddManualItem,
     handleImportFurnitureDesign,
-    handleImportFurnitureSet
+    handleImportFurnitureSet,
+    handleAddItemToQuote
   } = useQuote();
 
   // Load database on component mount
