@@ -6,12 +6,14 @@ interface FurnitureThumbnailProps {
   type: string;
   color: string;
   size?: number;
+  className?: string; // Adăugăm prop pentru stylizare suplimentară
 }
 
 const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({ 
   type, 
   color, 
-  size = 24 
+  size = 24,
+  className = ""
 }) => {
   const getIcon = () => {
     switch (type.toLowerCase()) {
@@ -44,7 +46,7 @@ const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({
 
   return (
     <div 
-      className="flex items-center justify-center rounded-md overflow-hidden" 
+      className={`flex items-center justify-center rounded-md overflow-hidden ${className}`}
       style={{ backgroundColor: color }}
     >
       <div className="text-white">

@@ -1,15 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Quote, updateQuoteMetadata } from '@/lib/db';
+import { Quote, updateQuoteMetadata, addFurnitureDesignToQuote, calculateDesignCost, addFurnitureSetToQuote } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import QuoteDetailsDrawer from './QuoteDetailsDrawer';
 import QuoteMetadataDialog from './QuoteMetadataDialog';
-import { Eye, Printer, Building, BookOpen, ChefHat, Home } from 'lucide-react';
+import { Eye, Printer, Building, BookOpen, ChefHat, Home, Plus, Check } from 'lucide-react';
 import { toast } from "sonner";
 import FurnitureThumbnail from './FurnitureThumbnail';
+import { FurnitureDesign } from './FurnitureSetManager';
+import { AccessorySelector, Accessory } from './AccessorySelector';
 
 interface QuoteSummaryProps {
   quote: Quote;
@@ -18,29 +21,8 @@ interface QuoteSummaryProps {
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onUpdateMetadata: (metadata: { beneficiary: string; title: string }) => void;
-}
-
-interface FurnitureDesign {
-  id: string;
-  presetId?: string;
-  type: string;
-  color: string;
-  material: string;
-  room: string;
-  width: number;
-  height: number;
-  depth: number;
-  name: string;
-  accessories?: {
-    name: string;
-    price: number;
-    quantity: number;
-  }[];
-  hasDrawers?: boolean;
-  hasDoors?: boolean;
-  doorMaterial?: string;
-  doorColor?: string;
-  setId?: string;
+  onImportFurnitureDesign?: (design: FurnitureDesign, cost: number) => void;
+  onImportFurnitureSet?: (setName: string, designs: FurnitureDesign[], costs: Map<string, number>) => void;
 }
 
 interface FurnitureSet {
@@ -59,17 +41,29 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
   onUpdateLabor,
   onUpdateQuantity,
   onRemoveItem,
-  onUpdateMetadata
+  onUpdateMetadata,
+  onImportFurnitureDesign,
+  onImportFurnitureSet
 }) => {
   const [laborPct, setLaborPct] = useState<number>(quote.laborPercentage);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
+  const [selectedDesignId, setSelectedDesignId] = useState<string | null>(null);
+  const [showDesignDetails, setShowDesignDetails] = useState<boolean>(false);
   
   // Calculate furniture costs based on saved designs in localStorage
   const [furnitureDesignCosts, setFurnitureDesignCosts] = useState<{
     totalMaterialCost: number;
     totalAccessoriesCost: number;
-    designs: Array<{ name: string, cost: number, type: string, id: string, description?: string }>;
+    designs: Array<{ 
+      name: string; 
+      cost: number; 
+      type: string; 
+      id: string; 
+      description?: string;
+      design: FurnitureDesign;
+      accessories?: Accessory[];
+    }>;
     sets: Array<{
       id: string; 
       name: string; 
@@ -79,6 +73,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
         type: string; 
         id: string;
         description?: string;
+        design: FurnitureDesign;
       }>; 
       totalCost: number
     }>;
@@ -88,6 +83,9 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
     designs: [],
     sets: []
   });
+  
+  // Selected design for details view
+  const [selectedDesign, setSelectedDesign] = useState<FurnitureDesign | null>(null);
   
   // Load furniture designs from localStorage on component mount
   useEffect(() => {
@@ -112,61 +110,23 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
           type: string;
           id: string;
           description?: string;
+          design: FurnitureDesign;
+          accessories?: Accessory[];
         }[] = [];
         
+        const designCostsMap = new Map<string, number>();
+        
         const processCost = (design: FurnitureDesign) => {
-          // Base calculation logic from Designer.tsx
-          const basePrice: Record<string, number> = {
-            canapea: 1200,
-            scaun: 250,
-            biblioteca: 800,
-            dulap: 1500,
-            masa: 700,
-            pat: 1000,
-            bucatarie: 2000,
-            corp: 500,
-            corp_colt: 700,
-            corp_suspendat: 600,
-            corp_sertar: 800
-          };
+          // Calculează costul folosind funcția din db.ts
+          const cost = calculateDesignCost(design);
           
-          // Material multiplier
-          const materialMultiplier: Record<string, number> = {
-            pal: 1,
-            pal_hdf: 1.2,
-            mdf: 1.5,
-            mdf_lucios: 1.8,
-            lemn_masiv: 2.5
-          };
-          
-          // Calculate size factor (larger = more expensive)
-          const volumeFactor = (design.width * design.height * design.depth) / 100000;
-          
-          // Preset multiplier
-          const presetMultiplier = design.presetId ? 1.1 : 1;
-          
-          // Door multiplier
-          const doorMultiplier = design.hasDoors ? 
-            (design.doorMaterial === 'mdf_lucios' ? 1.3 : design.doorMaterial === 'lemn_masiv' ? 1.5 : 1.1) : 1;
-          
-          // Drawer multiplier
-          const drawerMultiplier = design.hasDrawers ? 1.2 : 1;
-          
-          // Calculate price
-          let materialCost = basePrice[design.type] * 
-                           (materialMultiplier[design.material] || 1) * 
-                           volumeFactor * 
-                           presetMultiplier *
-                           doorMultiplier *
-                           drawerMultiplier;
-          
-          // Accessories cost
+          // Calcul separat pentru cost materiale și accesorii
+          let materialCost = cost;
           let accessoriesCost = 0;
+          
           if (design.accessories && design.accessories.length > 0) {
             accessoriesCost = design.accessories.reduce((sum, acc) => sum + acc.price * acc.quantity, 0);
-          } else {
-            // Default accessories (estimated as 15% of material cost)
-            accessoriesCost = materialCost * 0.15;
+            materialCost = cost - accessoriesCost;
           }
           
           // Add to totals
@@ -176,12 +136,17 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
           // Create description
           const description = generateDescription(design);
           
+          // Store cost in map for later use
+          designCostsMap.set(design.id, cost);
+          
           return {
             name: design.name,
-            cost: materialCost + accessoriesCost,
+            cost: cost,
             type: design.type,
             id: design.id,
-            description
+            description,
+            design: design,
+            accessories: design.accessories
           };
         };
         
@@ -269,43 +234,37 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
     setIsDetailsOpen(true);
   };
   
-  const handleImportDesigns = () => {
-    if (furnitureDesignCosts.designs.length === 0) {
-      toast.error("Nu există designuri de mobilier salvate");
-      return;
+  const handleImportDesign = (design: FurnitureDesign, cost: number) => {
+    if (onImportFurnitureDesign) {
+      onImportFurnitureDesign(design, cost);
+      toast.success(`Design "${design.name}" adăugat în ofertă`);
     }
-    
-    // Add each design as a quote item
-    furnitureDesignCosts.designs.forEach(design => {
-      // Create a descriptive name
-      const designDescription = `${design.name} (${design.type})`;
-      
-      // Add to quote using addManualPalItem (we're assuming this function exists in the parent)
-      // For this example, we'll use toast to simulate
-      toast.success(`Adăugat în ofertă: ${designDescription} - ${design.cost.toFixed(2)} RON`);
-    });
-    
-    // Assuming there's a better way to add items in the actual implementation
-    toast.info(`${furnitureDesignCosts.designs.length} designuri importate în ofertă. Actualizați cantitățile după necesitate.`);
   };
   
   const handleImportSet = (setId: string) => {
     const set = furnitureDesignCosts.sets.find(s => s.id === setId);
-    if (!set) {
-      toast.error("Set negăsit");
+    if (!set || !onImportFurnitureSet) {
+      toast.error("Set negăsit sau funcția de import lipsește");
       return;
     }
     
-    // Add each design in the set as a quote item
-    set.designs.forEach(design => {
-      // Create a descriptive name
-      const designDescription = `${design.name} (${design.type})`;
-      
-      // Add to quote (implementation would depend on the actual app structure)
-      toast.success(`Adăugat în ofertă: ${designDescription} - ${design.cost.toFixed(2)} RON`);
+    // Create a cost map for the designs in the set
+    const costsMap = new Map<string, number>();
+    set.designs.forEach(d => {
+      costsMap.set(d.id, d.cost);
     });
     
-    toast.info(`Setul "${set.name}" cu ${set.designs.length} componente a fost importat în ofertă.`);
+    // Get the actual design objects
+    const designObjects = set.designs.map(d => d.design);
+    
+    // Import the set
+    onImportFurnitureSet(set.name, designObjects, costsMap);
+    toast.success(`Set "${set.name}" adăugat în ofertă`);
+  };
+  
+  const handleShowDesignDetails = (design: FurnitureDesign) => {
+    setSelectedDesign(design);
+    setShowDesignDetails(true);
   };
 
   return (
@@ -352,13 +311,17 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                   {/* Individual designs */}
                   <div className="space-y-2 max-h-[180px] overflow-y-auto">
                     {furnitureDesignCosts.designs.map((design) => (
-                      <Card key={design.id} className="bg-white">
+                      <Card 
+                        key={design.id} 
+                        className={`bg-white ${selectedDesignId === design.id ? 'ring-2 ring-primary' : ''}`}
+                        onClick={() => setSelectedDesignId(design.id)}
+                      >
                         <CardContent className="p-3 flex justify-between items-center">
                           <div className="flex items-center gap-2">
                             <div className="h-8 w-8">
                               <FurnitureThumbnail 
                                 type={design.type} 
-                                color="#D4B48C" 
+                                color={design.design.color || "#D4B48C"} 
                                 size={18}
                               />
                             </div>
@@ -367,7 +330,27 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                               <p className="text-xs text-gray-500">{design.description}</p>
                             </div>
                           </div>
-                          <p className="font-medium">{design.cost.toFixed(2)} RON</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{design.cost.toFixed(2)} RON</p>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 px-2"
+                              onClick={() => handleShowDesignDetails(design.design)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="h-8 px-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleImportDesign(design.design, design.cost);
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -385,7 +368,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                                 <div className="h-8 w-8">
                                   <FurnitureThumbnail 
                                     type={set.designs[0]?.type || "corp"} 
-                                    color="#D4B48C" 
+                                    color={set.designs[0]?.design.color || "#D4B48C"} 
                                     size={18}
                                   />
                                 </div>
@@ -415,15 +398,6 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                     <p>Cost total accesorii: {furnitureDesignCosts.totalAccessoriesCost.toFixed(2)} RON</p>
                     <p className="font-semibold">Total: {(furnitureDesignCosts.totalMaterialCost + furnitureDesignCosts.totalAccessoriesCost).toFixed(2)} RON</p>
                   </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleImportDesigns}
-                    className="w-full mt-2"
-                  >
-                    Importă designuri în ofertă
-                  </Button>
                 </div>
               )}
 
@@ -461,6 +435,101 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                 </Button>
               </div>
             </>
+          )}
+          
+          {/* Design Details Dialog */}
+          {selectedDesign && showDesignDetails && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+              <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <CardHeader>
+                  <CardTitle className="flex justify-between items-center">
+                    <span>Detalii Design: {selectedDesign.name}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => setShowDesignDetails(false)}
+                    >
+                      <span className="sr-only">Close</span>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16">
+                      <FurnitureThumbnail 
+                        type={selectedDesign.type} 
+                        color={selectedDesign.color || "#D4B48C"} 
+                        size={32}
+                        className="h-16 w-16" 
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">{selectedDesign.name}</h3>
+                      <p className="text-sm text-gray-500">{selectedDesign.type}</p>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-sm text-gray-500">Dimensiuni</p>
+                      <p className="font-medium">{selectedDesign.width} × {selectedDesign.height} × {selectedDesign.depth} cm</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Material</p>
+                      <p className="font-medium">{selectedDesign.material}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Uși</p>
+                      <p className="font-medium">{selectedDesign.hasDoors ? 'Da' : 'Nu'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Sertare</p>
+                      <p className="font-medium">{selectedDesign.hasDrawers ? 'Da' : 'Nu'}</p>
+                    </div>
+                    {selectedDesign.hasDoors && (
+                      <>
+                        <div>
+                          <p className="text-sm text-gray-500">Material Uși</p>
+                          <p className="font-medium">{selectedDesign.doorMaterial || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Culoare Uși</p>
+                          <p className="font-medium">{selectedDesign.doorColor || 'N/A'}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  <Separator />
+                  
+                  {selectedDesign.accessories && selectedDesign.accessories.length > 0 && (
+                    <div>
+                      <AccessorySelector 
+                        accessories={selectedDesign.accessories || []}
+                        onAccessoriesChange={() => {}}
+                        readOnly={true}
+                      />
+                    </div>
+                  )}
+                  
+                  <Button 
+                    className="w-full mt-4"
+                    onClick={() => {
+                      const designCost = calculateDesignCost(selectedDesign);
+                      handleImportDesign(selectedDesign, designCost);
+                      setShowDesignDetails(false);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adaugă în ofertă
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           )}
           
           {/* Print page styling for the quote - visible only in print mode */}

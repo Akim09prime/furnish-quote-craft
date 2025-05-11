@@ -1,4 +1,6 @@
 import { initialDB as dbInitialData } from "../data/initialDB";
+import { FurnitureDesign } from "@/components/FurnitureSetManager";
+import { Accessory } from "@/components/AccessorySelector";
 
 // Re-export initialDB
 export const initialDB = dbInitialData;
@@ -466,16 +468,8 @@ export const addManualPalItem = (
 // Function to add a furniture design item to the quote
 export const addFurnitureDesignToQuote = (
   quote: Quote,
-  design: {
-    id: string;
-    name: string;
-    type: string;
-    material: string;
-    width: number;
-    height: number;
-    depth: number;
-    cost: number;
-  }
+  design: FurnitureDesign,
+  calculatedCost: number
 ): Quote => {
   const newItem = {
     id: Date.now().toString(),
@@ -483,15 +477,21 @@ export const addFurnitureDesignToQuote = (
     subcategoryName: design.type,
     productId: design.id,
     quantity: 1,
-    pricePerUnit: design.cost,
-    total: design.cost,
+    pricePerUnit: calculatedCost,
+    total: calculatedCost,
     productDetails: {
       cod: `DESIGN-${design.id.slice(-6)}`,
-      pret: design.cost,
-      description: `${design.name} - ${design.material} (${design.width}x${design.height}x${design.depth}cm)`,
+      pret: calculatedCost,
+      name: design.name,
       type: design.type,
       material: design.material,
-      dimensions: `${design.width}x${design.height}x${design.depth}cm`
+      doorMaterial: design.doorMaterial || "N/A",
+      dimensions: `${design.width}x${design.height}x${design.depth}cm`,
+      accessories: design.accessories || [],
+      hasDoors: design.hasDoors ? "Da" : "Nu",
+      hasDrawers: design.hasDrawers ? "Da" : "Nu",
+      color: design.color,
+      designId: design.id
     }
   };
 
@@ -501,6 +501,82 @@ export const addFurnitureDesignToQuote = (
   };
 
   return recalculateQuote(newQuote);
+};
+
+// Function to add all designs in a furniture set to the quote
+export const addFurnitureSetToQuote = (
+  quote: Quote,
+  setName: string,
+  designs: FurnitureDesign[],
+  designCosts: Map<string, number>
+): Quote => {
+  let newQuote = { ...quote };
+  
+  designs.forEach(design => {
+    const cost = designCosts.get(design.id) || calculateDesignCost(design);
+    newQuote = addFurnitureDesignToQuote(newQuote, design, cost);
+  });
+  
+  return newQuote;
+};
+
+// Helper function to calculate the cost of a furniture design
+export const calculateDesignCost = (design: FurnitureDesign): number => {
+  // Base calculation logic
+  const basePrice: Record<string, number> = {
+    canapea: 1200,
+    scaun: 250,
+    biblioteca: 800,
+    dulap: 1500,
+    masa: 700,
+    pat: 1000,
+    bucatarie: 2000,
+    corp: 500,
+    corp_colt: 700,
+    corp_suspendat: 600,
+    corp_sertar: 800
+  };
+  
+  // Material multiplier
+  const materialMultiplier: Record<string, number> = {
+    pal: 1,
+    pal_hdf: 1.2,
+    mdf: 1.5,
+    mdf_lucios: 1.8,
+    lemn_masiv: 2.5
+  };
+  
+  // Calculate size factor (larger = more expensive)
+  const volumeFactor = (design.width * design.height * design.depth) / 100000;
+  
+  // Preset multiplier
+  const presetMultiplier = design.presetId ? 1.1 : 1;
+  
+  // Door multiplier
+  const doorMultiplier = design.hasDoors ? 
+    (design.doorMaterial === 'mdf_lucios' ? 1.3 : design.doorMaterial === 'lemn_masiv' ? 1.5 : 1.1) : 1;
+  
+  // Drawer multiplier
+  const drawerMultiplier = design.hasDrawers ? 1.2 : 1;
+  
+  // Calculate price
+  let materialCost = basePrice[design.type] * 
+                   (materialMultiplier[design.material] || 1) * 
+                   volumeFactor * 
+                   presetMultiplier *
+                   doorMultiplier *
+                   drawerMultiplier;
+  
+  // Accessories cost
+  let accessoriesCost = 0;
+  if (design.accessories && design.accessories.length > 0) {
+    accessoriesCost = design.accessories.reduce((sum, acc) => sum + acc.price * acc.quantity, 0);
+  } else {
+    // Default accessories (estimated as 15% of material cost)
+    accessoriesCost = materialCost * 0.15;
+  }
+  
+  return materialCost + accessoriesCost;
 };
 
 // Function to update item in quote
