@@ -182,4 +182,6 @@ const AccessorySelector: React.FC<AccessorySelectorProps> = ({
   );
 };
 
+// Export both as default and named export for compatibility
+export { AccessorySelector };
 export default AccessorySelector;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Quote, updateQuoteMetadata, addFurnitureDesignToQuote, calculateDesignCost, addFurnitureSetToQuote } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +11,7 @@ import { Eye, Printer, Building, BookOpen, ChefHat, Home, Plus, Check } from 'lu
 import { toast } from "sonner";
 import FurnitureThumbnail from './FurnitureThumbnail';
 import { FurnitureDesign } from './FurnitureSetManager';
-import { AccessorySelector, Accessory } from './AccessorySelector';
+import AccessorySelector, { Accessory } from './AccessorySelector';
 
 interface QuoteSummaryProps {
   quote: Quote;
@@ -615,7 +614,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
             
             <div className="quote-print-footer">
               <p>Vă mulțumim pentru încrederea acordată!</p>
-              <p>www.furnishquotecraft.ro | office@furnishquotecraft.ro | +40 722 123 456</p>
+              <p>www.furnishquotecraft.ro | office@furnishquote.com | +40 722 123 456</p>
               <p>Oferta este valabilă 30 de zile de la data emiterii.</p>
             </div>
           </div>
