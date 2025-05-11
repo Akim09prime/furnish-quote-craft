@@ -36,6 +36,8 @@ import QuoteItemEditor from "@/components/QuoteItemEditor";
 import FurnitureSetManager, { FurnitureDesign } from "@/components/FurnitureSetManager";
 import FurnitureDesigner from "@/components/FurnitureDesigner";
 import { useQuote } from "@/hooks/use-quote";
+import ProductSelector from "@/components/ProductSelector";
+import FurnitureSelector, { FurnitureTemplate } from "@/components/FurnitureSelector";
 
 // Designer page with improved stylings and fixed quote updating
 const Designer = () => {
@@ -59,6 +61,7 @@ const Designer = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [selectedDesign, setSelectedDesign] = useState<FurnitureDesign | null>(null);
+  const [activeTab, setActiveTab] = useState<'database' | 'templates'>('templates');
   
   // Use our custom hook for quote management
   const {
@@ -269,181 +272,210 @@ const Designer = () => {
     toast.success("Design salvat cu succes");
   };
 
+  // Handler for furniture templates
+  const handleSelectTemplate = (template: FurnitureTemplate) => {
+    // Add template to quote as a furniture item
+    handleAddManualItem(template.name, 1, template.price);
+  };
+
   return (
     <div className="container mx-auto p-4 flex flex-col md:flex-row gap-4 animate-fade-in">
       {/* Left Panel - Database Management */}
       <div className="w-full md:w-1/3 space-y-4">
-        <h2 className="text-xl font-semibold">Bază de date</h2>
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={activeTab === 'templates' ? 'default' : 'outline'}
+            className="flex-1"
+            onClick={() => setActiveTab('templates')}
+          >
+            Corpuri Standard
+          </Button>
+          <Button
+            variant={activeTab === 'database' ? 'default' : 'outline'}
+            className="flex-1"
+            onClick={() => setActiveTab('database')}
+          >
+            Bază de Date
+          </Button>
+        </div>
 
-        {/* Category Management */}
-        <Card className="hover-scale">
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label>Categorii</Label>
-              <Button size="sm" onClick={() => setIsCategoryFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adaugă
-              </Button>
-            </div>
-            {db.categories.length === 0 ? (
-              <p className="text-sm text-gray-500">Nu există categorii</p>
-            ) : (
-              <div className="space-y-1">
-                {db.categories.map(category => (
-                  <div key={category.name} className="flex justify-between items-center">
-                    <Button
-                      variant="secondary"
-                      className={`w-full justify-start ${selectedCategory === category.name ? 'bg-gray-100' : ''}`}
-                      onClick={() => {
-                        setSelectedCategory(category.name);
-                        setSelectedSubcategory(null);
-                        setSelectedProduct(null);
-                      }}
-                    >
-                      {category.name}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteCategory(category.name)}
-                    >
-                      Șterge
+        {activeTab === 'templates' ? (
+          <FurnitureSelector onSelectTemplate={handleSelectTemplate} db={db} />
+        ) : (
+          <>
+            <h2 className="text-xl font-semibold">Bază de date</h2>
+            
+            {/* Category Management */}
+            <Card className="hover-scale">
+              <CardContent className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>Categorii</Label>
+                  <Button size="sm" onClick={() => setIsCategoryFormOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adaugă
+                  </Button>
+                </div>
+                {db.categories.length === 0 ? (
+                  <p className="text-sm text-gray-500">Nu există categorii</p>
+                ) : (
+                  <div className="space-y-1">
+                    {db.categories.map(category => (
+                      <div key={category.name} className="flex justify-between items-center">
+                        <Button
+                          variant="secondary"
+                          className={`w-full justify-start ${selectedCategory === category.name ? 'bg-gray-100' : ''}`}
+                          onClick={() => {
+                            setSelectedCategory(category.name);
+                            setSelectedSubcategory(null);
+                            setSelectedProduct(null);
+                          }}
+                        >
+                          {category.name}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteCategory(category.name)}
+                        >
+                          Șterge
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Subcategory Management */}
+            {selectedCategory && (
+              <Card className="hover-scale">
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label>Subcategorii ({selectedCategory})</Label>
+                    <Button size="sm" onClick={() => setIsSubcategoryFormOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Adaugă
                     </Button>
                   </div>
-                ))}
-              </div>
+                  {db.categories.find(c => c.name === selectedCategory)?.subcategories.length === 0 ? (
+                    <p className="text-sm text-gray-500">Nu există subcategorii</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {db.categories.find(c => c.name === selectedCategory)?.subcategories.map(subcategory => (
+                        <div key={subcategory.name} className="flex justify-between items-center">
+                          <Button
+                            variant="secondary"
+                            className={`w-full justify-start ${selectedSubcategory === subcategory.name ? 'bg-gray-100' : ''}`}
+                            onClick={() => {
+                              setSelectedSubcategory(subcategory.name);
+                              setSelectedProduct(null);
+                            }}
+                          >
+                            {subcategory.name}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteSubcategory(selectedCategory, subcategory.name)}
+                          >
+                            Șterge
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Subcategory Management */}
-        {selectedCategory && (
-          <Card className="hover-scale">
-            <CardContent className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Subcategorii ({selectedCategory})</Label>
-                <Button size="sm" onClick={() => setIsSubcategoryFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Adaugă
-                </Button>
-              </div>
-              {db.categories.find(c => c.name === selectedCategory)?.subcategories.length === 0 ? (
-                <p className="text-sm text-gray-500">Nu există subcategorii</p>
-              ) : (
-                <div className="space-y-1">
-                  {db.categories.find(c => c.name === selectedCategory)?.subcategories.map(subcategory => (
-                    <div key={subcategory.name} className="flex justify-between items-center">
-                      <Button
-                        variant="secondary"
-                        className={`w-full justify-start ${selectedSubcategory === subcategory.name ? 'bg-gray-100' : ''}`}
-                        onClick={() => {
-                          setSelectedSubcategory(subcategory.name);
-                          setSelectedProduct(null);
-                        }}
-                      >
-                        {subcategory.name}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteSubcategory(selectedCategory, subcategory.name)}
-                      >
-                        Șterge
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Product Management */}
-        {selectedCategory && selectedSubcategory && (
-          <Card className="hover-scale">
-            <CardContent className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Produse ({selectedSubcategory})</Label>
-                <Button size="sm" onClick={() => setIsProductFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Adaugă
-                </Button>
-              </div>
-              {db.categories.find(c => c.name === selectedCategory)?.subcategories.find(s => s.name === selectedSubcategory)?.products.length === 0 ? (
-                <p className="text-sm text-gray-500">Nu există produse</p>
-              ) : (
-                <div className="space-y-1">
-                  {db.categories.find(c => c.name === selectedCategory)?.subcategories.find(s => s.name === selectedSubcategory)?.products.map(product => (
-                    <div key={product.id} className="flex justify-between items-center">
-                      <Button
-                        variant="secondary"
-                        className={`w-full justify-start ${selectedProduct === product.id ? 'bg-gray-100' : ''}`}
-                        onClick={() => setSelectedProduct(product.id)}
-                      >
-                        {product.cod} - {product.pret} RON
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteProduct(selectedCategory, selectedSubcategory, product.id)}
-                      >
-                        Șterge
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Material Management */}
-        <Card className="hover-scale">
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label>Materiale</Label>
-              <Button size="sm" onClick={() => setIsMaterialFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adaugă
-              </Button>
-            </div>
-            {materials.length === 0 ? (
-              <p className="text-sm text-gray-500">Nu există materiale</p>
-            ) : (
-              <div className="space-y-1">
-                {materials.map(material => (
-                  <div key={material.id} className="flex justify-between items-center">
-                    <div>
-                      {material.name} ({material.thickness}mm)
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteMaterial(material.id)}
-                    >
-                      Șterge
+            {/* Product Management */}
+            {selectedCategory && selectedSubcategory && (
+              <Card className="hover-scale">
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label>Produse ({selectedSubcategory})</Label>
+                    <Button size="sm" onClick={() => setIsProductFormOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Adaugă
                     </Button>
                   </div>
-                ))}
-              </div>
+                  {db.categories.find(c => c.name === selectedCategory)?.subcategories.find(s => s.name === selectedSubcategory)?.products.length === 0 ? (
+                    <p className="text-sm text-gray-500">Nu există produse</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {db.categories.find(c => c.name === selectedCategory)?.subcategories.find(s => s.name === selectedSubcategory)?.products.map(product => (
+                        <div key={product.id} className="flex justify-between items-center">
+                          <Button
+                            variant="secondary"
+                            className={`w-full justify-start ${selectedProduct === product.id ? 'bg-gray-100' : ''}`}
+                            onClick={() => setSelectedProduct(product.id)}
+                          >
+                            {product.cod} - {product.pret} RON
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteProduct(selectedCategory, selectedSubcategory, product.id)}
+                          >
+                            Șterge
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Import/Export Database */}
-        <Card className="hover-scale">
-          <CardContent className="space-y-2">
-            <Label>Import / Export</Label>
-            <div className="flex gap-2">
-              <Button className="w-1/2" onClick={handleExportDatabase}>
-                Exportă
-              </Button>
-              <Button className="w-1/2" onClick={() => setIsImportExportDialogOpen(true)}>
-                Importă
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Material Management */}
+            <Card className="hover-scale">
+              <CardContent className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>Materiale</Label>
+                  <Button size="sm" onClick={() => setIsMaterialFormOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adaugă
+                  </Button>
+                </div>
+                {materials.length === 0 ? (
+                  <p className="text-sm text-gray-500">Nu există materiale</p>
+                ) : (
+                  <div className="space-y-1">
+                    {materials.map(material => (
+                      <div key={material.id} className="flex justify-between items-center">
+                        <div>
+                          {material.name} ({material.thickness}mm)
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteMaterial(material.id)}
+                        >
+                          Șterge
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Import/Export Database */}
+            <Card className="hover-scale">
+              <CardContent className="space-y-2">
+                <Label>Import / Export</Label>
+                <div className="flex gap-2">
+                  <Button className="w-1/2" onClick={handleExportDatabase}>
+                    Exportă
+                  </Button>
+                  <Button className="w-1/2" onClick={() => setIsImportExportDialogOpen(true)}>
+                    Importă
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Center Panel - Product Details & Quote Item Addition */}

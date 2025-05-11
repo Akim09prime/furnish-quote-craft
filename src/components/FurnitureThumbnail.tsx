@@ -6,7 +6,7 @@ interface FurnitureThumbnailProps {
   type: string;
   color: string;
   size?: number;
-  className?: string; // Adăugăm prop pentru stylizare suplimentară
+  className?: string;
 }
 
 const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({ 
@@ -46,8 +46,8 @@ const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({
 
   return (
     <div 
-      className={`flex items-center justify-center rounded-md overflow-hidden ${className}`}
-      style={{ backgroundColor: color }}
+      className={`flex items-center justify-center rounded-md overflow-hidden p-2 ${className}`}
+      style={{ backgroundColor: color, boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}
     >
       <div className="text-white">
         {getIcon()}
