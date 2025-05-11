@@ -26,7 +26,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Armchair, Ruler, Table, BookOpen, Save, Bed, ArrowRight, Cabinet, Sofa } from 'lucide-react';
+import { Armchair, Ruler, Table, BookOpen, Save, Bed, ArrowRight, Sofa } from 'lucide-react';
 import { 
   Carousel,
   CarouselContent,
