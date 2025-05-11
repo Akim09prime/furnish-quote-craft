@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, FolderOpen } from 'lucide-react';
+import { Plus, FolderOpen, PenLine } from 'lucide-react';
 import { Database } from "@/lib/db";
 import { toast } from 'sonner';
 import FurnitureThumbnail from './FurnitureThumbnail';
+import ManualFurnitureForm, { ManualFurniture } from './ManualFurnitureForm';
 
 export interface FurnitureTemplate {
   id: string;
@@ -33,6 +34,7 @@ const FurnitureSelector: React.FC<FurnitureSelectorProps> = ({ onSelectTemplate,
   const [templates, setTemplates] = useState<FurnitureTemplate[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('templates');
 
   // Dummy templates for demonstration
   useEffect(() => {
@@ -62,7 +64,7 @@ const FurnitureSelector: React.FC<FurnitureSelectorProps> = ({ onSelectTemplate,
         id: '3',
         name: 'Coloană frigider',
         category: 'Bucătărie',
-        type: 'corp',
+        type: 'corp_frigider',
         dimensions: { width: 60, height: 200, depth: 60 },
         materials: ['PAL melaminat'],
         price: 650,
@@ -138,29 +140,49 @@ const FurnitureSelector: React.FC<FurnitureSelectorProps> = ({ onSelectTemplate,
     });
   };
 
+  const handleSaveManualFurniture = (furniture: ManualFurniture) => {
+    // Convert manual furniture to template format
+    const template: FurnitureTemplate = {
+      id: furniture.id,
+      name: furniture.name,
+      category: furniture.category.charAt(0).toUpperCase() + furniture.category.slice(1), // Capitalize first letter
+      type: furniture.type,
+      dimensions: {
+        width: furniture.width,
+        height: furniture.height,
+        depth: furniture.depth
+      },
+      materials: [furniture.material],
+      price: furniture.totalPrice,
+      color: furniture.color
+    };
+
+    // Add to available templates
+    setTemplates([...templates, template]);
+
+    // Select it directly
+    onSelectTemplate(template);
+  };
+
   return (
     <Card className="shadow-lg">
       <CardHeader className="bg-gradient-to-r from-furniture-purple-light to-furniture-purple-dark pb-2">
-        <CardTitle className="text-white">Corpuri de Mobilier Standard</CardTitle>
+        <CardTitle className="text-white">Corpuri de Mobilier</CardTitle>
       </CardHeader>
       <CardContent className="p-4">
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="mb-4 grid grid-cols-4 sm:grid-cols-5">
-            <TabsTrigger value="all" onClick={() => setActiveCategory('all')}>
-              Toate
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-4 grid grid-cols-3">
+            <TabsTrigger value="templates">
+              <FolderOpen className="h-4 w-4 mr-1" />
+              Corpuri Standard
             </TabsTrigger>
-            {categories.map(category => (
-              <TabsTrigger 
-                key={category}
-                value={category}
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </TabsTrigger>
-            ))}
+            <TabsTrigger value="manual">
+              <PenLine className="h-4 w-4 mr-1" />
+              Creare Manuală
+            </TabsTrigger>
             <TabsTrigger value="new">
               <Plus className="h-4 w-4 mr-1" />
-              Nou
+              Corp Nou
             </TabsTrigger>
           </TabsList>
 
@@ -175,7 +197,28 @@ const FurnitureSelector: React.FC<FurnitureSelectorProps> = ({ onSelectTemplate,
             </div>
           </TabsContent>
 
-          <TabsContent value="all" className="space-y-2">
+          <TabsContent value="manual">
+            <ManualFurnitureForm db={db} onSave={handleSaveManualFurniture} />
+          </TabsContent>
+
+          <TabsContent value="templates" className="space-y-2">
+            <div className="mb-4">
+              <TabsList className="mb-2 grid grid-cols-4 sm:grid-cols-5">
+                <TabsTrigger value="all" onClick={() => setActiveCategory('all')}>
+                  Toate
+                </TabsTrigger>
+                {categories.map(category => (
+                  <TabsTrigger 
+                    key={category}
+                    value={category}
+                    onClick={() => setActiveCategory(category)}
+                  >
+                    {category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            
             <ScrollArea className="h-[500px] pr-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {filteredTemplates.map(template => (

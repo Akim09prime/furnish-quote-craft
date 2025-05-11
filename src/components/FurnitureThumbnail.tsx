@@ -1,6 +1,20 @@
 
 import React from 'react';
-import { Armchair, BookOpen, Table, Bed, Sofa, ChefHat, Inbox, Home, Container, LayoutGrid } from 'lucide-react';
+import { 
+  Armchair, 
+  BookOpen, 
+  Table, 
+  Bed, 
+  Sofa, 
+  ChefHat, 
+  Inbox, 
+  Home, 
+  Container, 
+  LayoutGrid, 
+  Fridge, 
+  Cabinet,  
+  Drawer
+} from 'lucide-react';
 
 interface FurnitureThumbnailProps {
   type: string;
@@ -24,20 +38,24 @@ const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({
       case 'biblioteca':
         return <BookOpen size={size} />;
       case 'dulap':
-        return <Inbox size={size} />; // Using Inbox as a replacement for Cabinet
+        return <Cabinet size={size} />; 
       case 'masa':
         return <Table size={size} />;
       case 'pat':
         return <Bed size={size} />;
       case 'bucatarie':
         return <ChefHat size={size} />;
-      case 'corp': // For generic furniture components
+      case 'corp': 
         return <Home size={size} />;
       case 'corp_colt':
         return <LayoutGrid size={size} />;
       case 'corp_suspendat':
         return <Container size={size} />;
       case 'corp_sertar':
+        return <Drawer size={size} />;
+      case 'corp_frigider':
+        return <Fridge size={size} />;
+      case 'corp_chiuveta':
         return <Inbox size={size} />;
       default:
         return <Home size={size} />;
