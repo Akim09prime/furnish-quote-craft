@@ -2,15 +2,20 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database } from '@/lib/db';
+import PageHeader from '@/lib/components/common/PageHeader';
+import { Button } from "@/components/ui/button";
+import { Settings, Package, LayersIcon, Database as DatabaseIcon, Import, BookOpen } from 'lucide-react';
+
+// Tab components
 import EditProductsTab from './admin/EditProductsTab';
-import ManageCategoriesTab from './admin/ManageCategoriesTab';
+import CategoriesAdminTab from './admin/CategoriesAdminTab';
+import FurnitureComponentsTab from './admin/FurnitureComponentsTab';
 import MaterialsTab from './admin/MaterialsTab';
 import TypesEditorTab from './admin/TypesEditorTab';
 import ExportImportTab from './admin/ExportImportTab';
 import AIAssistantTab from './admin/AIAssistantTab';
 import AISettingsTab from './admin/AISettingsTab';
-import CategoriesAdminTab from './admin/CategoriesAdminTab';
-import FurnitureComponentsTab from './admin/FurnitureComponentsTab';
+import AccessoriesTab from './admin/AccessoriesTab';
 
 interface AdminPanelProps {
   database: Database;
@@ -42,88 +47,110 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const defaultSuccessMessage = "Tipul '{type}' a fost adăugat cu succes";
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 w-full h-auto">
-        <TabsTrigger value="edit-products" className="text-xs md:text-sm">
-          Editare Produse
-        </TabsTrigger>
-        <TabsTrigger value="categories" className="text-xs md:text-sm">
-          Categorii Simple
-        </TabsTrigger>
-        <TabsTrigger value="categories-admin" className="text-xs md:text-sm">
-          Categorii Advanced
-        </TabsTrigger>
-        <TabsTrigger value="furniture-components" className="text-xs md:text-sm">
-          Corpuri Mobilier
-        </TabsTrigger>
-        <TabsTrigger value="materials" className="text-xs md:text-sm">
-          Materiale
-        </TabsTrigger>
-        <TabsTrigger value="types-editor" className="text-xs md:text-sm">
-          Editor Tipuri
-        </TabsTrigger>
-        <TabsTrigger value="export-import" className="text-xs md:text-sm">
-          Export/Import
-        </TabsTrigger>
-        <TabsTrigger value="ai" className="text-xs md:text-sm">
-          AI
-        </TabsTrigger>
-      </TabsList>
-      
-      <div className="mt-6">
-        <TabsContent value="edit-products">
-          <EditProductsTab 
-            database={database} 
-            onDatabaseUpdate={onDatabaseUpdate}
-            cloudinaryStatus={cloudinaryStatus}
-            onCheckCloudinary={onCheckCloudinary}
-          />
-        </TabsContent>
+    <div className="bg-white rounded-lg shadow-md">
+      <PageHeader 
+        title="Panou administrare" 
+        description="Gestionați produsele, categoriile, materialele și setările aplicației"
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 w-full h-auto">
+          <TabsTrigger value="edit-products" className="text-xs md:text-sm flex items-center gap-1">
+            <Package className="h-4 w-4" />
+            <span className="hidden md:inline">Produse</span>
+          </TabsTrigger>
+          
+          <TabsTrigger value="categories-admin" className="text-xs md:text-sm flex items-center gap-1">
+            <LayersIcon className="h-4 w-4" />
+            <span className="hidden md:inline">Categorii</span>
+          </TabsTrigger>
+          
+          <TabsTrigger value="furniture-components" className="text-xs md:text-sm flex items-center gap-1">
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden md:inline">Corpuri</span>
+          </TabsTrigger>
+          
+          <TabsTrigger value="materials" className="text-xs md:text-sm flex items-center gap-1">
+            <DatabaseIcon className="h-4 w-4" />
+            <span className="hidden md:inline">Materiale</span>
+          </TabsTrigger>
+          
+          <TabsTrigger value="accessories" className="text-xs md:text-sm flex items-center gap-1">
+            <Package className="h-4 w-4" />
+            <span className="hidden md:inline">Accesorii</span>
+          </TabsTrigger>
+          
+          <TabsTrigger value="types-editor" className="text-xs md:text-sm flex items-center gap-1">
+            <LayersIcon className="h-4 w-4" />
+            <span className="hidden md:inline">Tipuri</span>
+          </TabsTrigger>
+          
+          <TabsTrigger value="export-import" className="text-xs md:text-sm flex items-center gap-1">
+            <Import className="h-4 w-4" />
+            <span className="hidden md:inline">Import/Export</span>
+          </TabsTrigger>
+          
+          <TabsTrigger value="ai" className="text-xs md:text-sm flex items-center gap-1">
+            <Settings className="h-4 w-4" />
+            <span className="hidden md:inline">AI & Setări</span>
+          </TabsTrigger>
+        </TabsList>
         
-        <TabsContent value="categories">
-          <ManageCategoriesTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
-        </TabsContent>
-        
-        <TabsContent value="categories-admin">
-          <CategoriesAdminTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
-        </TabsContent>
-        
-        <TabsContent value="furniture-components">
-          <FurnitureComponentsTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
-        </TabsContent>
-        
-        <TabsContent value="materials">
-          <MaterialsTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
-        </TabsContent>
-        
-        <TabsContent value="types-editor">
-          <TypesEditorTab 
-            database={database} 
-            onDatabaseUpdate={onDatabaseUpdate}
-            categoryName={defaultCategoryName}
-            subcategoryName={defaultSubcategoryName}
-            fieldName={defaultFieldName}
-            title={defaultTitle}
-            description={defaultDescription}
-            addButtonLabel={defaultAddButtonLabel}
-            inputLabel={defaultInputLabel}
-            inputPlaceholder={defaultInputPlaceholder}
-            successMessage={defaultSuccessMessage}
-          />
-        </TabsContent>
-        
-        <TabsContent value="export-import">
-          <ExportImportTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
-        </TabsContent>
-        
-        <TabsContent value="ai">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AIAssistantTab />
-            <AISettingsTab />
-          </div>
-        </TabsContent>
-      </div>
-    </Tabs>
+        <div className="mt-6 p-4">
+          <TabsContent value="edit-products">
+            <EditProductsTab 
+              database={database} 
+              onDatabaseUpdate={onDatabaseUpdate}
+              cloudinaryStatus={cloudinaryStatus}
+              onCheckCloudinary={onCheckCloudinary}
+            />
+          </TabsContent>
+          
+          <TabsContent value="categories-admin">
+            <CategoriesAdminTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
+          </TabsContent>
+          
+          <TabsContent value="furniture-components">
+            <FurnitureComponentsTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
+          </TabsContent>
+          
+          <TabsContent value="materials">
+            <MaterialsTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
+          </TabsContent>
+          
+          <TabsContent value="accessories">
+            <AccessoriesTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
+          </TabsContent>
+          
+          <TabsContent value="types-editor">
+            <TypesEditorTab 
+              database={database} 
+              onDatabaseUpdate={onDatabaseUpdate}
+              categoryName={defaultCategoryName}
+              subcategoryName={defaultSubcategoryName}
+              fieldName={defaultFieldName}
+              title={defaultTitle}
+              description={defaultDescription}
+              addButtonLabel={defaultAddButtonLabel}
+              inputLabel={defaultInputLabel}
+              inputPlaceholder={defaultInputPlaceholder}
+              successMessage={defaultSuccessMessage}
+            />
+          </TabsContent>
+          
+          <TabsContent value="export-import">
+            <ExportImportTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
+          </TabsContent>
+          
+          <TabsContent value="ai">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <AIAssistantTab />
+              <AISettingsTab />
+            </div>
+          </TabsContent>
+        </div>
+      </Tabs>
+    </div>
   );
 };
 

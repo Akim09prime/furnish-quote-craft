@@ -4,7 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// Pages
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Database from "./pages/Database";
@@ -12,10 +14,11 @@ import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import FirebaseSetup from "./pages/FirebaseSetup";
 import Designer from "./pages/Designer";
+import Catalog from "./pages/Catalog";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Save, Palette, Brush, PaintBucket, Layers } from "lucide-react";
-import { AppProvider, useAppContext } from "./lib/contexts/AppContext";
+
+// Context providers
+import { AppProvider } from "./lib/contexts/AppContext";
 
 // Create a new QueryClient
 const queryClient = new QueryClient({
@@ -27,127 +30,15 @@ const queryClient = new QueryClient({
   },
 });
 
-// Component to determine page class based on route
-const PageWrapper = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
-  const [pageClass, setPageClass] = useState("");
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    const path = location.pathname;
-    
-    if (path === "/") {
-      setPageClass("index-page");
-    } else if (path === "/admin") {
-      setPageClass("admin-page");
-    } else if (path === "/designer") {
-      setPageClass("designer-page");
-    } else if (path === "/database") {
-      setPageClass("database-page");
-    } else if (path === "/login") {
-      setPageClass("login-page");
-    } else {
-      setPageClass("other-page");
-    }
-    
-    // Trigger mount animation
-    setMounted(false);
-    setTimeout(() => setMounted(true), 50);
-  }, [location]);
-  
-  return (
-    <div className={`${pageClass} min-h-screen transition-all duration-700`}>
-      <div className="page-background animate-fade-in" />
-      <div className={`w-full ${mounted ? 'animate-fade-in' : 'opacity-0'}`}>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-// Live Edit Mode Provider with enhanced UI
-const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const { isEditMode, setEditMode } = useAppContext(); // Utilizăm contextul pentru editMode
-  
-  useEffect(() => {
-    const adminPaths = ['/admin', '/database', '/designer'];
-    setIsAdmin(adminPaths.includes(location.pathname));
-    
-    // Reset edit mode when navigating away from admin pages
-    if (!adminPaths.includes(location.pathname)) {
-      setEditMode(false);
-    }
-  }, [location, setEditMode]);
-  
-  if (!isAdmin) return <>{children}</>;
-  
-  return (
-    <>
-      {isEditMode && (
-        <div className="edit-mode-overlay animate-fade-in">
-          <div>
-            <span className="font-bold">Mod editare activat</span>
-            <span className="ml-2 text-sm opacity-75">Faceți clic pe elementele pe care doriți să le editați</span>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setEditMode(false)}
-            className="bg-white text-black hover:bg-white/90"
-          >
-            Ieșire mod editare
-          </Button>
-        </div>
-      )}
-      
-      <div className={isEditMode ? 'edit-mode-container' : ''}>
-        {children}
-      </div>
-      
-      {isAdmin && !isEditMode && (
-        <div className="edit-controls animate-fade-in">
-          <Button size="sm" onClick={() => setEditMode(true)} variant="purple">
-            <Eye className="h-4 w-4 mr-2" />
-            Mod editare
-          </Button>
-          <Button size="sm" variant="outline">
-            <Palette className="h-4 w-4 mr-2" />
-            Personalizare
-          </Button>
-          <Button size="sm" variant="outline">
-            <PaintBucket className="h-4 w-4 mr-2" />
-            Schimbă tema
-          </Button>
-        </div>
-      )}
-      
-      {isAdmin && isEditMode && (
-        <div className="edit-controls animate-fade-in">
-          <Button size="sm" variant="destructive" onClick={() => setEditMode(false)}>
-            <EyeOff className="h-4 w-4 mr-2" />
-            Ieșire
-          </Button>
-          <Button size="sm" variant="purple">
-            <Save className="h-4 w-4 mr-2" />
-            Salvare modificări
-          </Button>
-          <Button size="sm" variant="outline">
-            <Brush className="h-4 w-4 mr-2" />
-            Resetare
-          </Button>
-          <Button size="sm" variant="amber">
-            <Layers className="h-4 w-4 mr-2" />
-            Straturi
-          </Button>
-        </div>
-      )}
-    </>
-  );
-};
-
 const App = () => {
+  useEffect(() => {
+    // Pentru debugging - afișăm informații despre încărcarea aplicației
+    console.log("=============================================");
+    console.log("ÎNCĂRCARE APLICAȚIE RESTRUCTURATĂ");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("=============================================");
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
@@ -155,34 +46,36 @@ const App = () => {
           <div className="font-inter text-[#111827] min-h-screen">
             <Toaster />
             <Sonner position="top-right" expand={true} closeButton={true} />
+            
             <BrowserRouter>
-              <PageWrapper>
-                <LiveEditModeProvider>
-                  <Routes>
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/firebase-setup" element={<FirebaseSetup />} />
-                    <Route path="/" element={<Index />} />
-                    <Route path="/designer" element={<Designer />} />
-                    <Route 
-                      path="/admin" 
-                      element={
-                        <ProtectedRoute>
-                          <Admin />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/database" 
-                      element={
-                        <ProtectedRoute>
-                          <Database />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </LiveEditModeProvider>
-              </PageWrapper>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/designer" element={<Designer />} />
+                <Route path="/catalog" element={<Catalog />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/firebase-setup" element={<FirebaseSetup />} />
+                
+                {/* Protected Routes */}
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute>
+                      <Admin />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/database" 
+                  element={
+                    <ProtectedRoute>
+                      <Database />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* 404 Route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </BrowserRouter>
           </div>
         </TooltipProvider>

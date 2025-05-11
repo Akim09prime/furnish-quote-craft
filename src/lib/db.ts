@@ -40,9 +40,21 @@ export type Material = {
   updatedAt: string;
 };
 
+// Define the Accessory type
+export type Accessory = {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  unit: string;
+  description?: string;
+};
+
+// Update the Database type to include accessories
 export type Database = {
   categories: Category[];
   materials?: Material[];
+  accessories?: Accessory[];
 };
 
 // DB operations
@@ -66,13 +78,19 @@ export const loadDatabase = (): Database => {
             parsed.materials = [];
           }
           
+          // Ensure accessories exists
+          if (!parsed.accessories) {
+            parsed.accessories = [];
+          }
+          
           return parsed;
         } else {
           console.error("[db] Saved database has invalid structure, using initial DB");
           // Initialize localStorage with initial data
           const initialDbWithMaterials = {
             ...initialDB,
-            materials: []
+            materials: [],
+            accessories: []
           };
           localStorage.setItem(DB_KEY, JSON.stringify(initialDbWithMaterials));
           return initialDbWithMaterials;
@@ -82,7 +100,8 @@ export const loadDatabase = (): Database => {
         // Initialize localStorage with initial data
         const initialDbWithMaterials = {
           ...initialDB,
-          materials: []
+          materials: [],
+          accessories: []
         };
         localStorage.setItem(DB_KEY, JSON.stringify(initialDbWithMaterials));
         return initialDbWithMaterials;
@@ -92,7 +111,8 @@ export const loadDatabase = (): Database => {
     // Initialize localStorage with initial data
     const initialDbWithMaterials = {
       ...initialDB,
-      materials: []
+      materials: [],
+      accessories: []
     };
     localStorage.setItem(DB_KEY, JSON.stringify(initialDbWithMaterials));
     return initialDbWithMaterials;
@@ -100,7 +120,8 @@ export const loadDatabase = (): Database => {
     console.error("[db] Error in loadDatabase, using initial DB", e);
     const initialDbWithMaterials = {
       ...initialDB,
-      materials: []
+      materials: [],
+      accessories: []
     };
     return initialDbWithMaterials;
   }
@@ -124,6 +145,11 @@ export const importDatabaseJSON = (json: string): boolean => {
     // Ensure materials exists
     if (!data.materials) {
       data.materials = [];
+    }
+    
+    // Ensure accessories exists
+    if (!data.accessories) {
+      data.accessories = [];
     }
     
     saveDatabase(data);

@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { Database, loadDatabase, saveDatabase } from '@/lib/db';
 import { initialDB } from '@/data/initialDB';
-import Header from '@/components/Header';
+import AppLayout from '@/components/layouts/AppLayout';
 import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { checkCloudinaryAvailability } from '@/lib/cloudinary';
+import PageHeader from '@/lib/components/common/PageHeader';
 
 const Admin = () => {
   const [database, setDatabase] = useState<Database | null>(null);
@@ -87,26 +88,32 @@ const Admin = () => {
   };
 
   if (isLoading || !database) {
-    return <div className="h-screen flex items-center justify-center">Încărcare...</div>;
+    return (
+      <AppLayout>
+        <div className="h-64 flex items-center justify-center">
+          <p className="text-gray-500">Încărcare...</p>
+        </div>
+      </AppLayout>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
+    <AppLayout>
+      <PageHeader 
+        title="Administrare" 
+        description="Administrează produsele, categoriile și setările aplicației"
+      >
+        <Button 
+          variant="outline" 
+          onClick={handleResetDatabase}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw size={16} />
+          Reset la valorile inițiale
+        </Button>
+      </PageHeader>
       
-      <div className="container mx-auto px-4 py-6 flex-grow">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Administrare</h1>
-          <Button 
-            variant="outline" 
-            onClick={handleResetDatabase}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw size={16} />
-            Reset la valorile inițiale
-          </Button>
-        </div>
-        
+      <div className="mt-6">
         <AdminPanel 
           database={database} 
           onDatabaseUpdate={handleDatabaseUpdate}
@@ -114,7 +121,7 @@ const Admin = () => {
           onCheckCloudinary={checkCloudinary}
         />
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

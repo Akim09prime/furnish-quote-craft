@@ -4,7 +4,10 @@ import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LogIn, LogOut, Armchair, Home, Database, Settings, LayoutGrid } from 'lucide-react';
+import { 
+  LogIn, LogOut, Armchair, Home, Database, 
+  Settings, LayoutGrid, Book, ShoppingCart 
+} from 'lucide-react';
 import { subscribeToAuthState, logout } from '@/services/AuthService';
 
 const Header: React.FC = () => {
@@ -78,10 +81,25 @@ const Header: React.FC = () => {
               asChild
               variant={location.pathname === "/" ? "purple" : "ghost"}
               className="transition-all duration-300"
+              size="sm"
             >
               <Link to="/">
-                <Home className="mr-1.5 h-4 w-4" />
-                Generator Ofertă
+                <ShoppingCart className="mr-1.5 h-4 w-4" />
+                <span className="hidden sm:inline">Generator Ofertă</span>
+                <span className="sm:hidden">Oferte</span>
+              </Link>
+            </Button>
+            
+            <Button 
+              asChild
+              variant={location.pathname === "/catalog" ? "purple" : "ghost"}
+              className="transition-all duration-300"
+              size="sm"
+            >
+              <Link to="/catalog">
+                <Book className="mr-1.5 h-4 w-4" />
+                <span className="hidden sm:inline">Catalog Produse</span>
+                <span className="sm:hidden">Catalog</span>
               </Link>
             </Button>
             
@@ -89,10 +107,12 @@ const Header: React.FC = () => {
               asChild
               variant={location.pathname === "/designer" ? "purple" : "ghost"}
               className="transition-all duration-300"
+              size="sm"
             >
               <Link to="/designer">
                 <Armchair className="mr-1.5 h-4 w-4" />
-                Proiectare Mobilier
+                <span className="hidden sm:inline">Proiectare Mobilier</span>
+                <span className="sm:hidden">Designer</span>
               </Link>
             </Button>
             
@@ -100,10 +120,12 @@ const Header: React.FC = () => {
               asChild
               variant={location.pathname === "/admin" ? "purple" : "ghost"}
               className="transition-all duration-300"
+              size="sm"
             >
               <Link to="/admin">
                 <Settings className="mr-1.5 h-4 w-4" />
-                Administrare
+                <span className="hidden sm:inline">Administrare</span>
+                <span className="sm:hidden">Admin</span>
               </Link>
             </Button>
             
@@ -111,10 +133,12 @@ const Header: React.FC = () => {
               asChild
               variant={location.pathname === "/database" ? "purple" : "ghost"}
               className="transition-all duration-300"
+              size="sm"
             >
               <Link to="/database">
                 <Database className="mr-1.5 h-4 w-4" />
-                Baza de date
+                <span className="hidden sm:inline">Baza de date</span>
+                <span className="sm:hidden">DB</span>
               </Link>
             </Button>
           </nav>
@@ -123,12 +147,13 @@ const Header: React.FC = () => {
             isLoggedIn ? (
               <Button onClick={handleLogout} size="sm" variant="outline" className="ml-4 hover:bg-red-50 hover:text-red-600 hover:border-red-200">
                 <LogOut className="mr-1.5 h-4 w-4 text-red-500" />
-                Deconectare
+                <span className="hidden sm:inline">Deconectare</span>
               </Button>
             ) : (
               <Button onClick={handleLogin} size="sm" variant="purple" className="ml-4">
                 <LogIn className="mr-1.5 h-4 w-4" />
-                Autentificare
+                <span className="hidden sm:inline">Autentificare</span>
+                <span className="sm:hidden">Login</span>
               </Button>
             )
           )}

@@ -1,346 +1,72 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  Database, 
-  loadDatabase, 
-  Quote, 
-  loadQuote, 
-  saveQuote, 
-  addItemToQuote,
-  updateQuoteItem,
-  removeQuoteItem, 
-  setLaborPercentage,
-  Category,
-  QuoteItem as QuoteItemType,
-  addManualPalItem,
-  updateQuoteMetadata
-} from '@/lib/db';
-import CategorySelector from '@/components/CategorySelector';
-import ProductSelector from '@/components/ProductSelector';
-import QuoteItem from '@/components/QuoteItem';
-import QuoteSummary from '@/components/QuoteSummary';
-import Header from '@/components/Header';
-import QuoteTypeSelector from '@/components/QuoteTypeSelector';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
+import React, { useState, useEffect } from 'react';
+import { Database, loadDatabase } from '@/lib/db';
+import { useQuote } from '@/hooks/use-quote';
 import { toast } from 'sonner';
+import AppLayout from '@/components/layouts/AppLayout';
+import QuoteTypeSelector from '@/components/QuoteTypeSelector';
+import QuoteDetailsDrawer from '@/components/QuoteDetailsDrawer';
+import QuoteSummary from '@/components/QuoteSummary';
+import PageHeader from '@/lib/components/common/PageHeader';
+import ProductSelector from '@/components/ProductSelector';
 
 const Index = () => {
   const [database, setDatabase] = useState<Database | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [quote, setQuote] = useState<Quote | null>(null);
-  const [quoteType, setQuoteType] = useState<'client' | 'internal'>('internal');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Initialize database and quote on mount
+  const [isLoading, setIsLoading] = useState(true);
+  const { quote } = useQuote();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Load database
   useEffect(() => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      console.log("[Index] Loading database...");
       const db = loadDatabase();
-      console.log("[Index] Database loaded:", db);
-      console.log("[Index] Categories in database:", db?.categories?.map(c => c.name) || "No categories");
-      
-      // Make sure database is properly loaded
-      if (!db) {
-        const errMsg = "Database failed to load";
-        console.error(errMsg);
-        setError(errMsg);
-        return;
-      }
-      
-      if (!db.categories || db.categories.length === 0) {
-        const errMsg = "Database has no categories";
-        console.error(errMsg);
-        setError(errMsg);
-      }
-      
+      console.log("Database loaded:", db);
       setDatabase(db);
-
-      const savedQuote = loadQuote();
-      setQuote(savedQuote);
     } catch (error) {
-      const errMsg = `Error loading database: ${error instanceof Error ? error.message : String(error)}`;
-      console.error(errMsg);
-      setError(errMsg);
+      console.error("Error loading database:", error);
       toast.error("Eroare la încărcarea bazei de date");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, []);
-
-  // Update category when selection changes
-  useEffect(() => {
-    if (database && selectedCategory) {
-      const cat = database.categories.find(c => c.name === selectedCategory);
-      setCategory(cat || null);
-    } else {
-      setCategory(null);
-    }
-  }, [selectedCategory, database]);
-
-  // Handle category selection
-  const handleSelectCategory = (categoryName: string) => {
-    setSelectedCategory(categoryName);
-  };
-
-  // Add item to quote
-  const handleAddToQuote = (item: {
-    categoryName: string;
-    subcategoryName: string;
-    productId: string;
-    quantity: number;
-    pricePerUnit: number;
-    productDetails: Record<string, any>;
-  }) => {
-    if (quote) {
-      // Calculate total before adding to quote
-      const total = item.quantity * item.pricePerUnit;
-      const quoteItem: Omit<QuoteItemType, "id"> = {
-        ...item,
-        total: total
-      };
-      
-      const updatedQuote = addItemToQuote(quote, quoteItem);
-      setQuote(updatedQuote);
-      saveQuote(updatedQuote);
-    }
-  };
-
-  // Update item quantity
-  const handleUpdateQuantity = (itemId: string, quantity: number) => {
-    if (quote) {
-      const updatedQuote = updateQuoteItem(quote, itemId, { quantity });
-      setQuote(updatedQuote);
-      saveQuote(updatedQuote);
-    }
-  };
-
-  // Remove item
-  const handleRemoveItem = (itemId: string) => {
-    if (quote) {
-      const updatedQuote = removeQuoteItem(quote, itemId);
-      setQuote(updatedQuote);
-      saveQuote(updatedQuote);
-    }
-  };
-
-  // Update labor percentage
-  const handleUpdateLabor = (percentage: number) => {
-    if (quote) {
-      const updatedQuote = setLaborPercentage(quote, percentage);
-      setQuote(updatedQuote);
-      saveQuote(updatedQuote);
-    }
-  };
-
-  // Handle metadata updates
-  const handleUpdateMetadata = (metadata: { beneficiary: string; title: string }) => {
-    if (quote) {
-      const updatedQuote = updateQuoteMetadata(quote, metadata);
-      setQuote(updatedQuote);
-      saveQuote(updatedQuote);
-    }
-  };
-
-  // Handle manual PAL or MDF entry
-  const handleAddManualItem = (description: string, quantity: number, price: number, categoryName: string) => {
-    if (quote) {
-      const updatedQuote = addManualPalItem(quote, description, quantity, price, categoryName);
-      setQuote(updatedQuote);
-      saveQuote(updatedQuote);
-    }
-  };
-
-  // Handle quote type change
-  const handleQuoteTypeChange = (type: 'client' | 'internal') => {
-    setQuoteType(type);
-  };
-
-  // Show a better loading state
-  if (loading) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-furniture-purple mb-4"></div>
-        <p className="text-lg">Încărcare baza de date...</p>
-      </div>
-    );
-  }
   
-  if (error) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center p-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md w-full">
-          <h2 className="text-red-600 font-medium text-lg">Eroare la încărcarea aplicației</h2>
-          <p className="mt-2 text-sm text-red-600">{error}</p>
-          <button 
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-            onClick={() => window.location.reload()}
-          >
-            Încearcă din nou
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Debug check for specific categories
-  console.log("[Index] Checking 'Accesorii' category:", database?.categories?.some(c => c.name === "Accesorii"));
-
-  // Safety check
-  if (!database || !quote) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center p-4">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md w-full">
-          <h2 className="text-yellow-600 font-medium text-lg">Date incomplete</h2>
-          <p className="mt-2 text-sm text-yellow-600">
-            {!database ? "Baza de date nu a putut fi încărcată." : "Oferta nu a putut fi încărcată."}
-          </p>
-          <button 
-            className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700"
-            onClick={() => window.location.reload()}
-          >
-            Încearcă din nou
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col print:bg-white">
-      <div className="print:hidden">
-        <Header />
-      </div>
+    <AppLayout>
+      <PageHeader 
+        title="Generator Oferte" 
+        description="Creează și gestionează oferte personalizate pentru clienți"
+      />
       
-      <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
-        <div className="lg:col-span-2 space-y-8 print:col-span-2">
-          <div className="print:hidden">
-            <QuoteTypeSelector 
-              quoteType={quoteType} 
-              onChangeQuoteType={handleQuoteTypeChange}
-            />
-            
-            {!selectedCategory ? (
-              <CategorySelector
-                database={database}
-                selectedCategory={selectedCategory}
-                onSelectCategory={handleSelectCategory}
-              />
-            ) : category ? (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">{category.name}</h2>
-                  <button 
-                    onClick={() => setSelectedCategory(null)}
-                    className="text-sm text-gray-500 hover:text-furniture-purple"
-                  >
-                    Schimbă categoria
-                  </button>
-                </div>
-                <ProductSelector 
-                  category={category}
-                  onAddToQuote={handleAddToQuote}
-                  onAddManualItem={handleAddManualItem}
-                />
-              </div>
-            ) : null}
-          </div>
-          
-          <div className="print:block">
-            <div className="print:mb-8">
-              <h2 className="text-2xl font-bold mb-4 print:text-3xl print:text-center">
-                {quote.title || "Ofertă Mobilier"}
-              </h2>
-              {quote.beneficiary && (
-                <p className="text-gray-700 print:text-center print:text-lg">
-                  Client: {quote.beneficiary}
-                </p>
-              )}
-              <p className="text-gray-500 print:text-center print:text-lg">
-                Data: {new Date().toLocaleDateString('ro-RO')}
-              </p>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <p className="text-gray-500">Încărcare...</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            <div className="lg:col-span-2 space-y-8">
+              <section className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4">Selectează Tipul de Ofertă</h2>
+                <QuoteTypeSelector />
+              </section>
+              
+              <section className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-bold mb-4">Adaugă Produse</h2>
+                {database && <ProductSelector database={database} />}
+              </section>
             </div>
             
-            {quote.items.length > 0 ? (
-              <div className="space-y-4 print:mt-8">
-                <h3 className="text-xl font-medium print:text-2xl print:mb-4">
-                  Produse în ofertă
-                </h3>
-                <table className="w-full hidden print:table">
-                  <thead className="border-b">
-                    <tr>
-                      {quoteType === 'internal' && <th className="text-left py-2">Cod</th>}
-                      <th className="text-left py-2">Categorie</th>
-                      <th className="text-left py-2">Specificații</th>
-                      {quoteType === 'internal' && <th className="text-right py-2">Preț/buc</th>}
-                      <th className="text-right py-2">Cant.</th>
-                      {quoteType === 'internal' && <th className="text-right py-2">Total</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quote.items.map(item => (
-                      <tr key={item.id} className="border-b">
-                        {quoteType === 'internal' && <td className="py-2">{item.productDetails.cod}</td>}
-                        <td className="py-2">{item.categoryName}</td>
-                        <td className="py-2">
-                          {Object.entries(item.productDetails)
-                            .filter(([key]) => !['id', 'cod', 'pret'].includes(key) && typeof item.productDetails[key] !== 'object')
-                            .map(([key, value]) => (
-                              <div key={key}>
-                                {quoteType === 'internal' ? (
-                                  <><span className="font-medium">{key}:</span> {String(value)}</>
-                                ) : (
-                                  <>{String(value)}</>
-                                )}
-                              </div>
-                            ))}
-                        </td>
-                        {quoteType === 'internal' && <td className="py-2 text-right">{item.pricePerUnit.toFixed(2)} RON</td>}
-                        <td className="py-2 text-right">{item.quantity}</td>
-                        {quoteType === 'internal' && <td className="py-2 text-right font-medium">{item.total.toFixed(2)} RON</td>}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden">
-                  {quote.items.map(item => (
-                    <QuoteItem
-                      key={item.id}
-                      item={item}
-                      onUpdateQuantity={handleUpdateQuantity}
-                      onRemove={handleRemoveItem}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-10 bg-gray-50 rounded-lg print:hidden">
-                <p className="text-gray-500">
-                  Nu există produse în ofertă. Selectează produse pentru a le adăuga.
-                </p>
-              </div>
-            )}
+            <div>
+              <section className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+                <QuoteSummary onEditClick={() => setDrawerOpen(true)} />
+              </section>
+            </div>
           </div>
-        </div>
-
-        <div className="lg:col-span-1 print:col-span-1 print:mt-0">
-          <div className="sticky top-20 print:static">
-            <QuoteSummary 
-              quote={quote}
-              quoteType={quoteType}
-              onUpdateLabor={handleUpdateLabor} 
-              onUpdateQuantity={handleUpdateQuantity}
-              onRemoveItem={handleRemoveItem}
-              onUpdateMetadata={handleUpdateMetadata}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+          
+          <QuoteDetailsDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+        </>
+      )}
+    </AppLayout>
   );
 };
 

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 interface SaveButtonProps {
   onClick: () => void;
   label?: string;
-  tooltip?: string; // Added tooltip prop
+  tooltip?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "amber" | "purple" | null | undefined;
   size?: "default" | "sm" | "lg" | "icon" | null | undefined;
   className?: string;
