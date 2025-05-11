@@ -50,8 +50,8 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => {
   }, [location]);
   
   return (
-    <div className={pageClass}>
-      <div className="page-background" />
+    <div className={`${pageClass} min-h-screen`}>
+      <div className="page-background animate-fade-in" />
       {children}
     </div>
   );
@@ -100,7 +100,7 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
       
       {isAdmin && !editMode && (
         <div className="edit-controls animate-fade-in">
-          <Button size="sm" onClick={() => setEditMode(true)}>
+          <Button size="sm" onClick={() => setEditMode(true)} variant="purple">
             <Eye className="h-4 w-4 mr-2" />
             Mod editare
           </Button>
@@ -121,7 +121,7 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
             <EyeOff className="h-4 w-4 mr-2" />
             Ieșire
           </Button>
-          <Button size="sm" variant="default">
+          <Button size="sm" variant="purple">
             <Save className="h-4 w-4 mr-2" />
             Salvare modificări
           </Button>
@@ -143,9 +143,9 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="font-inter text-[#111827] bg-[#F9FAFB]">
+        <div className="font-inter text-[#111827] bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
           <Toaster />
-          <Sonner />
+          <Sonner position="top-right" expand={true} closeButton={true} />
           <BrowserRouter>
             <PageWrapper>
               <LiveEditModeProvider>

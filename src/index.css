@@ -16,7 +16,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 217 89% 50%;
+    --primary: 258 96% 90%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -33,7 +33,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 217 89% 50%;
+    --ring: 258 96% 90%;
 
     --radius: 0.75rem;
 
@@ -57,7 +57,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217 89% 50%;
+    --primary: 258 96% 90%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -98,12 +98,12 @@
 
 @layer components {
   .furniture-input {
-    @apply h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A73E8] focus-visible:ring-offset-2;
+    @apply h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b87f5] focus-visible:ring-offset-2;
   }
   
   /* Modern button styling */
   .btn-primary {
-    @apply bg-[#1A73E8] hover:bg-[#1565D8] text-white px-4 py-2 rounded-md shadow transition-all duration-200;
+    @apply bg-[#9b87f5] hover:bg-[#7E69AB] text-white px-4 py-2 rounded-md shadow transition-all duration-200;
   }
   
   /* Modern card styling */

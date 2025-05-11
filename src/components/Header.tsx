@@ -59,61 +59,61 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-md backdrop-blur-sm bg-white/90">
-      <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center">
+    <header className="bg-white/80 backdrop-blur-lg border-b border-furniture-purple-light/20 sticky top-0 z-50 shadow-lg">
+      <div className="container mx-auto px-6 h-18 flex items-center justify-between">
+        <div className="flex items-center py-3">
           <Link to="/" className="flex items-center group">
-            <h1 className="text-xl font-semibold">
-              <span className="bg-gradient-to-r from-[#1A73E8] to-[#3b82f6] bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold">
+              <span className="bg-gradient-to-r from-furniture-purple to-furniture-purple-dark bg-clip-text text-transparent transition-all duration-300">
                 FurnishQuote
               </span>
-              <span className="font-light text-gray-500 group-hover:text-gray-700 transition-colors">Craft</span>
+              <span className="font-light text-gray-600 group-hover:text-furniture-purple transition-colors">Craft</span>
             </h1>
           </Link>
         </div>
         
-        <div className="flex items-center justify-between gap-2">
-          <nav className="flex space-x-2">
+        <div className="flex items-center justify-between gap-3">
+          <nav className="flex gap-1 p-1 bg-gray-50/80 backdrop-blur rounded-lg shadow-inner">
             <Button 
               asChild
-              variant={location.pathname === "/" ? "default" : "ghost"}
-              className="transition-all duration-200"
+              variant={location.pathname === "/" ? "purple" : "ghost"}
+              className="transition-all duration-300"
             >
               <Link to="/">
-                <Home className="mr-2 h-4 w-4" />
+                <Home className="mr-1.5 h-4 w-4" />
                 Generator Ofertă
               </Link>
             </Button>
             
             <Button 
               asChild
-              variant={location.pathname === "/designer" ? "default" : "ghost"}
-              className="transition-all duration-200"
+              variant={location.pathname === "/designer" ? "purple" : "ghost"}
+              className="transition-all duration-300"
             >
               <Link to="/designer">
-                <Armchair className="mr-2 h-4 w-4" />
+                <Armchair className="mr-1.5 h-4 w-4" />
                 Proiectare Mobilier
               </Link>
             </Button>
             
             <Button 
               asChild
-              variant={location.pathname === "/admin" ? "default" : "ghost"}
-              className="transition-all duration-200"
+              variant={location.pathname === "/admin" ? "purple" : "ghost"}
+              className="transition-all duration-300"
             >
               <Link to="/admin">
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings className="mr-1.5 h-4 w-4" />
                 Administrare
               </Link>
             </Button>
             
             <Button 
               asChild
-              variant={location.pathname === "/database" ? "default" : "ghost"}
-              className="transition-all duration-200"
+              variant={location.pathname === "/database" ? "purple" : "ghost"}
+              className="transition-all duration-300"
             >
               <Link to="/database">
-                <Database className="mr-2 h-4 w-4" />
+                <Database className="mr-1.5 h-4 w-4" />
                 Baza de date
               </Link>
             </Button>
@@ -121,13 +121,13 @@ const Header: React.FC = () => {
 
           {isAuthInitialized && (
             isLoggedIn ? (
-              <Button onClick={handleLogout} size="sm" variant="outline" className="ml-4 hover:bg-red-50">
-                <LogOut className="mr-2 h-4 w-4 text-red-500" />
+              <Button onClick={handleLogout} size="sm" variant="outline" className="ml-4 hover:bg-red-50 hover:text-red-600 hover:border-red-200">
+                <LogOut className="mr-1.5 h-4 w-4 text-red-500" />
                 Deconectare
               </Button>
             ) : (
-              <Button onClick={handleLogin} size="sm" variant="default" className="ml-4">
-                <LogIn className="mr-2 h-4 w-4" />
+              <Button onClick={handleLogin} size="sm" variant="purple" className="ml-4">
+                <LogIn className="mr-1.5 h-4 w-4" />
                 Autentificare
               </Button>
             )
