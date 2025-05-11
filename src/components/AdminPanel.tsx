@@ -1,215 +1,106 @@
 
 import React, { useState } from 'react';
-import { Database, saveDatabase } from '@/lib/db';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
-import { Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Database } from '@/lib/db';
 import EditProductsTab from './admin/EditProductsTab';
 import ManageCategoriesTab from './admin/ManageCategoriesTab';
-import CategoriesAdminTab from './admin/CategoriesAdminTab';
+import MaterialsTab from './admin/MaterialsTab';
 import TypesEditorTab from './admin/TypesEditorTab';
 import ExportImportTab from './admin/ExportImportTab';
-import MaterialsTab from './admin/MaterialsTab';
 import AIAssistantTab from './admin/AIAssistantTab';
 import AISettingsTab from './admin/AISettingsTab';
+import CategoriesAdminTab from './admin/CategoriesAdminTab';
+import FurnitureComponentsTab from './admin/FurnitureComponentsTab';
 
 interface AdminPanelProps {
   database: Database;
   onDatabaseUpdate: (db: Database) => void;
-  cloudinaryStatus: {
+  cloudinaryStatus?: {
     available: boolean;
     message?: string;
   } | null;
-  onCheckCloudinary: () => void;
+  onCheckCloudinary?: () => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
   database, 
-  onDatabaseUpdate, 
-  cloudinaryStatus, 
-  onCheckCloudinary 
+  onDatabaseUpdate,
+  cloudinaryStatus,
+  onCheckCloudinary = () => {}
 }) => {
-  const [activeTab, setActiveTab] = useState("edit");
-
-  // Function to create a backup of the current database
-  const createBackup = (db: Database) => {
-    try {
-      const BACKUP_KEY = "furniture-quote-db-backups";
-      
-      const newBackup = {
-        date: new Date().toISOString(),
-        database: db
-      };
-      
-      // Get existing backups
-      const savedBackups = localStorage.getItem(BACKUP_KEY);
-      let existingBackups = [];
-      
-      if (savedBackups) {
-        existingBackups = JSON.parse(savedBackups);
-      }
-      
-      // Add new backup
-      existingBackups.push(newBackup);
-      
-      // Keep only the last 10 backups
-      const limitedBackups = existingBackups.slice(-10);
-      
-      // Save to localStorage
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(limitedBackups));
-      
-      console.log("Backup created:", newBackup.date);
-    } catch (error) {
-      console.error("Error creating backup:", error);
-    }
-  };
-
-  // Function to save a specific category
-  const saveCategoryData = (categoryName: string) => {
-    if (!database) return;
-    
-    console.log(`Saving category: ${categoryName}`);
-    
-    // Create backup before saving
-    createBackup(database);
-    
-    // Save to localStorage
-    saveDatabase(database);
-    
-    toast.success(`Categoria "${categoryName}" a fost salvată cu succes`, {
-      duration: 10000
-    });
-  };
+  const [activeTab, setActiveTab] = useState("edit-products");
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-4">Administrare Bază de Date</h1>
-        <p className="text-gray-500">
-          Modifică produsele și prețurile sau exportă/importă baza de date
-        </p>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4 flex flex-wrap">
-          <TabsTrigger value="edit">Editare Produse</TabsTrigger>
-          <TabsTrigger value="manage">Gestionare Categorii</TabsTrigger>
-          <TabsTrigger value="categories">Categorii</TabsTrigger>
-          <TabsTrigger value="materials">Prețuri Materiale</TabsTrigger>
-          <TabsTrigger value="glisiere">Tipuri Glisiere</TabsTrigger>
-          <TabsTrigger value="balamale">Tipuri Balamale</TabsTrigger>
-          <TabsTrigger value="export">Export/Import</TabsTrigger>
-          <TabsTrigger value="aiAssistant">🧠 Asistent AI</TabsTrigger>
-          <TabsTrigger value="aiSettings">⚙️ Setări AI</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="edit">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 w-full h-auto">
+        <TabsTrigger value="edit-products" className="text-xs md:text-sm">
+          Editare Produse
+        </TabsTrigger>
+        <TabsTrigger value="categories" className="text-xs md:text-sm">
+          Categorii Simple
+        </TabsTrigger>
+        <TabsTrigger value="categories-admin" className="text-xs md:text-sm">
+          Categorii Advanced
+        </TabsTrigger>
+        <TabsTrigger value="furniture-components" className="text-xs md:text-sm">
+          Corpuri Mobilier
+        </TabsTrigger>
+        <TabsTrigger value="materials" className="text-xs md:text-sm">
+          Materiale
+        </TabsTrigger>
+        <TabsTrigger value="types-editor" className="text-xs md:text-sm">
+          Editor Tipuri
+        </TabsTrigger>
+        <TabsTrigger value="export-import" className="text-xs md:text-sm">
+          Export/Import
+        </TabsTrigger>
+        <TabsTrigger value="ai" className="text-xs md:text-sm">
+          AI
+        </TabsTrigger>
+      </TabsList>
+      
+      <div className="mt-6">
+        <TabsContent value="edit-products">
           <EditProductsTab 
             database={database} 
-            onDatabaseUpdate={onDatabaseUpdate} 
+            onDatabaseUpdate={onDatabaseUpdate}
             cloudinaryStatus={cloudinaryStatus}
             onCheckCloudinary={onCheckCloudinary}
           />
         </TabsContent>
-
-        <TabsContent value="manage">
+        
+        <TabsContent value="categories">
           <ManageCategoriesTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
         </TabsContent>
-
-        <TabsContent value="categories">
-          <div className="mb-4">
-            <Button 
-              variant="outline"
-              onClick={() => saveCategoryData("Categories")}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Salvează Categoriile
-            </Button>
-          </div>
+        
+        <TabsContent value="categories-admin">
           <CategoriesAdminTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
         </TabsContent>
-
+        
+        <TabsContent value="furniture-components">
+          <FurnitureComponentsTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
+        </TabsContent>
+        
         <TabsContent value="materials">
-          <div className="mb-4">
-            <Button 
-              variant="outline"
-              onClick={() => saveCategoryData("Materials")}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Salvează Materiale
-            </Button>
-          </div>
           <MaterialsTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
         </TabsContent>
-
-        <TabsContent value="glisiere">
-          <div className="mb-4">
-            <Button 
-              variant="outline"
-              onClick={() => saveCategoryData("Accesorii")}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Salvează Glisiere
-            </Button>
-          </div>
-          <TypesEditorTab 
-            database={database}
-            onDatabaseUpdate={onDatabaseUpdate}
-            categoryName="Accesorii"
-            subcategoryName="Glisiere"
-            fieldName="Type"
-            title="Administrare Tipuri de Glisiere"
-            description="Adaugă tipuri noi de glisiere în baza de date"
-            addButtonLabel="Tip Nou de Glisieră"
-            inputLabel="Tip Nou de Glisieră"
-            inputPlaceholder="ex. Tandem, Legrabox, etc."
-            successMessage="Tipul de glisieră {type} a fost adăugat"
-          />
+        
+        <TabsContent value="types-editor">
+          <TypesEditorTab />
         </TabsContent>
         
-        <TabsContent value="balamale">
-          <div className="mb-4">
-            <Button 
-              variant="outline"
-              onClick={() => saveCategoryData("Balamale")}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Salvează Balamale
-            </Button>
-          </div>
-          <TypesEditorTab 
-            database={database}
-            onDatabaseUpdate={onDatabaseUpdate}
-            categoryName="Accesorii"
-            subcategoryName="Balamale"
-            fieldName="Tip"
-            title="Administrare Tipuri de Balamale"
-            description="Adaugă tipuri noi de balamale în baza de date"
-            addButtonLabel="Tip Nou de Balamale"
-            inputLabel="Tip Nou de Balamale"
-            inputPlaceholder="ex. Aplicată, Semi-aplicată, Sticlă, etc."
-            successMessage="Tipul de balamale {type} a fost adăugat"
-          />
-        </TabsContent>
-        
-        <TabsContent value="export">
+        <TabsContent value="export-import">
           <ExportImportTab database={database} onDatabaseUpdate={onDatabaseUpdate} />
         </TabsContent>
-
-        <TabsContent value="aiAssistant">
-          <AIAssistantTab />
+        
+        <TabsContent value="ai">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AIAssistantTab />
+            <AISettingsTab />
+          </div>
         </TabsContent>
-
-        <TabsContent value="aiSettings">
-          <AISettingsTab />
-        </TabsContent>
-      </Tabs>
-    </div>
+      </div>
+    </Tabs>
   );
 };
 
