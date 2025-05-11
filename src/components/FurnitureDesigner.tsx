@@ -23,7 +23,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { FurnitureDesign } from './FurnitureSetManager';
-import AccessorySelector, { Accessory } from './AccessorySelector';
+import AccessorySelector from './AccessorySelector';
+import { Accessory } from './AccessorySelector';
 
 interface FurnitureDesignerProps {
   isOpen: boolean;
@@ -45,6 +46,8 @@ const DEFAULT_DESIGN: FurnitureDesign = {
   doorMaterial: '',
   doorColor: '',
   accessories: [],
+  color: '#D4B48C', // Add missing color property
+  room: 'living' // Add missing room property
 };
 
 const FURNITURE_TYPES = [
@@ -70,6 +73,17 @@ const MATERIAL_TYPES = [
   { value: 'Sticlă', label: 'Sticlă' }
 ];
 
+const ROOM_TYPES = [
+  { value: 'living', label: 'Living' },
+  { value: 'dormitor', label: 'Dormitor' },
+  { value: 'bucatarie', label: 'Bucătărie' },
+  { value: 'baie', label: 'Baie' },
+  { value: 'birou', label: 'Birou' },
+  { value: 'hol', label: 'Hol' },
+  { value: 'camera_copil', label: 'Camera copil' },
+  { value: 'alta', label: 'Altă cameră' }
+];
+
 const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
   isOpen,
   onClose,
@@ -85,13 +99,13 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
   useEffect(() => {
     if (design) {
       setCurrentDesign({
-        ...design
+        ...design,
       });
     } else {
       // Create a new design with default values
       setCurrentDesign({
         ...DEFAULT_DESIGN,
-        id: Date.now().toString()
+        id: Date.now().toString(),
       });
     }
   }, [design]);
@@ -186,6 +200,32 @@ const FurnitureDesigner: React.FC<FurnitureDesignerProps> = ({
                       {FURNITURE_TYPES.map(type => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">
+                Cameră
+              </Label>
+              <div className="col-span-3">
+                <Select 
+                  value={currentDesign.room} 
+                  onValueChange={(value) => handleSelectChange('room', value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selectează camera" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Camere</SelectLabel>
+                      {ROOM_TYPES.map(room => (
+                        <SelectItem key={room.value} value={room.value}>
+                          {room.label}
                         </SelectItem>
                       ))}
                     </SelectGroup>
