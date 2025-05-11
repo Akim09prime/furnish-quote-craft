@@ -1,12 +1,33 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Save, Upload, Download } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { toast } from "sonner";
-import { initialDB, loadDatabase, saveDatabase, addCategory, deleteCategory, addSubcategory, updateSubcategory, deleteSubcategory, addProduct, updateProduct, deleteProduct, exportDatabaseJSON, importDatabaseJSON, Quote, loadQuote, saveQuote, updateQuoteItem, removeQuoteItem, setLaborPercentage, updateQuoteMetadata, addManualPalItem, createNewQuote, addFurnitureDesignToQuote, addFurnitureSetToQuote, Material, addMaterial, deleteMaterial, Database } from "@/lib/db";
+import { 
+  loadDatabase, 
+  saveDatabase, 
+  addCategory, 
+  deleteCategory, 
+  addSubcategory, 
+  updateSubcategory, 
+  deleteSubcategory, 
+  addProduct, 
+  updateProduct, 
+  deleteProduct, 
+  exportDatabaseJSON, 
+  importDatabaseJSON, 
+  loadQuote, 
+  createNewQuote, 
+  Material, 
+  addMaterial, 
+  deleteMaterial, 
+  Database 
+} from "@/lib/db";
+import { initialDB } from "@/data/initialDB";
 import CategoryForm from "@/components/CategoryForm";
 import SubcategoryForm from "@/components/SubcategoryForm";
 import ProductForm from "@/components/ProductForm";
@@ -15,11 +36,11 @@ import QuoteSummary from "@/components/QuoteSummary";
 import QuoteItemEditor from "@/components/QuoteItemEditor";
 import FurnitureSetManager, { FurnitureDesign } from "@/components/FurnitureSetManager";
 import FurnitureDesigner from "@/components/FurnitureDesigner";
+import { useQuote } from "@/hooks/use-quote";
 
-// Make sure the page has the necessary callbacks for furniture design integration
+// Designer page with improved stylings and fixed quote updating
 const Designer = () => {
   const [db, setDb] = useState<Database>(initialDB);
-  const [quote, setQuote] = useState<Quote>(createNewQuote());
   const [quoteType, setQuoteType] = useState<'client' | 'internal'>('client');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
@@ -40,25 +61,31 @@ const Designer = () => {
   });
   const [selectedDesign, setSelectedDesign] = useState<FurnitureDesign | null>(null);
   
-  // Load database and quote on component mount
+  // Use our custom hook for quote management
+  const { 
+    quote, 
+    handleUpdateQuoteItem,
+    handleRemoveItem,
+    handleUpdateLabor,
+    handleUpdateQuantity,
+    handleUpdateQuoteMetadata,
+    handleAddManualItem,
+    handleImportFurnitureDesign,
+    handleImportFurnitureSet,
+    handleAddItemToQuote
+  } = useQuote();
+
+  // Load database on component mount
   useEffect(() => {
     const loadedDb = loadDatabase();
     setDb(loadedDb);
     setMaterials(loadedDb.materials || []);
-
-    const loadedQuote = loadQuote();
-    setQuote(loadedQuote);
   }, []);
 
   // Save database when it changes
   useEffect(() => {
     saveDatabase(db);
   }, [db]);
-
-  // Save quote when it changes
-  useEffect(() => {
-    saveQuote(quote);
-  }, [quote]);
   
   // Save designs to localStorage
   useEffect(() => {
@@ -78,7 +105,7 @@ const Designer = () => {
     }
   };
 
-  const handleAddSubcategory = (categoryName: string, subcategory: Omit<typeof initialDB.categories[0]['subcategories'][0], 'products'>) => {
+  const handleAddSubcategory = (categoryName: string, subcategory: { name: string; adaos: number; fields: { name: string; type: "number" | "boolean" | "select" | "text"; options?: string[] }[] }) => {
     try {
       const updatedDb = addSubcategory(db, categoryName, { ...subcategory, products: [] });
       setDb(updatedDb);
@@ -90,7 +117,7 @@ const Designer = () => {
     }
   };
 
-  const handleUpdateSubcategory = (categoryName: string, oldSubcategoryName: string, updatedSubcategory: typeof initialDB.categories[0]['subcategories'][0]) => {
+  const handleUpdateSubcategory = (categoryName: string, oldSubcategoryName: string, updatedSubcategory: any) => {
     try {
       const updatedDb = updateSubcategory(db, categoryName, oldSubcategoryName, updatedSubcategory);
       setDb(updatedDb);
@@ -100,14 +127,14 @@ const Designer = () => {
     }
   };
 
-  const handleAddProduct = (categoryName: string, subcategoryName: string, product: Omit<typeof initialDB.categories[0]['subcategories'][0]['products'][0], 'id'>) => {
+  const handleAddProduct = (categoryName: string, subcategoryName: string, product: any) => {
     const updatedDb = addProduct(db, categoryName, subcategoryName, product);
     setDb(updatedDb);
     toast.success(`Produsul "${product.cod}" a fost adăugat în subcategoria "${subcategoryName}"`);
     setIsProductFormOpen(false);
   };
 
-  const handleUpdateProduct = (categoryName: string, subcategoryName: string, product: typeof initialDB.categories[0]['subcategories'][0]['products'][0]) => {
+  const handleUpdateProduct = (categoryName: string, subcategoryName: string, product: any) => {
     const updatedDb = updateProduct(db, categoryName, subcategoryName, product);
     setDb(updatedDb);
     toast.success(`Produsul "${product.cod}" a fost actualizat în subcategoria "${subcategoryName}"`);
@@ -145,90 +172,27 @@ const Designer = () => {
     toast.success(`Produsul a fost șters din subcategoria "${subcategoryName}"`);
   };
 
-  // Handler functions for quote operations
-  const handleAddItemToQuote = (categoryName: string, subcategoryName: string, productId: string, quantity: number) => {
+  // Method to add a product to quote with validation
+  const addProductToQuote = (categoryName: string, subcategoryName: string, productId: string, quantity: number) => {
     const category = db.categories.find(c => c.name === categoryName);
-    if (!category) return;
+    if (!category) {
+      toast.error("Categoria nu a fost găsită");
+      return;
+    }
 
     const subcategory = category.subcategories.find(s => s.name === subcategoryName);
-    if (!subcategory) return;
+    if (!subcategory) {
+      toast.error("Subcategoria nu a fost găsită");
+      return;
+    }
 
     const product = subcategory.products.find(p => p.id === productId);
-    if (!product) return;
+    if (!product) {
+      toast.error("Produsul nu a fost găsit");
+      return;
+    }
 
-    const newItem = {
-      categoryName,
-      subcategoryName,
-      productId,
-      quantity,
-      pricePerUnit: product.pret,
-      productDetails: product,
-    };
-
-    setQuote(prevQuote => {
-      const updatedQuote = {
-        ...prevQuote,
-        items: [...prevQuote.items, {
-          ...newItem,
-          id: Date.now().toString(),
-          total: newItem.pricePerUnit * newItem.quantity,
-        }],
-      };
-      saveQuote(updatedQuote);
-      return updatedQuote;
-    });
-  };
-
-  const handleUpdateQuoteItem = (itemId: string, updates: Partial<typeof initialDB.categories[0]['subcategories'][0]['products'][0]>) => {
-    setQuote(prevQuote => {
-      const updatedQuote = updateQuoteItem(prevQuote, itemId, updates);
-      saveQuote(updatedQuote);
-      return updatedQuote;
-    });
-    setIsQuoteItemEditorOpen(false);
-  };
-
-  const handleRemoveItem = (itemId: string) => {
-    setQuote(prevQuote => {
-      const updatedQuote = removeQuoteItem(prevQuote, itemId);
-      saveQuote(updatedQuote);
-      return updatedQuote;
-    });
-  };
-
-  const handleUpdateLabor = (percentage: number) => {
-    setQuote(prevQuote => {
-      const updatedQuote = setLaborPercentage(prevQuote, percentage);
-      saveQuote(updatedQuote);
-      return updatedQuote;
-    });
-  };
-
-  const handleUpdateQuantity = (itemId: string, quantity: number) => {
-    setQuote(prevQuote => {
-      const item = prevQuote.items.find(i => i.id === itemId);
-      if (!item) return prevQuote;
-
-      const updatedQuote = updateQuoteItem(prevQuote, itemId, { quantity, total: item.pricePerUnit * quantity });
-      saveQuote(updatedQuote);
-      return updatedQuote;
-    });
-  };
-
-  const handleUpdateQuoteMetadata = (metadata: { beneficiary: string; title: string }) => {
-    setQuote(prevQuote => {
-      const updatedQuote = updateQuoteMetadata(prevQuote, metadata);
-      saveQuote(updatedQuote);
-      return updatedQuote;
-    });
-  };
-
-  const handleAddManualItem = (description: string, quantity: number, pricePerUnit: number) => {
-    setQuote(prevQuote => {
-      const updatedQuote = addManualPalItem(prevQuote, description, quantity, pricePerUnit);
-      saveQuote(updatedQuote);
-      return updatedQuote;
-    });
+    handleAddItemToQuote(categoryName, subcategoryName, productId, quantity, product);
   };
 
   // Handler functions for import/export
@@ -281,22 +245,6 @@ const Designer = () => {
     setMaterials(prevMaterials => prevMaterials.filter(m => m.id !== materialId));
   };
   
-  // Add a handler for importing furniture designs to the quote
-  const handleImportFurnitureDesign = (design: FurnitureDesign, cost: number) => {
-    console.log('Designer: Adding furniture design to quote:', design);
-    const updatedQuote = addFurnitureDesignToQuote(quote, design, cost);
-    setQuote(updatedQuote);
-    saveQuote(updatedQuote);
-  };
-  
-  // Add a handler for importing furniture sets to the quote
-  const handleImportFurnitureSet = (setName: string, designs: FurnitureDesign[], costs: Map<string, number>) => {
-    console.log('Designer: Adding furniture set to quote:', setName, designs);
-    const updatedQuote = addFurnitureSetToQuote(quote, setName, designs, costs);
-    setQuote(updatedQuote);
-    saveQuote(updatedQuote);
-  };
-  
   const handleLoadDesign = (design: FurnitureDesign) => {
     setSelectedDesign(design);
     setIsFurnitureDesignerOpen(true);
@@ -323,13 +271,13 @@ const Designer = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 flex flex-col md:flex-row gap-4">
+    <div className="container mx-auto p-4 flex flex-col md:flex-row gap-4 animate-fade-in">
       {/* Left Panel - Database Management */}
       <div className="w-full md:w-1/3 space-y-4">
         <h2 className="text-xl font-semibold">Bază de date</h2>
 
         {/* Category Management */}
-        <Card>
+        <Card className="hover-scale">
           <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
               <Label>Categorii</Label>
@@ -371,7 +319,7 @@ const Designer = () => {
 
         {/* Subcategory Management */}
         {selectedCategory && (
-          <Card>
+          <Card className="hover-scale">
             <CardContent className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label>Subcategorii ({selectedCategory})</Label>
@@ -413,7 +361,7 @@ const Designer = () => {
 
         {/* Product Management */}
         {selectedCategory && selectedSubcategory && (
-          <Card>
+          <Card className="hover-scale">
             <CardContent className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label>Produse ({selectedSubcategory})</Label>
@@ -451,7 +399,7 @@ const Designer = () => {
         )}
 
         {/* Material Management */}
-        <Card>
+        <Card className="hover-scale">
           <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
               <Label>Materiale</Label>
@@ -484,16 +432,14 @@ const Designer = () => {
         </Card>
 
         {/* Import/Export Database */}
-        <Card>
+        <Card className="hover-scale">
           <CardContent className="space-y-2">
             <Label>Import / Export</Label>
             <div className="flex gap-2">
               <Button className="w-1/2" onClick={handleExportDatabase}>
-                <Download className="h-4 w-4 mr-1" />
                 Exportă
               </Button>
               <Button className="w-1/2" onClick={() => setIsImportExportDialogOpen(true)}>
-                <Upload className="h-4 w-4 mr-1" />
                 Importă
               </Button>
             </div>
@@ -507,7 +453,7 @@ const Designer = () => {
 
         {/* Product Details */}
         {selectedCategory && selectedSubcategory && selectedProduct && (
-          <Card>
+          <Card className="hover-scale">
             <CardContent className="space-y-2">
               <Label>Detalii Produs</Label>
               {Object.entries(db.categories
@@ -533,7 +479,7 @@ const Designer = () => {
                   onBlur={(e) => {
                     const quantity = parseInt(e.target.value);
                     if (isNaN(quantity) || quantity < 1) return;
-                    handleAddItemToQuote(selectedCategory!, selectedSubcategory!, selectedProduct!, quantity);
+                    addProductToQuote(selectedCategory, selectedSubcategory, selectedProduct, quantity);
                   }}
                 />
               </div>
@@ -542,7 +488,7 @@ const Designer = () => {
         )}
 
         {/* Manual Item Addition */}
-        <Card>
+        <Card className="hover-scale">
           <CardContent className="space-y-2">
             <Label>Adaugă Produs Manual</Label>
             <Input
@@ -550,15 +496,6 @@ const Designer = () => {
               type="text"
               placeholder="Descriere"
               className="mb-2"
-              onBlur={(e) => {
-                const description = e.target.value;
-                const quantity = parseInt((document.getElementById("manual-quantity") as HTMLInputElement).value);
-                const pricePerUnit = parseFloat((document.getElementById("manual-price") as HTMLInputElement).value);
-
-                if (!description || isNaN(quantity) || quantity < 1 || isNaN(pricePerUnit) || pricePerUnit < 0) return;
-
-                handleAddManualItem(description, quantity, pricePerUnit);
-              }}
             />
             <div className="flex gap-2">
               <Input
@@ -568,15 +505,6 @@ const Designer = () => {
                 defaultValue={1}
                 min={1}
                 className="w-1/2"
-                onBlur={(e) => {
-                  const description = (document.getElementById("description") as HTMLInputElement).value;
-                  const quantity = parseInt(e.target.value);
-                  const pricePerUnit = parseFloat((document.getElementById("manual-price") as HTMLInputElement).value);
-
-                  if (!description || isNaN(quantity) || quantity < 1 || isNaN(pricePerUnit) || pricePerUnit < 0) return;
-
-                  handleAddManualItem(description, quantity, pricePerUnit);
-                }}
               />
               <Input
                 id="manual-price"
@@ -586,17 +514,31 @@ const Designer = () => {
                 min={0}
                 step={0.01}
                 className="w-1/2"
-                onBlur={(e) => {
-                  const description = (document.getElementById("description") as HTMLInputElement).value;
-                  const quantity = parseInt((document.getElementById("manual-quantity") as HTMLInputElement).value);
-                  const pricePerUnit = parseFloat(e.target.value);
-
-                  if (!description || isNaN(quantity) || quantity < 1 || isNaN(pricePerUnit) || pricePerUnit < 0) return;
-
-                  handleAddManualItem(description, quantity, pricePerUnit);
-                }}
               />
             </div>
+            <Button 
+              className="w-full mt-2"
+              onClick={() => {
+                const description = (document.getElementById("description") as HTMLInputElement).value;
+                const quantity = parseInt((document.getElementById("manual-quantity") as HTMLInputElement).value);
+                const pricePerUnit = parseFloat((document.getElementById("manual-price") as HTMLInputElement).value);
+
+                if (!description || isNaN(quantity) || quantity < 1 || isNaN(pricePerUnit) || pricePerUnit < 0) {
+                  toast.error("Toate câmpurile trebuie completate corect");
+                  return;
+                }
+
+                handleAddManualItem(description, quantity, pricePerUnit);
+                
+                // Reset form fields
+                (document.getElementById("description") as HTMLInputElement).value = '';
+                (document.getElementById("manual-quantity") as HTMLInputElement).value = '1';
+                (document.getElementById("manual-price") as HTMLInputElement).value = '0';
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Adaugă în ofertă
+            </Button>
           </CardContent>
         </Card>
         

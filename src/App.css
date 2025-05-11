@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +40,114 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Page-specific backgrounds */
+.page-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  opacity: 0.1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: all 0.5s ease;
+}
+
+.admin-page .page-background {
+  background-image: linear-gradient(180deg, rgb(254,100,121) 0%, rgb(251,221,186) 100%);
+}
+
+.designer-page .page-background {
+  background-image: linear-gradient(108deg, rgba(242,245,139,1) 17.7%, rgba(148,197,20,0.68) 91.2%);
+}
+
+.database-page .page-background {
+  background-image: linear-gradient(90deg, hsla(221, 45%, 73%, 1) 0%, hsla(220, 78%, 29%, 1) 100%);
+}
+
+.index-page .page-background {
+  background-image: linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%);
+}
+
+.login-page .page-background {
+  background-image: linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%);
+}
+
+/* Live Edit Mode Styles */
+.edit-mode-active {
+  position: relative;
+}
+
+.edit-mode-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border: 2px dashed #1A73E8;
+  border-radius: 4px;
+  z-index: 999;
+  transition: all 0.2s ease;
+}
+
+.edit-mode-active:hover::before {
+  background-color: rgba(26, 115, 232, 0.1);
+}
+
+.edit-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.editable-component {
+  position: relative;
+}
+
+.editable-component:hover {
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.5);
+}
+
+.editable-component .edit-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: #1A73E8;
+  color: white;
+  border-radius: 50%;
+  padding: 2px;
+  display: none;
+  z-index: 1001;
+}
+
+.editable-component:hover .edit-icon {
+  display: block;
+}
+
+.edit-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  gap: 8px;
 }
