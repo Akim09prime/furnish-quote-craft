@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Armchair, BookOpen, Table, Bed, Sofa, ChefHat, Inbox, Home } from 'lucide-react';
+import { Armchair, BookOpen, Table, Bed, Sofa, ChefHat, Inbox, Home, Container, LayoutGrid } from 'lucide-react';
 
 interface FurnitureThumbnailProps {
   type: string;
@@ -31,8 +31,14 @@ const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({
         return <ChefHat size={size} />;
       case 'corp': // For generic furniture components
         return <Home size={size} />;
+      case 'corp_colt':
+        return <LayoutGrid size={size} />;
+      case 'corp_suspendat':
+        return <Container size={size} />;
+      case 'corp_sertar':
+        return <Inbox size={size} />;
       default:
-        return <BookOpen size={size} />;
+        return <Home size={size} />;
     }
   };
 
