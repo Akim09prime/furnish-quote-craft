@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +61,7 @@ const Designer = () => {
   const [selectedDesign, setSelectedDesign] = useState<FurnitureDesign | null>(null);
   
   // Use our custom hook for quote management
-  const { 
+  const {
     quote, 
     handleUpdateQuoteItem,
     handleRemoveItem,
@@ -71,8 +70,7 @@ const Designer = () => {
     handleUpdateQuoteMetadata,
     handleAddManualItem,
     handleImportFurnitureDesign,
-    handleImportFurnitureSet,
-    handleAddItemToQuote
+    handleImportFurnitureSet
   } = useQuote();
 
   // Load database on component mount
