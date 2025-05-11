@@ -23,7 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { FurnitureDesign } from './FurnitureSetManager';
-import { AccessorySelector, type Accessory } from './AccessorySelector';
+import AccessorySelector, { Accessory } from './AccessorySelector';
 
 interface FurnitureDesignerProps {
   isOpen: boolean;

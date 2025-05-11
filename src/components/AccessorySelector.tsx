@@ -7,7 +7,7 @@ import {
   Card, 
   CardContent
 } from "@/components/ui/card";
-import { Plus, Trash, Save } from "lucide-react";
+import { Plus, Trash } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Accessory {
