@@ -1,19 +1,19 @@
 
 import React, { useState } from 'react';
-import { Database, addCategory, deleteCategory } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { PlusCircle, Save, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppContext } from '@/lib/contexts/AppContext';
+import SaveButton from '@/lib/components/common/SaveButton';
+import PageHeader from '@/lib/components/common/PageHeader';
+import { useCategories } from '@/lib/hooks/useCategories';
 
-interface CategoriesAdminTabProps {
-  database: Database;
-  onDatabaseUpdate: (db: Database) => void;
-}
-
-const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = ({ database, onDatabaseUpdate }) => {
-  const [selectedCategory, setSelectedCategory] = useState("");
+const CategoriesAdminTab: React.FC = () => {
+  const { createBackup } = useAppContext();
+  const { categories, selectedCategory, setSelectedCategory, addCategory, deleteCategory } = useCategories();
+  
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showAddCategory, setShowAddCategory] = useState(false);
 
@@ -23,15 +23,10 @@ const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = ({ database, onDat
       return;
     }
 
-    try {
-      const updatedDb = addCategory(database, newCategoryName);
-      onDatabaseUpdate(updatedDb);
-      setNewCategoryName("");
-      setShowAddCategory(false);
-      toast.success(`Categoria "${newCategoryName}" a fost adăugată`);
-    } catch (error) {
-      toast.error(`${error instanceof Error ? error.message : 'Eroare la adăugarea categoriei'}`);
-    }
+    addCategory(newCategoryName);
+    setNewCategoryName("");
+    setShowAddCategory(false);
+    createBackup();
   };
 
   const handleDeleteCategory = () => {
@@ -40,14 +35,8 @@ const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = ({ database, onDat
       return;
     }
 
-    try {
-      const updatedDb = deleteCategory(database, selectedCategory);
-      onDatabaseUpdate(updatedDb);
-      setSelectedCategory("");
-      toast.success(`Categoria "${selectedCategory}" a fost ștearsă`);
-    } catch (error) {
-      toast.error(`${error instanceof Error ? error.message : 'Eroare la ștergerea categoriei'}`);
-    }
+    deleteCategory(selectedCategory);
+    createBackup();
   };
 
   return (
@@ -79,10 +68,10 @@ const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = ({ database, onDat
                 />
               </div>
               <div className="flex justify-end">
-                <Button onClick={handleAddCategory} className="gap-2">
-                  <Save size={16} />
-                  <span>Salvează Categoria</span>
-                </Button>
+                <SaveButton 
+                  onClick={handleAddCategory}
+                  label="Salvează Categoria"
+                />
               </div>
             </div>
           )}
@@ -96,14 +85,14 @@ const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = ({ database, onDat
                 </tr>
               </thead>
               <tbody>
-                {database.categories.length === 0 ? (
+                {categories.length === 0 ? (
                   <tr>
                     <td colSpan={2} className="text-center py-4">
                       Nu există categorii
                     </td>
                   </tr>
                 ) : (
-                  database.categories.map((cat) => (
+                  categories.map((cat) => (
                     <tr key={cat.name} className="border-b">
                       <td className="py-3 px-4">{cat.name}</td>
                       <td className="py-3 px-4">

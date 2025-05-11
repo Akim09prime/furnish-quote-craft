@@ -15,6 +15,7 @@ import Designer from "./pages/Designer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Save, Palette, Brush, PaintBucket, Layers } from "lucide-react";
+import { AppProvider } from "./lib/contexts/AppContext";
 
 // Create a new QueryClient
 const queryClient = new QueryClient({
@@ -149,41 +150,43 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="font-inter text-[#111827] min-h-screen">
-          <Toaster />
-          <Sonner position="top-right" expand={true} closeButton={true} />
-          <BrowserRouter>
-            <PageWrapper>
-              <LiveEditModeProvider>
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/firebase-setup" element={<FirebaseSetup />} />
-                  <Route path="/" element={<Index />} />
-                  <Route path="/designer" element={<Designer />} />
-                  <Route 
-                    path="/admin" 
-                    element={
-                      <ProtectedRoute>
-                        <Admin />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/database" 
-                    element={
-                      <ProtectedRoute>
-                        <Database />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </LiveEditModeProvider>
-            </PageWrapper>
-          </BrowserRouter>
-        </div>
-      </TooltipProvider>
+      <AppProvider>
+        <TooltipProvider>
+          <div className="font-inter text-[#111827] min-h-screen">
+            <Toaster />
+            <Sonner position="top-right" expand={true} closeButton={true} />
+            <BrowserRouter>
+              <PageWrapper>
+                <LiveEditModeProvider>
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/firebase-setup" element={<FirebaseSetup />} />
+                    <Route path="/" element={<Index />} />
+                    <Route path="/designer" element={<Designer />} />
+                    <Route 
+                      path="/admin" 
+                      element={
+                        <ProtectedRoute>
+                          <Admin />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/database" 
+                      element={
+                        <ProtectedRoute>
+                          <Database />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </LiveEditModeProvider>
+              </PageWrapper>
+            </BrowserRouter>
+          </div>
+        </TooltipProvider>
+      </AppProvider>
     </QueryClientProvider>
   );
 };

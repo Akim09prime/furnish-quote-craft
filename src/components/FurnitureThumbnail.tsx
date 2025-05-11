@@ -15,57 +15,59 @@ import {
   PackageOpen,  
   Archive
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export type FurnitureType = 
+  'canapea' | 'scaun' | 'biblioteca' | 'dulap' | 'masa' | 
+  'pat' | 'bucatarie' | 'corp' | 'corp_colt' | 'corp_suspendat' | 
+  'corp_sertar' | 'corp_frigider' | 'corp_chiuveta';
 
 interface FurnitureThumbnailProps {
   type: string;
   color: string;
   size?: number;
   className?: string;
+  onClick?: () => void;
 }
+
+// Map pentru asocierea tipurilor de mobilier cu iconițele corespunzătoare
+const FURNITURE_ICON_MAP: Record<FurnitureType, React.FC<{ size: number }>> = {
+  'canapea': Sofa,
+  'scaun': Armchair,
+  'biblioteca': BookOpen,
+  'dulap': PackageOpen,
+  'masa': Table,
+  'pat': Bed,
+  'bucatarie': ChefHat,
+  'corp': Home,
+  'corp_colt': LayoutGrid,
+  'corp_suspendat': Container,
+  'corp_sertar': Archive,
+  'corp_frigider': RefrigeratorIcon,
+  'corp_chiuveta': Inbox
+};
 
 const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({ 
   type, 
   color, 
   size = 24,
-  className = ""
+  className = "",
+  onClick
 }) => {
   const getIcon = () => {
-    switch (type.toLowerCase()) {
-      case 'canapea':
-        return <Sofa size={size} />;
-      case 'scaun':
-        return <Armchair size={size} />;
-      case 'biblioteca':
-        return <BookOpen size={size} />;
-      case 'dulap':
-        return <PackageOpen size={size} />; // Înlocuit Cabinet cu PackageOpen
-      case 'masa':
-        return <Table size={size} />;
-      case 'pat':
-        return <Bed size={size} />;
-      case 'bucatarie':
-        return <ChefHat size={size} />;
-      case 'corp': 
-        return <Home size={size} />;
-      case 'corp_colt':
-        return <LayoutGrid size={size} />;
-      case 'corp_suspendat':
-        return <Container size={size} />;
-      case 'corp_sertar':
-        return <Archive size={size} />; // Înlocuit Drawer cu Archive
-      case 'corp_frigider':
-        return <RefrigeratorIcon size={size} />; // Înlocuit Fridge cu RefrigeratorIcon
-      case 'corp_chiuveta':
-        return <Inbox size={size} />;
-      default:
-        return <Home size={size} />;
-    }
+    const IconComponent = FURNITURE_ICON_MAP[type.toLowerCase() as FurnitureType] || Home;
+    return <IconComponent size={size} />;
   };
 
   return (
     <div 
-      className={`flex items-center justify-center rounded-md overflow-hidden p-2 ${className}`}
+      className={cn(
+        "flex items-center justify-center rounded-md overflow-hidden p-2",
+        onClick ? "cursor-pointer" : "",
+        className
+      )}
       style={{ backgroundColor: color, boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}
+      onClick={onClick}
     >
       <div className="text-white">
         {getIcon()}
