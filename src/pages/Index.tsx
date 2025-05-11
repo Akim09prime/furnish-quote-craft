@@ -75,7 +75,15 @@ const Index = () => {
                 {database && (
                   <ProductSelector 
                     database={database} 
-                    onAddToQuote={handleAddItemToQuote}
+                    onAddToQuote={(item) => {
+                      handleAddItemToQuote(
+                        item.categoryName,
+                        item.subcategoryName,
+                        item.productId,
+                        item.quantity,
+                        item.productDetails
+                      );
+                    }}
                     onAddManualItem={(description, quantity, price, categoryName) => {
                       if (handleAddManualItem) {
                         handleAddManualItem(description, quantity, price);
