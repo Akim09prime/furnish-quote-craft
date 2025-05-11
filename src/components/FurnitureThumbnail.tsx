@@ -13,7 +13,8 @@ import {
   LayoutGrid, 
   RefrigeratorIcon, 
   PackageOpen,  
-  Archive
+  Archive,
+  LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,8 +31,8 @@ interface FurnitureThumbnailProps {
   onClick?: () => void;
 }
 
-// Map pentru asocierea tipurilor de mobilier cu iconițele corespunzătoare
-const FURNITURE_ICON_MAP: Record<FurnitureType, React.FC<{ size: number }>> = {
+// Modificăm tipul mapării pentru a folosi LucideIcon în loc de FC<{ size: number }>
+const FURNITURE_ICON_MAP: Record<FurnitureType, LucideIcon> = {
   'canapea': Sofa,
   'scaun': Armchair,
   'biblioteca': BookOpen,

@@ -9,8 +9,15 @@ import { useAppContext } from '@/lib/contexts/AppContext';
 import SaveButton from '@/lib/components/common/SaveButton';
 import PageHeader from '@/lib/components/common/PageHeader';
 import { useCategories } from '@/lib/hooks/useCategories';
+import { Database } from '@/lib/db';
 
-const CategoriesAdminTab: React.FC = () => {
+// Adăugăm interfața props-urilor
+interface CategoriesAdminTabProps {
+  database?: Database;
+  onDatabaseUpdate?: (db: Database) => void;
+}
+
+const CategoriesAdminTab: React.FC<CategoriesAdminTabProps> = () => {
   const { createBackup } = useAppContext();
   const { categories, selectedCategory, setSelectedCategory, addCategory, deleteCategory } = useCategories();
   

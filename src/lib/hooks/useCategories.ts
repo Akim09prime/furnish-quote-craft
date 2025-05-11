@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '@/lib/contexts/AppContext';
 import { toast } from 'sonner';
+import { Category, Subcategory } from '@/lib/db'; // Asigurăm-ne că importăm tipurile corecte
 
 export const useCategories = () => {
   const { database, updateDatabase } = useAppContext();
@@ -27,10 +28,13 @@ export const useCategories = () => {
       return;
     }
     
-    const updatedCategories = [
-      ...categories,
-      { name, subcategories: [] }
-    ];
+    // Creăm o categorie nouă cu structura corectă
+    const newCategory: Category = {
+      name,
+      subcategories: []
+    };
+    
+    const updatedCategories = [...categories, newCategory];
     
     updateDatabase({
       ...database,
@@ -68,14 +72,18 @@ export const useCategories = () => {
       return;
     }
     
+    // Creăm o subcategorie nouă cu structura corectă
+    const newSubcategory: Subcategory = {
+      name: subcategoryName,
+      products: [],
+      fields: [] // Adăugăm câmpul obligatoriu fields
+    };
+    
     const updatedCategories = categories.map(c => {
       if (c.name === categoryName) {
         return {
           ...c,
-          subcategories: [
-            ...c.subcategories,
-            { name: subcategoryName, products: [] }
-          ]
+          subcategories: [...c.subcategories, newSubcategory]
         };
       }
       return c;

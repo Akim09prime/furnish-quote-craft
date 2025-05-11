@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Database } from '@/lib/db';
 
@@ -119,6 +120,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({
   useEffect(() => {
     checkCloudinaryStatus();
   }, []);
+
+  const setEditMode = setIsEditMode; // Corectăm referința la setEditMode
 
   const value = {
     database,
