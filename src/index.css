@@ -1,5 +1,4 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -45,6 +44,12 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Furniture specific colors */
+    --furniture-purple: 258 54% 76%;
+    --furniture-purple-light: 258 68% 82%;
+    --furniture-purple-dark: 258 42% 58%;
+    --furniture-amber: 39 96% 56%;
   }
 
   .dark {
@@ -83,6 +88,12 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Furniture specific colors */
+    --furniture-purple: 258 54% 76%;
+    --furniture-purple-light: 258 68% 82%;
+    --furniture-purple-dark: 258 42% 58%;
+    --furniture-amber: 39 96% 56%;
   }
 }
 
@@ -92,37 +103,69 @@
   }
 
   body {
-    @apply bg-[#F9FAFB] text-[#111827] font-inter;
+    @apply bg-background text-foreground font-inter;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+    font-family: 'Inter', sans-serif;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+/* Page-specific backgrounds */
+.index-page .page-background {
+  @apply fixed inset-0 -z-10 bg-gradient-to-br from-white via-purple-50 to-amber-50;
+  opacity: 0.8;
+}
+
+.admin-page .page-background {
+  @apply fixed inset-0 -z-10 bg-gradient-to-br from-white via-blue-50 to-indigo-50;
+  opacity: 0.8;
+}
+
+.designer-page .page-background {
+  @apply fixed inset-0 -z-10 bg-gradient-to-br from-white via-indigo-50 to-purple-50;
+  opacity: 0.8;
+}
+
+.database-page .page-background {
+  @apply fixed inset-0 -z-10 bg-gradient-to-br from-white via-slate-50 to-gray-100;
+  opacity: 0.8;
+}
+
+.login-page .page-background {
+  @apply fixed inset-0 -z-10 bg-gradient-to-br from-white via-purple-50 to-blue-50;
+  opacity: 0.8;
 }
 
 @layer components {
   .furniture-input {
-    @apply h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b87f5] focus-visible:ring-offset-2;
+    @apply h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b87f5] focus-visible:ring-offset-2 transition-all duration-300;
   }
   
   /* Modern button styling */
   .btn-primary {
-    @apply bg-[#9b87f5] hover:bg-[#7E69AB] text-white px-4 py-2 rounded-md shadow transition-all duration-200;
+    @apply bg-gradient-to-r from-[#9b87f5] to-[#7E69AB] hover:from-[#7E69AB] hover:to-[#6E59A5] text-white px-4 py-2 rounded-md shadow-md transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1;
   }
   
   /* Modern card styling */
   .modern-card {
-    @apply bg-white p-6 shadow-md rounded-xl;
+    @apply bg-white p-6 shadow-md rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm bg-opacity-90;
   }
   
   /* Hover effects */
   .hover-scale {
-    @apply hover:scale-[1.02] transition-transform duration-150;
+    @apply hover:scale-[1.03] transition-all duration-200;
   }
   
   /* Typography classes */
   .heading-xl {
-    @apply text-2xl font-semibold tracking-tight text-[#111827];
+    @apply text-3xl font-semibold tracking-tight text-[#111827] font-playfair;
   }
   
   .heading-lg {
-    @apply text-lg font-medium text-[#111827];
+    @apply text-xl font-medium text-[#111827] font-playfair;
   }
   
   .body-text {
@@ -131,11 +174,11 @@
 
   /* Table styling */
   .modern-table {
-    @apply table-auto w-full text-sm text-left text-gray-600 overflow-x-auto;
+    @apply table-auto w-full text-sm text-left text-gray-600 overflow-x-auto rounded-lg overflow-hidden border shadow-sm;
   }
   
   .modern-table th {
-    @apply p-4 font-medium bg-gray-100;
+    @apply p-4 font-medium bg-purple-50 text-purple-800;
   }
   
   .modern-table td {
@@ -147,7 +190,51 @@
   }
   
   .modern-table tr:hover {
-    @apply bg-gray-100;
+    @apply bg-purple-50/50;
+  }
+  
+  /* Animation classes */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out forwards;
+  }
+  
+  .animate-slide-in {
+    animation: slideIn 0.5s ease-in-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-in-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 }
 
@@ -200,4 +287,98 @@
   .quote-client-info {
     @apply mb-6 p-4 bg-gray-50 rounded-lg;
   }
+}
+
+/* Page editing mode styles */
+.edit-mode-container {
+  position: relative;
+}
+
+.edit-mode-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px dashed rgba(155, 135, 245, 0.5);
+  pointer-events: none;
+  z-index: 9998;
+}
+
+.edit-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 9999;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.edit-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: rgba(155, 135, 245, 0.9);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom furniture components */
+.furniture-room-card {
+  @apply bg-white p-6 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-100 overflow-hidden;
+}
+
+.furniture-room-card.kitchen {
+  @apply bg-gradient-to-br from-white to-amber-50;
+}
+
+.furniture-room-card.living {
+  @apply bg-gradient-to-br from-white to-blue-50;
+}
+
+.furniture-room-card.bedroom {
+  @apply bg-gradient-to-br from-white to-purple-50;
+}
+
+.furniture-room-card.bathroom {
+  @apply bg-gradient-to-br from-white to-cyan-50;
+}
+
+.furniture-room-card.office {
+  @apply bg-gradient-to-br from-white to-gray-50;
+}
+
+/* Dashboard grid */
+.dashboard-grid {
+  @apply grid gap-6;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+/* Project card */
+.project-card {
+  @apply flex flex-col h-full bg-white rounded-xl shadow-md transition-all duration-300 hover:shadow-lg border border-gray-100 overflow-hidden;
+}
+
+.project-card-header {
+  @apply p-4 bg-gradient-to-r from-purple-50 to-indigo-50;
+}
+
+.project-card-body {
+  @apply p-4 flex-1;
+}
+
+.project-card-footer {
+  @apply p-4 border-t border-gray-100 flex justify-between items-center;
 }

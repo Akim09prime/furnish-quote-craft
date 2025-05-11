@@ -30,6 +30,7 @@ const queryClient = new QueryClient({
 const PageWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [pageClass, setPageClass] = useState("");
+  const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     const path = location.pathname;
@@ -47,12 +48,18 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => {
     } else {
       setPageClass("other-page");
     }
+    
+    // Trigger mount animation
+    setMounted(false);
+    setTimeout(() => setMounted(true), 50);
   }, [location]);
   
   return (
-    <div className={`${pageClass} min-h-screen`}>
+    <div className={`${pageClass} min-h-screen transition-all duration-700`}>
       <div className="page-background animate-fade-in" />
-      {children}
+      <div className={`w-full ${mounted ? 'animate-fade-in' : 'opacity-0'}`}>
+        {children}
+      </div>
     </div>
   );
 };
@@ -87,7 +94,7 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
             variant="outline" 
             size="sm" 
             onClick={() => setEditMode(false)}
-            className="bg-white text-black"
+            className="bg-white text-black hover:bg-white/90"
           >
             Ieșire mod editare
           </Button>
@@ -143,7 +150,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="font-inter text-[#111827] bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+        <div className="font-inter text-[#111827] min-h-screen">
           <Toaster />
           <Sonner position="top-right" expand={true} closeButton={true} />
           <BrowserRouter>
