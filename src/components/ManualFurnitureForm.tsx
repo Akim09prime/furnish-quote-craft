@@ -15,9 +15,11 @@ import { Database, Material } from '@/lib/db';
 import { Accessory } from '@/components/AccessorySelector';
 import FurnitureThumbnail from './FurnitureThumbnail';
 
-// Extindem interfața Accessory pentru a include ID dacă nu există deja
+// Extindem interfața Accessory și adăugăm proprietățile necesare
 interface AccessoryWithId extends Accessory {
   id: string;
+  description?: string; // Adăugăm description ca proprietate opțională
+  imageUrl?: string;    // Adăugăm imageUrl ca proprietate opțională
 }
 
 export interface ManualFurniture {
