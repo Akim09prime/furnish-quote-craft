@@ -11,9 +11,9 @@ import {
   Home, 
   Container, 
   LayoutGrid, 
-  Fridge, 
-  Cabinet,  
-  Drawer
+  RefrigeratorIcon, 
+  PackageOpen,  
+  Archive
 } from 'lucide-react';
 
 interface FurnitureThumbnailProps {
@@ -38,7 +38,7 @@ const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({
       case 'biblioteca':
         return <BookOpen size={size} />;
       case 'dulap':
-        return <Cabinet size={size} />; 
+        return <PackageOpen size={size} />; // Înlocuit Cabinet cu PackageOpen
       case 'masa':
         return <Table size={size} />;
       case 'pat':
@@ -52,9 +52,9 @@ const FurnitureThumbnail: React.FC<FurnitureThumbnailProps> = ({
       case 'corp_suspendat':
         return <Container size={size} />;
       case 'corp_sertar':
-        return <Drawer size={size} />;
+        return <Archive size={size} />; // Înlocuit Drawer cu Archive
       case 'corp_frigider':
-        return <Fridge size={size} />;
+        return <RefrigeratorIcon size={size} />; // Înlocuit Fridge cu RefrigeratorIcon
       case 'corp_chiuveta':
         return <Inbox size={size} />;
       default:

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,11 @@ import { Database, Material } from '@/lib/db';
 import { Accessory } from '@/components/AccessorySelector';
 import FurnitureThumbnail from './FurnitureThumbnail';
 
+// Extindem interfața Accessory pentru a include ID dacă nu există deja
+interface AccessoryWithId extends Accessory {
+  id: string;
+}
+
 export interface ManualFurniture {
   id: string;
   name: string;
@@ -30,7 +34,7 @@ export interface ManualFurniture {
   doorMaterial?: string;
   hasDrawers: boolean;
   drawerCount?: number;
-  accessories: Accessory[];
+  accessories: AccessoryWithId[];
   totalPrice: number;
 }
 
@@ -93,7 +97,7 @@ const MATERIAL_PRICES = {
 };
 
 const ManualFurnitureForm: React.FC<ManualFurnitureFormProps> = ({ db, onSave }) => {
-  const [accessories, setAccessories] = useState<Accessory[]>([]);
+  const [accessories, setAccessories] = useState<AccessoryWithId[]>([]);
   const [selectedAccessories, setSelectedAccessories] = useState<{id: string, quantity: number}[]>([]);
   const [materialPrice, setMaterialPrice] = useState(0);
   const [accessoriesPrice, setAccessoriesPrice] = useState(0);
@@ -135,7 +139,7 @@ const ManualFurnitureForm: React.FC<ManualFurnitureFormProps> = ({ db, onSave })
   // Load accessories from DB
   useEffect(() => {
     // In a real scenario, load from DB
-    const dummyAccessories: Accessory[] = [
+    const dummyAccessories: AccessoryWithId[] = [
       { id: '1', name: 'Balama Clip-Top', description: 'Balama hidraulică cu amortizor', price: 15, imageUrl: '' },
       { id: '2', name: 'Mâner Profil', description: 'Mâner aluminiu 128mm', price: 8, imageUrl: '' },
       { id: '3', name: 'Sertar Tandem Box', description: 'Sistem complet de sertar', price: 120, imageUrl: '' },
@@ -267,7 +271,7 @@ const ManualFurnitureForm: React.FC<ManualFurnitureFormProps> = ({ db, onSave })
       doorMaterial: data.hasDoors ? data.doorMaterial : undefined,
       hasDrawers: data.hasDrawers,
       drawerCount: data.hasDrawers ? data.drawerCount : undefined,
-      accessories: furnitureAccessories as any,
+      accessories: furnitureAccessories as AccessoryWithId[],
       totalPrice: totalPrice
     };
     
