@@ -14,7 +14,7 @@ import FirebaseSetup from "./pages/FirebaseSetup";
 import Designer from "./pages/Designer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Save, Palette, Brush } from "lucide-react";
+import { Eye, EyeOff, Save, Palette, Brush, PaintBucket, Layers } from "lucide-react";
 
 // Create a new QueryClient
 const queryClient = new QueryClient({
@@ -57,14 +57,14 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Live Edit Mode Provider
+// Live Edit Mode Provider with enhanced UI
 const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [editMode, setEditMode] = useState(false);
   
   useEffect(() => {
-    const adminPaths = ['/admin', '/database'];
+    const adminPaths = ['/admin', '/database', '/designer'];
     setIsAdmin(adminPaths.includes(location.pathname));
     
     // Reset edit mode when navigating away from admin pages
@@ -78,7 +78,7 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
       {editMode && (
-        <div className="edit-mode-overlay">
+        <div className="edit-mode-overlay animate-fade-in">
           <div>
             <span className="font-bold">Mod editare activat</span>
             <span className="ml-2 text-sm opacity-75">Faceți clic pe elementele pe care doriți să le editați</span>
@@ -99,7 +99,7 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
       </div>
       
       {isAdmin && !editMode && (
-        <div className="edit-controls">
+        <div className="edit-controls animate-fade-in">
           <Button size="sm" onClick={() => setEditMode(true)}>
             <Eye className="h-4 w-4 mr-2" />
             Mod editare
@@ -108,11 +108,15 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
             <Palette className="h-4 w-4 mr-2" />
             Personalizare
           </Button>
+          <Button size="sm" variant="outline">
+            <PaintBucket className="h-4 w-4 mr-2" />
+            Schimbă tema
+          </Button>
         </div>
       )}
       
       {isAdmin && editMode && (
-        <div className="edit-controls">
+        <div className="edit-controls animate-fade-in">
           <Button size="sm" variant="destructive" onClick={() => setEditMode(false)}>
             <EyeOff className="h-4 w-4 mr-2" />
             Ieșire
@@ -124,6 +128,10 @@ const LiveEditModeProvider = ({ children }: { children: React.ReactNode }) => {
           <Button size="sm" variant="outline">
             <Brush className="h-4 w-4 mr-2" />
             Resetare
+          </Button>
+          <Button size="sm" variant="amber">
+            <Layers className="h-4 w-4 mr-2" />
+            Straturi
           </Button>
         </div>
       )}

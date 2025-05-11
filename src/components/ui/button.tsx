@@ -6,20 +6,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow hover:shadow-md",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-300 ease-in-out ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow-sm hover:shadow-md transform hover:-translate-y-0.5",
   {
     variants: {
       variant: {
-        default: "bg-[#1A73E8] text-white hover:bg-[#1565D8]",
+        default: "bg-gradient-to-r from-[#1A73E8] to-[#3b82f6] text-white hover:from-[#1565D8] hover:to-[#2563eb]",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-gradient-to-r from-[#e11d48] to-[#f43f5e] text-destructive-foreground hover:from-[#be123c] hover:to-[#e11d48]",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/90",
         ghost: "hover:bg-accent hover:text-accent-foreground shadow-none hover:shadow-none",
-        link: "text-primary underline-offset-4 hover:underline shadow-none",
-        amber: "bg-[#FBBF24] text-white hover:bg-amber-500",
+        link: "text-primary underline-offset-4 hover:underline shadow-none hover:shadow-none transform-none hover:translate-y-0",
+        amber: "bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-white hover:from-[#F59E0B] hover:to-[#D97706]",
       },
       size: {
         default: "h-10 px-4 py-2",

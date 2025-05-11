@@ -4,7 +4,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LogIn, LogOut, Armchair } from 'lucide-react';
+import { LogIn, LogOut, Armchair, Home, Database, Settings, LayoutGrid } from 'lucide-react';
 import { subscribeToAuthState, logout } from '@/services/AuthService';
 
 const Header: React.FC = () => {
@@ -59,12 +59,15 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-md backdrop-blur-sm bg-white/90">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center">
-          <Link to="/" className="flex items-center">
-            <h1 className="text-xl font-semibold text-[#1A73E8]">
-              FurnishQuote<span className="font-light text-gray-500">Craft</span>
+          <Link to="/" className="flex items-center group">
+            <h1 className="text-xl font-semibold">
+              <span className="bg-gradient-to-r from-[#1A73E8] to-[#3b82f6] bg-clip-text text-transparent">
+                FurnishQuote
+              </span>
+              <span className="font-light text-gray-500 group-hover:text-gray-700 transition-colors">Craft</span>
             </h1>
           </Link>
         </div>
@@ -76,7 +79,10 @@ const Header: React.FC = () => {
               variant={location.pathname === "/" ? "default" : "ghost"}
               className="transition-all duration-200"
             >
-              <Link to="/">Generator Ofertă</Link>
+              <Link to="/">
+                <Home className="mr-2 h-4 w-4" />
+                Generator Ofertă
+              </Link>
             </Button>
             
             <Button 
@@ -95,7 +101,10 @@ const Header: React.FC = () => {
               variant={location.pathname === "/admin" ? "default" : "ghost"}
               className="transition-all duration-200"
             >
-              <Link to="/admin">Administrare</Link>
+              <Link to="/admin">
+                <Settings className="mr-2 h-4 w-4" />
+                Administrare
+              </Link>
             </Button>
             
             <Button 
@@ -103,18 +112,21 @@ const Header: React.FC = () => {
               variant={location.pathname === "/database" ? "default" : "ghost"}
               className="transition-all duration-200"
             >
-              <Link to="/database">Baza de date</Link>
+              <Link to="/database">
+                <Database className="mr-2 h-4 w-4" />
+                Baza de date
+              </Link>
             </Button>
           </nav>
 
           {isAuthInitialized && (
             isLoggedIn ? (
-              <Button onClick={handleLogout} size="sm" variant="outline" className="ml-4">
-                <LogOut className="mr-2 h-4 w-4" />
+              <Button onClick={handleLogout} size="sm" variant="outline" className="ml-4 hover:bg-red-50">
+                <LogOut className="mr-2 h-4 w-4 text-red-500" />
                 Deconectare
               </Button>
             ) : (
-              <Button onClick={handleLogin} size="sm" variant="outline" className="ml-4">
+              <Button onClick={handleLogin} size="sm" variant="default" className="ml-4">
                 <LogIn className="mr-2 h-4 w-4" />
                 Autentificare
               </Button>
